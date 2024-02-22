@@ -10,8 +10,6 @@ import SwiftData
 import WebKit
 
 struct PoemsListView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
     @State private var viewModel = PoemsViewModel(service: PoemsService(httpClient: URLSession.shared))
     @State private var query: String = ""
     @State private var showSearchView: Bool = false
@@ -22,7 +20,7 @@ struct PoemsListView: View {
             List {
                 ForEach(viewModel.allPoems) { poem in
                     NavigationLink {
-                        PoemView(poem: poem)
+                        PoemView(viewModel: PoemViewModel(poem: poem))
                     } label: {
                         VStack(alignment: .leading) {
                             Text(poem.title)
@@ -36,6 +34,11 @@ struct PoemsListView: View {
                     .task {
                         await viewModel.fetchMorePoemsIfNeeded(poem: poem)
                     }
+                }
+            }
+            .overlay {
+                if viewModel.isLoading {
+                    ProgressView()
                 }
             }
             .listStyle(.plain)
@@ -56,11 +59,11 @@ struct PoemsListView: View {
                 }
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
-
+                        showSettingsView.toggle()
                     } label: {
                         Image(systemName: "gearshape")
                     }
-                    .sheet(isPresented: $showSearchView, content: {
+                    .sheet(isPresented: $showSettingsView, content: {
                         SettingsView()
                     })
                 }
@@ -89,23 +92,8 @@ struct PoemsListView: View {
         }
     }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
-        }
-    }
 }
 
 #Preview {
     PoemsListView()
-        .modelContainer(for: Item.self, inMemory: true)
 }

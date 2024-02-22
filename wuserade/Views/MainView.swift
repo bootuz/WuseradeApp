@@ -12,7 +12,7 @@ struct MainView: View {
         TabView(selection: .constant(1)) {
             PoemsListView().tabItem { Label("Усэхэр", systemImage: "pencil.and.scribble") }.tag(1)
             AuthorsListView().tabItem { Label("Усакlуэхэр", systemImage: "person.2") }.tag(2)
-            LikedPoemsView().tabItem { Label("Уигу ирихьахэр", systemImage: "heart") }.tag(3)
+            LikedPoemsView().tabItem { Label("Сигу ирихьахэр", systemImage: "heart") }.tag(3)
         }
         .tint(.primary)
     }

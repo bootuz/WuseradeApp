@@ -19,7 +19,7 @@ struct AuthorView: View {
         List {
             ForEach(viewModel.poems) { poem in
                 NavigationLink {
-                    PoemView(poem: poem)
+                    PoemView(viewModel: PoemViewModel(poem: poem))
                 } label: {
                     VStack(alignment: .leading) {
                         Text(poem.title)

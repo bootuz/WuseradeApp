@@ -12,7 +12,8 @@ import SwiftData
 struct wuseradeApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            PersistedPoem.self,
+            PersistedAuthor.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -23,9 +24,12 @@ struct wuseradeApp: App {
         }
     }()
 
+    @StateObject private var fontSettingsManager = FontSettingsManager()
+
     var body: some Scene {
         WindowGroup {
             MainView()
+                .environmentObject(fontSettingsManager)
         }
         .modelContainer(sharedModelContainer)
     }
