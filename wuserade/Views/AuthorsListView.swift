@@ -26,6 +26,11 @@ struct AuthorsListView: View {
                     }
                 }
             }
+            .overlay {
+                if viewModel.isLoading {
+                    ProgressView()
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("усакlуэхэр")

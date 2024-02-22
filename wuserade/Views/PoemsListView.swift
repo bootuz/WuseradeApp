@@ -14,34 +14,34 @@ struct PoemsListView: View {
     @State private var query: String = ""
     @State private var showSearchView: Bool = false
     @State private var showSettingsView: Bool = false
+    @State private var selected: Int = 0
+    @AppStorage("colorScheme") private var colorScheme: Bool = false
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(viewModel.allPoems) { poem in
-                    NavigationLink {
-                        PoemView(viewModel: PoemViewModel(poem: poem))
-                    } label: {
-                        VStack(alignment: .leading) {
-                            Text(poem.title)
-                                .lineLimit(0)
-                            Text(poem.author.name)
-                                .foregroundStyle(.secondary)
-                                .italic()
-                                .fontDesign(.serif)
-                        }
-                    }
-                    .task {
-                        await viewModel.fetchMorePoemsIfNeeded(poem: poem)
-                    }
+            VStack {
+                Picker(selection: $selected) {
+                    Text("Усэщlэхэр").tag(0)
+                    Text("Зытеухуар").tag(1)
+                } label: {
+
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.top)
+
+                switch selected {
+                    case 0:
+                        ListView()
+                            .transition(.move(edge: .leading))
+                    case 1:
+                        CategoriesView()
+                            .transition(.move(edge: .trailing))
+                    default:
+                        EmptyView()
                 }
             }
-            .overlay {
-                if viewModel.isLoading {
-                    ProgressView()
-                }
-            }
-            .listStyle(.plain)
+            .animation(.easeInOut, value: selected)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("усэхэр")
@@ -55,6 +55,7 @@ struct PoemsListView: View {
                     }
                     .sheet(isPresented: $showSearchView, content: {
                         SearchView()
+                            .preferredColorScheme(colorScheme ? .dark : .light)
                     })
                 }
                 ToolbarItem(placement: .topBarLeading) {
@@ -65,6 +66,7 @@ struct PoemsListView: View {
                     }
                     .sheet(isPresented: $showSettingsView, content: {
                         SettingsView()
+                            .preferredColorScheme(colorScheme ? .dark : .light)
                     })
                 }
             }
@@ -74,25 +76,49 @@ struct PoemsListView: View {
                     await viewModel.fetchPoems()
                 }
             }
+
         }
     }
 
-    @ViewBuilder
-    private func HeaderView() -> some View {
-        HStack {
-            Text("Усэщlэхэр")
-                .font(.subheadline)
-                .fontWeight(.bold)
-            Spacer()
-            Button(action: {
-
-            }, label: {
-                Text("Усу хъуар")
-            })
+    private func CategoriesView() -> some View {
+        VStack {
+            ContentUnavailableView("Categories", systemImage: "sun.horizon", description: Text("Coming soon"))
         }
     }
 
+    private func ListView() -> some View {
+        List {
+            ForEach(viewModel.allPoems) { poem in
+                NavigationLink {
+                    PoemView(viewModel: PoemViewModel(poem: poem))
+                } label: {
+                    VStack(alignment: .leading) {
+                        Text(poem.title)
+                            .lineLimit(0)
+                        Text(poem.author.name)
+                            .foregroundStyle(.secondary)
+                            .italic()
+                            .fontDesign(.serif)
+                    }
+                }
+                .task {
+                    await viewModel.fetchMorePoemsIfNeeded(poem: poem)
+                }
+            }
+        }
+        .refreshable {
+            
+        }
+        .overlay {
+            if viewModel.isLoading {
+                ProgressView()
+            }
+        }
+        .listStyle(.plain)
+    }
 }
+
+
 
 #Preview {
     PoemsListView()

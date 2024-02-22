@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct MainView: View {
+    @AppStorage("colorScheme") private var colorScheme: Bool = false
+
     var body: some View {
         TabView(selection: .constant(1)) {
             PoemsListView().tabItem { Label("Усэхэр", systemImage: "pencil.and.scribble") }.tag(1)
@@ -15,6 +17,7 @@ struct MainView: View {
             LikedPoemsView().tabItem { Label("Сигу ирихьахэр", systemImage: "heart") }.tag(3)
         }
         .tint(.primary)
+        .preferredColorScheme(colorScheme ? .dark : .light)
     }
 }
 

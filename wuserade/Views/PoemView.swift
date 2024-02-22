@@ -87,10 +87,15 @@ struct PoemView: View {
             Text(viewModel.poem.title)
                 .font(.custom(fontManager.currentSettings.fontName, size: 30))
                 .multilineTextAlignment(.center)
-            Text(viewModel.poem.author.name)
-                .font(.custom(fontManager.currentSettings.fontName, size: 18))
-                .italic()
-                .padding(.vertical, 1)
+            NavigationLink {
+                AuthorView(author: viewModel.poem.author)
+            } label: {
+                Text(viewModel.poem.author.name)
+                    .font(.custom(fontManager.currentSettings.fontName, size: 18))
+                    .italic()
+                    .padding(.vertical, 1)
+            }
+
             Divider()
         }
         .padding(.bottom, 10)

@@ -45,14 +45,13 @@ struct SearchView: View {
                     })
                 }
                 ToolbarItem(placement: .principal) {
-                    Text("лъыхъуэн")
+                    Text("лъыхъуапlэ")
                         .font(.custom("MarckScript-Regular", size: 25))
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $viewModel.query, prompt: Text("Усэм е усакlуэм и цlэр"))
         }
-        .tint(.primary)
         .onSubmit(of: .search) {
             Task {
                 await viewModel.searchPoems(query: viewModel.query)

@@ -16,7 +16,6 @@ class FontSettingsManager: ObservableObject {
     @Published var currentSettings: FontSettings {
         didSet {
             saveSettings()
-            print(currentSettings)
         }
     }
 

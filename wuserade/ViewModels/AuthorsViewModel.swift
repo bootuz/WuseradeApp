@@ -18,7 +18,8 @@ class AuthorsViewModel {
 
     @ObservationIgnored
     private var totalPages: Int = 0
-
+    
+    var isLoading: Bool = false
     var authors: [Author] = [Author]()
     var poems: [Poem] = [Poem]()
 
@@ -29,6 +30,8 @@ class AuthorsViewModel {
 
     @MainActor
     func fetchAllAuthors() async {
+        isLoading = true
+        defer { isLoading = false }
         do {
             let response = try await service.fetchAuthors(page: page)
             authors += response.authors
@@ -53,6 +56,8 @@ class AuthorsViewModel {
 
     @MainActor
     func fetchPoemsOfAuthor(id: Int) async {
+        isLoading = true
+        defer { isLoading = false}
         do {
             poems = try await service.fetchPoemsOfAuthor(id: id, page: page)
         } catch {

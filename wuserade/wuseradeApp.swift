@@ -30,6 +30,7 @@ struct wuseradeApp: App {
         WindowGroup {
             MainView()
                 .environmentObject(fontSettingsManager)
+                .tint(.primary)
         }
         .modelContainer(sharedModelContainer)
     }

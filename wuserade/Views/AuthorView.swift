@@ -28,6 +28,11 @@ struct AuthorView: View {
                 }
             }
         }
+        .overlay {
+            if viewModel.isLoading {
+                ProgressView()
+            }
+        }
         .toolbarRole(.editor)
         .toolbar {
             ToolbarItem(placement: .principal) {
