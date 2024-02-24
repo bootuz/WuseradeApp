@@ -20,22 +20,21 @@ struct PoemsListView: View {
     var body: some View {
         NavigationStack {
             VStack {
-                Picker(selection: $selected) {
+                Picker("", selection: $selected) {
                     Text("Усэщlэхэр").tag(0)
                     Text("Зытеухуар").tag(1)
-                } label: {
-
                 }
+
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
                 .padding(.top)
-
+                
                 switch selected {
                     case 0:
                         ListView()
                             .transition(.move(edge: .leading))
                     case 1:
-                        CategoriesView()
+                        PoemCategoriesListView()
                             .transition(.move(edge: .trailing))
                     default:
                         EmptyView()
@@ -44,8 +43,7 @@ struct PoemsListView: View {
             .animation(.easeInOut, value: selected)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("усэхэр")
-                        .font(.custom("MarckScript-Regular", size: 25))
+                    TitleView(title: "усэхэр")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -76,13 +74,6 @@ struct PoemsListView: View {
                     await viewModel.fetchPoems()
                 }
             }
-
-        }
-    }
-
-    private func CategoriesView() -> some View {
-        VStack {
-            ContentUnavailableView("Categories", systemImage: "sun.horizon", description: Text("Coming soon"))
         }
     }
 
@@ -92,14 +83,7 @@ struct PoemsListView: View {
                 NavigationLink {
                     PoemView(viewModel: PoemViewModel(poem: poem))
                 } label: {
-                    VStack(alignment: .leading) {
-                        Text(poem.title)
-                            .lineLimit(0)
-                        Text(poem.author.name)
-                            .foregroundStyle(.secondary)
-                            .italic()
-                            .fontDesign(.serif)
-                    }
+                    PoemLabel(poem: poem)
                 }
                 .task {
                     await viewModel.fetchMorePoemsIfNeeded(poem: poem)
@@ -122,4 +106,5 @@ struct PoemsListView: View {
 
 #Preview {
     PoemsListView()
+        .tint(.primary)
 }

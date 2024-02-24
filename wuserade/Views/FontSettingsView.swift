@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct FontSettingsView: View {
-    @ObservedObject var fontManager: FontSettingsManager
+    @EnvironmentObject var fontManager: FontSettingsManager
     @Environment(\.dismiss) private var dismiss
     var body: some View {
         VStack {
@@ -18,7 +18,6 @@ struct FontSettingsView: View {
                         Picker("Тхыпхъэр", selection: $fontManager.currentSettings.fontName) {
                             Text("System").tag("System")
                             Text("MarckScript").tag("MarckScript-Regular")
-                                .font(.custom("MarckScript-Regular", size: 18))
                             Text("Georgia").tag("Georgia")
                             Text("Times New Roman").tag("Times New Roman")
                         }
@@ -29,7 +28,6 @@ struct FontSettingsView: View {
                         }
                     }
                 }
-//                .padding(.top, -50)
             }
             .frame(height: 150)
 
@@ -37,8 +35,7 @@ struct FontSettingsView: View {
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Text("Тхыпхъэр")
-                    .font(.custom("MarckScript-Regular", size: 25))
+                TitleView(title: "тхыпхъэр")
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button(action: {
@@ -70,7 +67,6 @@ struct FontSettingsView: View {
 
             HStack {
                 SelectableTextView(text: Poem.example.content, height: .constant(0))
-//                    .frame(height: 300)
                 Spacer()
             }
         }
@@ -79,6 +75,9 @@ struct FontSettingsView: View {
 }
 
 #Preview {
-    FontSettingsView(fontManager: FontSettingsManager())
-
+    NavigationStack {
+        FontSettingsView()
+            .environmentObject(FontSettingsManager())
+            .tint(.primary)
+    }
 }

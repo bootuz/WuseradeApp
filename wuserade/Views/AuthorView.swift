@@ -36,8 +36,7 @@ struct AuthorView: View {
         .toolbarRole(.editor)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Text(author.name)
-                    .font(.custom("MarckScript-Regular", size: 25))
+                TitleView(title: author.name)
             }
         }
         .listStyle(.plain)

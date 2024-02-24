@@ -45,8 +45,7 @@ struct SearchView: View {
                     })
                 }
                 ToolbarItem(placement: .principal) {
-                    Text("лъыхъуапlэ")
-                        .font(.custom("MarckScript-Regular", size: 25))
+                    TitleView(title: "лъыхъуапlэ")
                 }
             }
             .navigationBarTitleDisplayMode(.inline)

@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @EnvironmentObject private var fontManager: FontSettingsManager
     @Environment(\.dismiss) private var dismiss
     @AppStorage("colorScheme") private var colorScheme: Bool = false
 
@@ -17,7 +16,7 @@ struct SettingsView: View {
             List {
                 Section("Тхыпхъэр (шрифтыр)") {
                     NavigationLink {
-                        FontSettingsView(fontManager: fontManager)
+                        FontSettingsView()
                     } label: {
                         Label("Тхыпхъэр теухуэн", systemImage: "textformat")
                     }
@@ -32,9 +31,9 @@ struct SettingsView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("гъэпсыпlэ")
-                        .font(.custom("MarckScript-Regular", size: 25))
+                    TitleView(title: "гъэпсыпlэ")
                 }
+
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         dismiss()
@@ -50,6 +49,5 @@ struct SettingsView: View {
 
 #Preview {
     SettingsView()
-        .environmentObject(FontSettingsManager())
         .tint(.primary)
 }

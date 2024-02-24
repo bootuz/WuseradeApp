@@ -23,8 +23,8 @@ struct Poem: Codable, Identifiable, Hashable {
         return Poem(id: 1, title: "Усэм и цlэр", author: Author(id: 1, name: "Усакlуэм и цlэр"), content: """
             Усэ lыхьэм и щапхъэ цlыкlу
             Мыбдежым усэм и тхыпхъэ 
-            щапхъэр нэрылъагъуу къытридзэнущ,
-            икlи и инагъри зарызихъуэжыр.
+            Щапхъэр нэрылъагъуу къытридзэнущ,
+            Икlи и инагъри зарызихъуэжыр.
             """
         )
     }
@@ -38,16 +38,4 @@ struct Poem: Codable, Identifiable, Hashable {
         )
         return poem
     }
-}
-
-
-struct Author: Codable, Identifiable, Hashable {
-    let id: Int
-    let name: String
-}
-
-struct AllAuthors: Codable {
-    let authors: [Author]
-    let totalPages: Int
-    let currentPage: String
 }

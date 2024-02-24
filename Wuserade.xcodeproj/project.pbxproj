@@ -16,6 +16,14 @@
 		C01241602B7FC9A100BA9615 /* AuthorsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C012415F2B7FC9A100BA9615 /* AuthorsService.swift */; };
 		C01241622B7FCA2E00BA9615 /* AuthorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01241612B7FCA2E00BA9615 /* AuthorView.swift */; };
 		C01241642B7FD4C600BA9615 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01241632B7FD4C600BA9615 /* SearchView.swift */; };
+		C030F8E82B88980A009E5907 /* TitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8E72B88980A009E5907 /* TitleView.swift */; };
+		C030F8EA2B88DD06009E5907 /* PoemCategoriesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8E92B88DD06009E5907 /* PoemCategoriesListView.swift */; };
+		C030F8EC2B88E021009E5907 /* CategoriesEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8EB2B88E021009E5907 /* CategoriesEndpoint.swift */; };
+		C030F8EE2B88E081009E5907 /* CategoriesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8ED2B88E081009E5907 /* CategoriesService.swift */; };
+		C030F8F02B88E0B5009E5907 /* Author.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8EF2B88E0B5009E5907 /* Author.swift */; };
+		C030F8F22B88E0C6009E5907 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8F12B88E0C6009E5907 /* Category.swift */; };
+		C030F8F42B88E163009E5907 /* PoemCategoriesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8F32B88E163009E5907 /* PoemCategoriesViewModel.swift */; };
+		C030F8F72B892EF6009E5907 /* PoemLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8F62B892EF6009E5907 /* PoemLabel.swift */; };
 		C0357D352B868D8800440969 /* SelectableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0357D342B868D8800440969 /* SelectableTextView.swift */; };
 		C0357D372B87540B00440969 /* FontSettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0357D362B87540B00440969 /* FontSettingsManager.swift */; };
 		C0357D392B87881A00440969 /* FontSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0357D382B87881A00440969 /* FontSettingsView.swift */; };
@@ -73,6 +81,14 @@
 		C012415F2B7FC9A100BA9615 /* AuthorsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorsService.swift; sourceTree = "<group>"; };
 		C01241612B7FCA2E00BA9615 /* AuthorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorView.swift; sourceTree = "<group>"; };
 		C01241632B7FD4C600BA9615 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
+		C030F8E72B88980A009E5907 /* TitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleView.swift; sourceTree = "<group>"; };
+		C030F8E92B88DD06009E5907 /* PoemCategoriesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemCategoriesListView.swift; sourceTree = "<group>"; };
+		C030F8EB2B88E021009E5907 /* CategoriesEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesEndpoint.swift; sourceTree = "<group>"; };
+		C030F8ED2B88E081009E5907 /* CategoriesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesService.swift; sourceTree = "<group>"; };
+		C030F8EF2B88E0B5009E5907 /* Author.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Author.swift; sourceTree = "<group>"; };
+		C030F8F12B88E0C6009E5907 /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
+		C030F8F32B88E163009E5907 /* PoemCategoriesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemCategoriesViewModel.swift; sourceTree = "<group>"; };
+		C030F8F62B892EF6009E5907 /* PoemLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemLabel.swift; sourceTree = "<group>"; };
 		C0357D342B868D8800440969 /* SelectableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableTextView.swift; sourceTree = "<group>"; };
 		C0357D362B87540B00440969 /* FontSettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontSettingsManager.swift; sourceTree = "<group>"; };
 		C0357D382B87881A00440969 /* FontSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontSettingsView.swift; sourceTree = "<group>"; };
@@ -138,10 +154,22 @@
 			path = fonts;
 			sourceTree = "<group>";
 		};
+		C030F8F52B88E1E6009E5907 /* Poems */ = {
+			isa = PBXGroup;
+			children = (
+				C01241512B7EB09D00BA9615 /* PoemView.swift */,
+				C030F8E92B88DD06009E5907 /* PoemCategoriesListView.swift */,
+				C07F16272B7E429A007F11B7 /* PoemsListView.swift */,
+				C030F8F62B892EF6009E5907 /* PoemLabel.swift */,
+			);
+			path = Poems;
+			sourceTree = "<group>";
+		};
 		C0357D332B868D7800440969 /* Components */ = {
 			isa = PBXGroup;
 			children = (
 				C0357D342B868D8800440969 /* SelectableTextView.swift */,
+				C030F8E72B88980A009E5907 /* TitleView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -226,6 +254,7 @@
 				C07F16592B7E4441007F11B7 /* Endpoints */,
 				C07F165C2B7E4588007F11B7 /* PoemsService.swift */,
 				C012415F2B7FC9A100BA9615 /* AuthorsService.swift */,
+				C030F8ED2B88E081009E5907 /* CategoriesService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -245,6 +274,7 @@
 			children = (
 				C07F165A2B7E445E007F11B7 /* PoemsEndpoint.swift */,
 				C012415D2B7FC8E400BA9615 /* AuthorsEndpoint.swift */,
+				C030F8EB2B88E021009E5907 /* CategoriesEndpoint.swift */,
 			);
 			path = Endpoints;
 			sourceTree = "<group>";
@@ -253,6 +283,8 @@
 			isa = PBXGroup;
 			children = (
 				C07F16612B7E463F007F11B7 /* Poem.swift */,
+				C030F8EF2B88E0B5009E5907 /* Author.swift */,
+				C030F8F12B88E0C6009E5907 /* Category.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -265,6 +297,7 @@
 				C076E19B2B81824300CC7B52 /* SearchViewModel.swift */,
 				C0A782E42B868B3D009FC5E8 /* PoemViewModel.swift */,
 				C0357D362B87540B00440969 /* FontSettingsManager.swift */,
+				C030F8F32B88E163009E5907 /* PoemCategoriesViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -272,9 +305,8 @@
 		C07F16662B7E51F2007F11B7 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				C030F8F52B88E1E6009E5907 /* Poems */,
 				C0357D332B868D7800440969 /* Components */,
-				C07F16272B7E429A007F11B7 /* PoemsListView.swift */,
-				C01241512B7EB09D00BA9615 /* PoemView.swift */,
 				C01241572B7FBD6B00BA9615 /* MainView.swift */,
 				C01241592B7FBF5000BA9615 /* AuthorsListView.swift */,
 				C01241612B7FCA2E00BA9615 /* AuthorView.swift */,
@@ -434,22 +466,30 @@
 				C07F16282B7E429A007F11B7 /* PoemsListView.swift in Sources */,
 				C07F165D2B7E4588007F11B7 /* PoemsService.swift in Sources */,
 				C012415A2B7FBF5000BA9615 /* AuthorsListView.swift in Sources */,
+				C030F8EE2B88E081009E5907 /* CategoriesService.swift in Sources */,
 				C01241602B7FC9A100BA9615 /* AuthorsService.swift in Sources */,
+				C030F8F22B88E0C6009E5907 /* Category.swift in Sources */,
 				C076E19C2B81824300CC7B52 /* SearchViewModel.swift in Sources */,
 				C076E20F2B86752D00CC7B52 /* HapticManager.swift in Sources */,
 				C07F16562B7E43C4007F11B7 /* HTTPClient.swift in Sources */,
+				C030F8EA2B88DD06009E5907 /* PoemCategoriesListView.swift in Sources */,
 				C012415E2B7FC8E400BA9615 /* AuthorsEndpoint.swift in Sources */,
 				C0A782E52B868B3D009FC5E8 /* PoemViewModel.swift in Sources */,
+				C030F8E82B88980A009E5907 /* TitleView.swift in Sources */,
+				C030F8F02B88E0B5009E5907 /* Author.swift in Sources */,
 				C01241622B7FCA2E00BA9615 /* AuthorView.swift in Sources */,
 				C0357D392B87881A00440969 /* FontSettingsView.swift in Sources */,
 				C01241522B7EB09D00BA9615 /* PoemView.swift in Sources */,
+				C030F8F72B892EF6009E5907 /* PoemLabel.swift in Sources */,
 				C07F162A2B7E429A007F11B7 /* Item.swift in Sources */,
 				C07F16652B7E4794007F11B7 /* PoemsViewModel.swift in Sources */,
 				C012415C2B7FC1E800BA9615 /* AuthorsViewModel.swift in Sources */,
 				C07F16542B7E4317007F11B7 /* Endpoint.swift in Sources */,
 				C076E19A2B811E2E00CC7B52 /* TestView.swift in Sources */,
 				C07F165F2B7E4611007F11B7 /* ResponseMapper.swift in Sources */,
+				C030F8F42B88E163009E5907 /* PoemCategoriesViewModel.swift in Sources */,
 				C076E2052B85FCF000CC7B52 /* LikedPoemsView.swift in Sources */,
+				C030F8EC2B88E021009E5907 /* CategoriesEndpoint.swift in Sources */,
 				C07F16262B7E429A007F11B7 /* wuseradeApp.swift in Sources */,
 				C07F16582B7E43F6007F11B7 /* Constants.swift in Sources */,
 				C0357D352B868D8800440969 /* SelectableTextView.swift in Sources */,
@@ -614,7 +654,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_ASSET_PATHS = "\"wuserade/Preview Content\"";
 				DEVELOPMENT_TEAM = KHNA6PF8QV;
 				ENABLE_PREVIEWS = YES;
@@ -651,7 +691,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_ASSET_PATHS = "\"wuserade/Preview Content\"";
 				DEVELOPMENT_TEAM = KHNA6PF8QV;
 				ENABLE_PREVIEWS = YES;

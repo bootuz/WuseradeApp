@@ -44,8 +44,7 @@ struct LikedPoemsView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("сигу ирихьахэр")
-                        .font(.custom("MarckScript-Regular", size: 25))
+                    TitleView(title: "сигу ирихьахэр")
                 }
             }
         }

@@ -33,11 +33,9 @@ struct AuthorsListView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("усакlуэхэр")
-                        .font(.custom("MarckScript-Regular", size: 25))
+                    TitleView(title: "усакlуэхэр")
                 }
             }
-//            .navigationTitle("Усакlуэхэр")
             .navigationBarTitleDisplayMode(.inline)
             .listStyle(.plain)
             .task {

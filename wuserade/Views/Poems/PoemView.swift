@@ -90,13 +90,18 @@ struct PoemView: View {
             NavigationLink {
                 AuthorView(author: viewModel.poem.author)
             } label: {
-                Text(viewModel.poem.author.name)
-                    .font(.custom(fontManager.currentSettings.fontName, size: 18))
-                    .italic()
-                    .padding(.vertical, 1)
+                HStack {
+                    Text(viewModel.poem.author.name)
+                        .font(.custom(fontManager.currentSettings.fontName, size: 18))
+                        .italic()
+                        .padding(.vertical, 1)
+                    Image(systemName: "chevron.right")
+                        .font(.subheadline)
+                }
             }
 
             Divider()
+                .padding(.top, 7)
         }
         .padding(.bottom, 10)
     }
