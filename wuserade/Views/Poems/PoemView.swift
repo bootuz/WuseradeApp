@@ -12,12 +12,14 @@ import SwiftData
 
 struct PoemView: View {
     @Environment(\.modelContext) var context
+    @Environment(\.requestReview) var requestReview
     @EnvironmentObject private var fontManager: FontSettingsManager
     @Query private var poems: [PersistedPoem]
-    @State var isLiked = false
+    
+    @State var viewModel: PoemViewModel
+    @State private var isLiked = false
     @State private var shouldAnimate: Bool = false
     @State private var textViewheight: CGFloat = 0
-    @State var viewModel: PoemViewModel
 
     var body: some View {
         ScrollView {
@@ -37,6 +39,9 @@ struct PoemView: View {
                 isLiked = true
             }
         }
+        .onDisappear {
+            requestReview()
+        }
         .navigationBarTitleDisplayMode(.inline)
         .toolbarRole(.editor)
         .toolbar {
@@ -49,8 +54,10 @@ struct PoemView: View {
 
                     if poemInFavourites() {
                         removePoemFromFavourites(poem: viewModel.poem)
+                        AnalyticsManager.shared.logEvent(name: "poem", params: ["unlike": viewModel.poem.title])
                     } else {
                         addPoemToFavourites(poem: viewModel.poem)
+                        AnalyticsManager.shared.logEvent(name: "poem", params: ["like": viewModel.poem.title])
                     }
                 } label: {
                     if isLiked {
@@ -66,6 +73,7 @@ struct PoemView: View {
                 .sensoryFeedback(.impact(flexibility: .solid), trigger: isLiked)
             }
         }
+        .analyticsScreen(name: "PoemView", extraParameters: ["poem" : viewModel.poem.title])
     }
 
     private func poemInFavourites() -> Bool {

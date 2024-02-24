@@ -7,10 +7,12 @@
 
 import SwiftUI
 import SwiftData
-import WebKit
+//import WebKit
+import FirebaseAnalytics
 
 struct PoemsListView: View {
     @State private var viewModel = PoemsViewModel(service: PoemsService(httpClient: URLSession.shared))
+    @State private var categoriesViewModel = PoemCategoriesViewModel(service: PoemCategoriesService(httpClient: URLSession.shared))
     @State private var query: String = ""
     @State private var showSearchView: Bool = false
     @State private var showSettingsView: Bool = false
@@ -34,7 +36,7 @@ struct PoemsListView: View {
                         ListView()
                             .transition(.move(edge: .leading))
                     case 1:
-                        PoemCategoriesListView()
+                        PoemCategoriesListView(viewModel: categoriesViewModel)
                             .transition(.move(edge: .trailing))
                     default:
                         EmptyView()
@@ -74,6 +76,7 @@ struct PoemsListView: View {
                     await viewModel.fetchPoems()
                 }
             }
+            .analyticsScreen(name: "PoemsListView")
         }
     }
 

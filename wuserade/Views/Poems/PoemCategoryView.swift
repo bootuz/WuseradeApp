@@ -8,11 +8,51 @@
 import SwiftUI
 
 struct PoemCategoryView: View {
+    @State private var viewModel = PoemCategoriesViewModel(service: PoemCategoriesService(httpClient: URLSession.shared))
+    let category: PoemCategory
+
+    init(category: PoemCategory) {
+        self.category = category
+    }
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        List {
+            ForEach(viewModel.poems) { poem in
+                NavigationLink {
+                    PoemView(viewModel: PoemViewModel(poem: poem))
+                } label: {
+                    PoemLabel(poem: poem)
+                }
+            }
+        }
+        .listStyle(.plain)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                TitleView(title: category.title)
+            }
+        }
+        .task {
+            if viewModel.poems.isEmpty {
+                await viewModel.fetchPoemsByCategory(id: category.id)
+            }
+        }
+        .overlay {
+            if viewModel.isLoading {
+                ProgressView()
+            } else if viewModel.poems.isEmpty {
+                ContentUnavailableView(label: {
+                    Label("Мэхь мэхь", systemImage: "pencil.and.scribble")
+                }, description: {
+                    Text("Мы категорием усэ зэкlэ хэткъым")
+                })
+            }
+        }
+        .analyticsScreen(name: "PoemCategoryView", extraParameters: ["category" : category.title])
     }
 }
 
 #Preview {
-    PoemCategoryView()
+    NavigationStack {
+        PoemCategoryView(category: PoemCategory(id: 2, title: "Test"))
+            .navigationBarTitleDisplayMode(.inline)
+    }
 }

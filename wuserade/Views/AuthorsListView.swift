@@ -43,6 +43,7 @@ struct AuthorsListView: View {
                     await viewModel.fetchAllAuthors()
                 }
             }
+            .analyticsScreen(name: "AuthorsListView")
         }
     }
 }

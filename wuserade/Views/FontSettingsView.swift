@@ -47,7 +47,7 @@ struct FontSettingsView: View {
         }
         .toolbarRole(.editor)
         .navigationBarTitleDisplayMode(.inline)
-
+        .analyticsScreen(name: "FontSettingsView")
     }
 
     private func PoemExampleView() -> some View {

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import FirebaseAnalytics
 
 struct MainView: View {
     @AppStorage("colorScheme") private var colorScheme: Bool = false
@@ -18,6 +19,9 @@ struct MainView: View {
         }
         .tint(.primary)
         .preferredColorScheme(colorScheme ? .dark : .light)
+        .onAppear {
+            Analytics.setUserID(UUID().uuidString)
+        }
     }
 }
 

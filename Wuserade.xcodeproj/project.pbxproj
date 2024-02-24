@@ -24,16 +24,18 @@
 		C030F8F22B88E0C6009E5907 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8F12B88E0C6009E5907 /* Category.swift */; };
 		C030F8F42B88E163009E5907 /* PoemCategoriesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8F32B88E163009E5907 /* PoemCategoriesViewModel.swift */; };
 		C030F8F72B892EF6009E5907 /* PoemLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8F62B892EF6009E5907 /* PoemLabel.swift */; };
+		C030F8F92B89F256009E5907 /* PoemCategoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8F82B89F256009E5907 /* PoemCategoryView.swift */; };
+		C030F8FB2B8A0D90009E5907 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C030F8FA2B8A0D90009E5907 /* GoogleService-Info.plist */; };
+		C030F8FE2B8A0F3A009E5907 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = C030F8FD2B8A0F3A009E5907 /* FirebaseAnalytics */; };
+		C030F9002B8A18E7009E5907 /* AnalyticsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8FF2B8A18E7009E5907 /* AnalyticsManager.swift */; };
 		C0357D352B868D8800440969 /* SelectableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0357D342B868D8800440969 /* SelectableTextView.swift */; };
 		C0357D372B87540B00440969 /* FontSettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0357D362B87540B00440969 /* FontSettingsManager.swift */; };
 		C0357D392B87881A00440969 /* FontSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0357D382B87881A00440969 /* FontSettingsView.swift */; };
-		C076E19A2B811E2E00CC7B52 /* TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C076E1992B811E2E00CC7B52 /* TestView.swift */; };
 		C076E19C2B81824300CC7B52 /* SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C076E19B2B81824300CC7B52 /* SearchViewModel.swift */; };
 		C076E2052B85FCF000CC7B52 /* LikedPoemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C076E2042B85FCF000CC7B52 /* LikedPoemsView.swift */; };
 		C076E2072B86082A00CC7B52 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C076E2062B86082A00CC7B52 /* SettingsView.swift */; };
 		C076E20A2B860E3B00CC7B52 /* Pow in Frameworks */ = {isa = PBXBuildFile; productRef = C076E2092B860E3B00CC7B52 /* Pow */; };
 		C076E20C2B863F7500CC7B52 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = C076E20B2B863F7500CC7B52 /* .gitignore */; };
-		C076E20F2B86752D00CC7B52 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C076E20E2B86752D00CC7B52 /* HapticManager.swift */; };
 		C07F16262B7E429A007F11B7 /* wuseradeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07F16252B7E429A007F11B7 /* wuseradeApp.swift */; };
 		C07F16282B7E429A007F11B7 /* PoemsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07F16272B7E429A007F11B7 /* PoemsListView.swift */; };
 		C07F162A2B7E429A007F11B7 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07F16292B7E429A007F11B7 /* Item.swift */; };
@@ -89,15 +91,16 @@
 		C030F8F12B88E0C6009E5907 /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
 		C030F8F32B88E163009E5907 /* PoemCategoriesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemCategoriesViewModel.swift; sourceTree = "<group>"; };
 		C030F8F62B892EF6009E5907 /* PoemLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemLabel.swift; sourceTree = "<group>"; };
+		C030F8F82B89F256009E5907 /* PoemCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemCategoryView.swift; sourceTree = "<group>"; };
+		C030F8FA2B8A0D90009E5907 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		C030F8FF2B8A18E7009E5907 /* AnalyticsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsManager.swift; sourceTree = "<group>"; };
 		C0357D342B868D8800440969 /* SelectableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableTextView.swift; sourceTree = "<group>"; };
 		C0357D362B87540B00440969 /* FontSettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontSettingsManager.swift; sourceTree = "<group>"; };
 		C0357D382B87881A00440969 /* FontSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontSettingsView.swift; sourceTree = "<group>"; };
-		C076E1992B811E2E00CC7B52 /* TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestView.swift; sourceTree = "<group>"; };
 		C076E19B2B81824300CC7B52 /* SearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViewModel.swift; sourceTree = "<group>"; };
 		C076E2042B85FCF000CC7B52 /* LikedPoemsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LikedPoemsView.swift; sourceTree = "<group>"; };
 		C076E2062B86082A00CC7B52 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C076E20B2B863F7500CC7B52 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
-		C076E20E2B86752D00CC7B52 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		C07F16222B7E429A007F11B7 /* Wuserade.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wuserade.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C07F16252B7E429A007F11B7 /* wuseradeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = wuseradeApp.swift; sourceTree = "<group>"; };
 		C07F16272B7E429A007F11B7 /* PoemsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemsListView.swift; sourceTree = "<group>"; };
@@ -125,6 +128,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C030F8FE2B8A0F3A009E5907 /* FirebaseAnalytics in Frameworks */,
 				C076E20A2B860E3B00CC7B52 /* Pow in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -161,6 +165,7 @@
 				C030F8E92B88DD06009E5907 /* PoemCategoriesListView.swift */,
 				C07F16272B7E429A007F11B7 /* PoemsListView.swift */,
 				C030F8F62B892EF6009E5907 /* PoemLabel.swift */,
+				C030F8F82B89F256009E5907 /* PoemCategoryView.swift */,
 			);
 			path = Poems;
 			sourceTree = "<group>";
@@ -177,7 +182,7 @@
 		C076E20D2B86752000CC7B52 /* Managers */ = {
 			isa = PBXGroup;
 			children = (
-				C076E20E2B86752D00CC7B52 /* HapticManager.swift */,
+				C030F8FF2B8A18E7009E5907 /* AnalyticsManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -207,6 +212,7 @@
 		C07F16242B7E429A007F11B7 /* wuserade */ = {
 			isa = PBXGroup;
 			children = (
+				C030F8FA2B8A0D90009E5907 /* GoogleService-Info.plist */,
 				C076E20D2B86752000CC7B52 /* Managers */,
 				C01241532B7F80A000BA9615 /* fonts */,
 				C07F16602B7E4632007F11B7 /* Models */,
@@ -311,7 +317,6 @@
 				C01241592B7FBF5000BA9615 /* AuthorsListView.swift */,
 				C01241612B7FCA2E00BA9615 /* AuthorView.swift */,
 				C01241632B7FD4C600BA9615 /* SearchView.swift */,
-				C076E1992B811E2E00CC7B52 /* TestView.swift */,
 				C076E2042B85FCF000CC7B52 /* LikedPoemsView.swift */,
 				C076E2062B86082A00CC7B52 /* SettingsView.swift */,
 				C0357D382B87881A00440969 /* FontSettingsView.swift */,
@@ -337,6 +342,7 @@
 			name = Wuserade;
 			packageProductDependencies = (
 				C076E2092B860E3B00CC7B52 /* Pow */,
+				C030F8FD2B8A0F3A009E5907 /* FirebaseAnalytics */,
 			);
 			productName = wuserade;
 			productReference = C07F16222B7E429A007F11B7 /* Wuserade.app */;
@@ -412,6 +418,7 @@
 			mainGroup = C07F16192B7E429A007F11B7;
 			packageReferences = (
 				C076E2082B860E3A00CC7B52 /* XCRemoteSwiftPackageReference "Pow" */,
+				C030F8FC2B8A0F3A009E5907 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			productRefGroup = C07F16232B7E429A007F11B7 /* Products */;
 			projectDirPath = "";
@@ -431,6 +438,7 @@
 			files = (
 				C076E20C2B863F7500CC7B52 /* .gitignore in Resources */,
 				C07F162F2B7E429B007F11B7 /* Preview Assets.xcassets in Resources */,
+				C030F8FB2B8A0D90009E5907 /* GoogleService-Info.plist in Resources */,
 				C07F162C2B7E429B007F11B7 /* Assets.xcassets in Resources */,
 				C01241552B7F80D900BA9615 /* MarckScript-Regular.ttf in Resources */,
 			);
@@ -459,6 +467,7 @@
 			files = (
 				C07F16622B7E463F007F11B7 /* Poem.swift in Sources */,
 				C0357D372B87540B00440969 /* FontSettingsManager.swift in Sources */,
+				C030F8F92B89F256009E5907 /* PoemCategoryView.swift in Sources */,
 				C076E2072B86082A00CC7B52 /* SettingsView.swift in Sources */,
 				C01241642B7FD4C600BA9615 /* SearchView.swift in Sources */,
 				C01241582B7FBD6B00BA9615 /* MainView.swift in Sources */,
@@ -470,7 +479,6 @@
 				C01241602B7FC9A100BA9615 /* AuthorsService.swift in Sources */,
 				C030F8F22B88E0C6009E5907 /* Category.swift in Sources */,
 				C076E19C2B81824300CC7B52 /* SearchViewModel.swift in Sources */,
-				C076E20F2B86752D00CC7B52 /* HapticManager.swift in Sources */,
 				C07F16562B7E43C4007F11B7 /* HTTPClient.swift in Sources */,
 				C030F8EA2B88DD06009E5907 /* PoemCategoriesListView.swift in Sources */,
 				C012415E2B7FC8E400BA9615 /* AuthorsEndpoint.swift in Sources */,
@@ -485,9 +493,9 @@
 				C07F16652B7E4794007F11B7 /* PoemsViewModel.swift in Sources */,
 				C012415C2B7FC1E800BA9615 /* AuthorsViewModel.swift in Sources */,
 				C07F16542B7E4317007F11B7 /* Endpoint.swift in Sources */,
-				C076E19A2B811E2E00CC7B52 /* TestView.swift in Sources */,
 				C07F165F2B7E4611007F11B7 /* ResponseMapper.swift in Sources */,
 				C030F8F42B88E163009E5907 /* PoemCategoriesViewModel.swift in Sources */,
+				C030F9002B8A18E7009E5907 /* AnalyticsManager.swift in Sources */,
 				C076E2052B85FCF000CC7B52 /* LikedPoemsView.swift in Sources */,
 				C030F8EC2B88E021009E5907 /* CategoriesEndpoint.swift in Sources */,
 				C07F16262B7E429A007F11B7 /* wuseradeApp.swift in Sources */,
@@ -654,7 +662,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_ASSET_PATHS = "\"wuserade/Preview Content\"";
 				DEVELOPMENT_TEAM = KHNA6PF8QV;
 				ENABLE_PREVIEWS = YES;
@@ -665,6 +673,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -691,7 +700,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_ASSET_PATHS = "\"wuserade/Preview Content\"";
 				DEVELOPMENT_TEAM = KHNA6PF8QV;
 				ENABLE_PREVIEWS = YES;
@@ -702,6 +711,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -840,6 +850,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		C030F8FC2B8A0F3A009E5907 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.21.0;
+			};
+		};
 		C076E2082B860E3A00CC7B52 /* XCRemoteSwiftPackageReference "Pow" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/EmergeTools/Pow.git";
@@ -851,6 +869,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		C030F8FD2B8A0F3A009E5907 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C030F8FC2B8A0F3A009E5907 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
 		C076E2092B860E3B00CC7B52 /* Pow */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C076E2082B860E3A00CC7B52 /* XCRemoteSwiftPackageReference "Pow" */;

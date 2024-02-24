@@ -18,7 +18,7 @@ struct SearchView: View {
                     ContentUnavailableView {
                         Label("", systemImage: "magnifyingglass")
                     } description: {
-                        Text("Усэ узылъыхъуэр мыбдежым къытридзэнущ")
+                        Text("Узылъыхъуэ усэр мыбдеж къридзэнущ")
                             .padding(.top, -15)
                     }
                 } else {
@@ -36,6 +36,7 @@ struct SearchView: View {
                     }
                 }
             }
+            .analyticsScreen(name: "SearchView")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(action: {
@@ -55,6 +56,7 @@ struct SearchView: View {
             Task {
                 await viewModel.searchPoems(query: viewModel.query)
             }
+            AnalyticsManager.shared.logEvent(name: "search", params: ["query": viewModel.query])
         }
     }
 }

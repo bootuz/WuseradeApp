@@ -37,7 +37,7 @@ struct LikedPoemsView: View {
                     ContentUnavailableView(label: {
                         Label("", systemImage: "heart.fill")
                     }, description: {
-                        Text("Уигу ирихьа усэхэр мыбдежым къытридзэнущ")
+                        Text("Уигу ирихьа усэхэр мыбдеж къридзэнущ")
                             .padding(.top, -15)
                     })
                 }
@@ -47,6 +47,7 @@ struct LikedPoemsView: View {
                     TitleView(title: "сигу ирихьахэр")
                 }
             }
+            .analyticsScreen(name: "LikedPoemsView")
         }
     }
 }

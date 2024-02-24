@@ -7,9 +7,15 @@
 
 import SwiftUI
 import SwiftData
+import FirebaseCore
 
 @main
 struct wuseradeApp: App {
+
+    init() {
+        FirebaseApp.configure()
+    }
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             PersistedPoem.self,
