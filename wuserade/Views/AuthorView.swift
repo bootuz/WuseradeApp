@@ -31,8 +31,6 @@ struct AuthorView: View {
         .overlay {
             if viewModel.isLoading {
                 ProgressView()
-            } else if viewModel.poems.isEmpty {
-                ContentUnavailableView("Мэхь мэхь", systemImage: "pencil.and.scribble", description: Text("\(author.name) и усэхэр зэкlэ диlэкъым"))
             }
         }
         .toolbarRole(.editor)
@@ -53,7 +51,7 @@ struct AuthorView: View {
 
 #Preview {
     NavigationStack {
-        AuthorView(author: Author(id: 1, name: "Усак1уэм и ц1эр"))
+        AuthorView(author: Author(id: 1, name: "Усакlуэм и цlэр"))
             .navigationBarTitleDisplayMode(.inline)
     }
 }
