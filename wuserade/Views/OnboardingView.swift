@@ -25,23 +25,23 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 30) {
                 AppFeature(
                     icon: "pencil.and.scribble",
-                    title: "Адыгэ усэхэм зыщыгъэгъуазэ",
-                    description: "Тхьэмахуэ къэс усэщlэ къыдогъувэ"
+                    title: "Адыгэ усыгъэм хэгъуазэ",
+                    description: "Тхьэмахуэ къэс усэщӏэ къыдогъэувэ"
                 )
                 AppFeature(
                     icon: "book.pages",
-                    title: "Усэхэр зытеухуам яхэплъэ",
-                    description: "Зэмылlэужьыгъуэу диlэщ"
+                    title: "Усэхэр зытеухуам еплъ",
+                    description: "Зэмылӏэужыгъуэу къыхэтхащ"
                 )
                 AppFeature(
                     icon: "person.2",
-                    title: "Усакlуэхэр зэгъэцlыху",
+                    title: "Усакӏуэхэр зэгъэцӏыху",
                     description: "Я лэжьыгъэхэм нэlуасэ зыхуэщl"
                 )
                 AppFeature(
                     icon: "heart",
                     title: "Уигу ирихь усэхэр къыхэх",
-                    description: "Уигу ирихьа усэхэм щхьэхуэу яхэплъэ"
+                    description: "Къыхэпхам щхьэхуэу яхэплъэж"
                 )
             }
             .padding()
@@ -51,7 +51,7 @@ struct OnboardingView: View {
             Button(action: {
                 firstLaunch = false
             }, label: {
-                Text("Дэгъуэ")
+                Text("Хъуащ")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
                     .foregroundStyle(colorScheme ? .black : .white)
