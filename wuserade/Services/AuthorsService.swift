@@ -14,8 +14,8 @@ class AuthorsService {
         self.httpClient = httpClient
     }
 
-    func fetchAuthors(page: Int) async throws -> AllAuthors {
-        let (data, response) = try await httpClient.perform(request: AuthorsEndpoint.fetchAuthors(page: page).urlRequest)
+    func fetchAuthors() async throws -> [Author] {
+        let (data, response) = try await httpClient.perform(request: AuthorsEndpoint.fetchAuthorsV2.urlRequest)
         return try ResponseMapper.map(data: data, response: response)
     }
 

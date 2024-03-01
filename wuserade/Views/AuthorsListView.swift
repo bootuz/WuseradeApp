@@ -13,15 +13,14 @@ struct AuthorsListView: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach(viewModel.authors) { author in
-                    NavigationLink(destination: {
-                        AuthorView(author: author)
-                    }, label: {
-                        Text(author.name)
-                    })
-                    .task {
-                        if viewModel.hasReachedEnd(of: author) {
-                            await viewModel.fetchNextAuthors()
+                ForEach(viewModel.groupedAndSortedAuthors, id: \.key) { group in
+                    Section(header: Text(group.key.capitalized)) {
+                        ForEach(group.value, id: \.name) { author in
+                            NavigationLink(destination: {
+                                AuthorView(author: author)
+                            }, label: {
+                                Text(author.name)
+                            })
                         }
                     }
                 }

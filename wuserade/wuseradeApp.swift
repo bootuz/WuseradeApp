@@ -1,6 +1,6 @@
 //
-//  wuseradeApp.swift
-//  wuserade
+//  WuseradeApp.swift
+//  Wuserade
 //
 //  Created by Астемир Бозиев on 15.02.2024.
 //
@@ -11,6 +11,7 @@ import FirebaseCore
 
 @main
 struct wuseradeApp: App {
+    @AppStorage("firstLaunch") private var firstLaunch = true
 
     init() {
         FirebaseApp.configure()
@@ -37,6 +38,10 @@ struct wuseradeApp: App {
             MainView()
                 .environmentObject(fontSettingsManager)
                 .tint(.primary)
+                .sheet(isPresented: $firstLaunch, content: {
+                    OnboardingView()
+                        .interactiveDismissDisabled()
+                })
         }
         .modelContainer(sharedModelContainer)
     }

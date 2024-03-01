@@ -36,7 +36,10 @@ struct AuthorView: View {
         .toolbarRole(.editor)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                TitleView(title: author.name)
+                let name = author.name
+                    .replacingOccurrences(of: "Ӏ", with: "I")
+                    .replacingOccurrences(of: "ӏ", with: "l")
+                TitleView(title: name)
             }
         }
         .listStyle(.plain)

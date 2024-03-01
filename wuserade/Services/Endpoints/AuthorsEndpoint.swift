@@ -11,6 +11,7 @@ enum AuthorsEndpoint {
     case fetchAuthors(page: Int)
     case fetchAuthor(id: Int)
     case fetchPoemsOfAuthor(id: Int, page: Int)
+    case fetchAuthorsV2
 }
 
 extension AuthorsEndpoint: Endpoint {
@@ -22,6 +23,8 @@ extension AuthorsEndpoint: Endpoint {
                 return "/authors/\(id)"
             case .fetchPoemsOfAuthor(let id, _):
                 return "/authors/\(id)/poems"
+            case .fetchAuthorsV2:
+                return "/authors/v2"
         }
     }
     
@@ -44,6 +47,8 @@ extension AuthorsEndpoint: Endpoint {
             case .fetchPoemsOfAuthor(_, let page):
                 return [URLQueryItem(name: "page", value: String(page))]
             case .fetchAuthor:
+                return nil
+            case .fetchAuthorsV2:
                 return nil
         }
     }
