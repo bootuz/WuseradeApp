@@ -28,7 +28,6 @@ struct PoemView: View {
                 HStack {
                     SelectableTextView(text: viewModel.poem.content, height: $textViewheight)
                         .frame(height: textViewheight)
-                    Spacer()
                 }
             }
             .padding()

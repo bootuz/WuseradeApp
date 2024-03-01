@@ -53,6 +53,7 @@
 		C07F16622B7E463F007F11B7 /* Poem.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07F16612B7E463F007F11B7 /* Poem.swift */; };
 		C07F16652B7E4794007F11B7 /* PoemsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07F16642B7E4794007F11B7 /* PoemsViewModel.swift */; };
 		C0A782E52B868B3D009FC5E8 /* PoemViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A782E42B868B3D009FC5E8 /* PoemViewModel.swift */; };
+		C0EA77052B8FCF3F00E736C0 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0EA77042B8FCF3F00E736C0 /* OnboardingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -121,6 +122,7 @@
 		C07F16612B7E463F007F11B7 /* Poem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Poem.swift; sourceTree = "<group>"; };
 		C07F16642B7E4794007F11B7 /* PoemsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemsViewModel.swift; sourceTree = "<group>"; };
 		C0A782E42B868B3D009FC5E8 /* PoemViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemViewModel.swift; sourceTree = "<group>"; };
+		C0EA77042B8FCF3F00E736C0 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -196,6 +198,7 @@
 				C07F16372B7E429B007F11B7 /* wuseradeTests */,
 				C07F16412B7E429B007F11B7 /* wuseradeUITests */,
 				C07F16232B7E429A007F11B7 /* Products */,
+				C0EA77062B921F0F00E736C0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -311,8 +314,8 @@
 		C07F16662B7E51F2007F11B7 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				C030F8F52B88E1E6009E5907 /* Poems */,
 				C0357D332B868D7800440969 /* Components */,
+				C030F8F52B88E1E6009E5907 /* Poems */,
 				C01241572B7FBD6B00BA9615 /* MainView.swift */,
 				C01241592B7FBF5000BA9615 /* AuthorsListView.swift */,
 				C01241612B7FCA2E00BA9615 /* AuthorView.swift */,
@@ -320,8 +323,16 @@
 				C076E2042B85FCF000CC7B52 /* LikedPoemsView.swift */,
 				C076E2062B86082A00CC7B52 /* SettingsView.swift */,
 				C0357D382B87881A00440969 /* FontSettingsView.swift */,
+				C0EA77042B8FCF3F00E736C0 /* OnboardingView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		C0EA77062B921F0F00E736C0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -491,6 +502,7 @@
 				C030F8F72B892EF6009E5907 /* PoemLabel.swift in Sources */,
 				C07F162A2B7E429A007F11B7 /* Item.swift in Sources */,
 				C07F16652B7E4794007F11B7 /* PoemsViewModel.swift in Sources */,
+				C0EA77052B8FCF3F00E736C0 /* OnboardingView.swift in Sources */,
 				C012415C2B7FC1E800BA9615 /* AuthorsViewModel.swift in Sources */,
 				C07F16542B7E4317007F11B7 /* Endpoint.swift in Sources */,
 				C07F165F2B7E4611007F11B7 /* ResponseMapper.swift in Sources */,
@@ -662,14 +674,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_ASSET_PATHS = "\"wuserade/Preview Content\"";
 				DEVELOPMENT_TEAM = KHNA6PF8QV;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Wuserade/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Усэрадэ";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.books";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -681,7 +693,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nart.wuserade;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -700,14 +712,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_ASSET_PATHS = "\"wuserade/Preview Content\"";
 				DEVELOPMENT_TEAM = KHNA6PF8QV;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Wuserade/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Усэрадэ";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.books";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -719,7 +731,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nart.wuserade;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

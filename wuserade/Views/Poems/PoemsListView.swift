@@ -7,13 +7,11 @@
 
 import SwiftUI
 import SwiftData
-//import WebKit
 import FirebaseAnalytics
 
 struct PoemsListView: View {
     @State private var viewModel = PoemsViewModel(service: PoemsService(httpClient: URLSession.shared))
     @State private var categoriesViewModel = PoemCategoriesViewModel(service: PoemCategoriesService(httpClient: URLSession.shared))
-    @State private var query: String = ""
     @State private var showSearchView: Bool = false
     @State private var showSettingsView: Bool = false
     @State private var selected: Int = 0
