@@ -20,7 +20,6 @@ struct OnboardingView: View {
                         .font(.system(size: 50, weight: .heavy))
                 }
             }
-            .padding()
 
             VStack(alignment: .leading, spacing: 30) {
                 AppFeature(
@@ -44,7 +43,6 @@ struct OnboardingView: View {
                     description: "Къыхэпхам щхьэхуэу яхэплъэж"
                 )
             }
-            .padding()
 
             Spacer()
             
@@ -58,8 +56,8 @@ struct OnboardingView: View {
             })
             .buttonStyle(.borderedProminent)
             .tint(.primary)
-            .padding()
         }
+        .padding()
     }
     
     @ViewBuilder

@@ -24,7 +24,6 @@ struct PoemsListView: View {
                     Text("Усэщlэхэр").tag(0)
                     Text("Зытеухуар").tag(1)
                 }
-
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
                 .padding(.top)
@@ -70,7 +69,7 @@ struct PoemsListView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .task {
-                if viewModel.allPoems.isEmpty {
+                if viewModel.poems.isEmpty {
                     await viewModel.fetchPoems()
                 }
             }
@@ -80,7 +79,7 @@ struct PoemsListView: View {
 
     private func ListView() -> some View {
         List {
-            ForEach(viewModel.allPoems) { poem in
+            ForEach(viewModel.poems) { poem in
                 NavigationLink {
                     PoemView(viewModel: PoemViewModel(poem: poem))
                 } label: {
@@ -92,7 +91,9 @@ struct PoemsListView: View {
             }
         }
         .refreshable {
-            
+            Task {
+                await viewModel.fetchPoems()
+            }
         }
         .overlay {
             if viewModel.isLoading {
