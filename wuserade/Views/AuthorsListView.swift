@@ -30,6 +30,11 @@ struct AuthorsListView: View {
                     ProgressView()
                 }
             }
+            .refreshable {
+                Task {
+                    await viewModel.fetchAllAuthors()
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     TitleView(title: "усакlуэхэр")

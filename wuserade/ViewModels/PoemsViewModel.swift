@@ -17,7 +17,7 @@ class PoemsViewModel {
     private var page: Int = 1
 
     var isLoading: Bool = false
-    var allPoems: [Poem] = [Poem]()
+    var poems: [Poem] = [Poem]()
     var latestPoems: [Poem] = [Poem]()
     
 
@@ -32,9 +32,10 @@ class PoemsViewModel {
     func fetchPoems() async {
         isLoading = true
         defer { isLoading = false }
+        page = 1
         do {
             let response = try await service.fetchPoems(page: page)
-            allPoems += response.poems
+            poems = response.poems
             totalPages = response.totalPages
         } catch {
             print(error)
@@ -48,7 +49,7 @@ class PoemsViewModel {
         do {
             if page <= totalPages {
                 let response = try await service.fetchPoems(page: page)
-                allPoems += response.poems
+                poems += response.poems
             }
         } catch {
             print(error)
@@ -65,7 +66,7 @@ class PoemsViewModel {
     }
 
     private func isLast(_ poem: Poem) -> Bool {
-        let thresholdIndex = allPoems.index(allPoems.endIndex, offsetBy: -10)
-        return allPoems.firstIndex(where: { $0.id == poem.id }) == thresholdIndex
+        let thresholdIndex = poems.index(poems.endIndex, offsetBy: -10)
+        return poems.firstIndex(where: { $0.id == poem.id }) == thresholdIndex
     }
 }

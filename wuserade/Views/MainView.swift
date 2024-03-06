@@ -10,6 +10,7 @@ import FirebaseAnalytics
 
 struct MainView: View {
     @AppStorage("colorScheme") private var colorScheme: Bool = false
+    @AppStorage("firstLaunch") private var firstLaunch = true
 
     var body: some View {
         TabView(selection: .constant(1)) {
@@ -20,7 +21,9 @@ struct MainView: View {
         .tint(.primary)
         .preferredColorScheme(colorScheme ? .dark : .light)
         .onAppear {
-            Analytics.setUserID(UUID().uuidString)
+            if firstLaunch {
+                Analytics.setUserID(UUID().uuidString)
+            }
         }
     }
 }

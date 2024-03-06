@@ -10,6 +10,9 @@ import Foundation
 struct FontSettings: Codable {
     var fontName: String
     var fontSize: CGFloat
+    var lineSpacing: CGFloat
+    var characterSpacing: CGFloat
+    var isBold: Bool
 }
 
 class FontSettingsManager: ObservableObject {
@@ -24,7 +27,7 @@ class FontSettingsManager: ObservableObject {
             let decodedSettings = try? JSONDecoder().decode(FontSettings.self, from: savedSettings) {
             self.currentSettings = decodedSettings
         } else {
-            self.currentSettings = FontSettings(fontName: "System", fontSize: 18)
+            self.currentSettings = FontSettings(fontName: "System", fontSize: 18, lineSpacing: 0, characterSpacing: 0, isBold: false)
         }
     }
 
@@ -32,5 +35,9 @@ class FontSettingsManager: ObservableObject {
         if let encoded = try? JSONEncoder().encode(currentSettings) {
             UserDefaults.standard.set(encoded, forKey: "fontSettings")
         }
+    }
+
+    func setToDefaultSettings() {
+        self.currentSettings = FontSettings(fontName: "System", fontSize: 18, lineSpacing: 0, characterSpacing: 0, isBold: false)
     }
 }

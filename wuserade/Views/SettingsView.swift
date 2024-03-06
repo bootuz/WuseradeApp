@@ -7,6 +7,7 @@
 
 import SwiftUI
 import StoreKit
+import Pow
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -14,28 +15,29 @@ struct SettingsView: View {
     @AppStorage("colorScheme") private var colorScheme: Bool = false
 
     @State private var showDialog: Bool = false
+    @State private var isAnimated = false
 
     var body: some View {
         NavigationStack {
             List {
-                Section("Тхыпхъэр (шрифтыр)") {
+                Section("Текстыр") {
                     NavigationLink {
                         FontSettingsView()
                     } label: {
-                        Label("Тхыпхъэр теухуэн", systemImage: "textformat")
+                        Label("Теплъэр теухуэн", systemImage: "textformat")
                     }
                 }
 
                 Section("Плъыфэр") {
                     Toggle(isOn: $colorScheme, label: {
-                        Label("Плъыфэр", systemImage: "circle.lefthalf.filled")
+                        Label(colorScheme ? "Хужьу" : "Фlыцly", systemImage: "circle.lefthalf.filled")
                     })
                     .tint(.green)
                 }
 
                 Section("Фидбэкыр") {
                     Button(action: {
-                        requestReview()
+                        RateManager.shared.rateApp()
                     }, label: {
                         Label("Усэрадэр къэлъытэн", systemImage: "star")
                     })
@@ -50,6 +52,15 @@ struct SettingsView: View {
                         Link("Instagram", destination: URL(string: "https://www.instagram.com/astemirboziy")!)
                         Link("Email", destination: URL(string: "mailto:astemirboziy@gmail.com")!)
                     }
+
+                    ShareLink(item: URL(string: "https://apple.co/3OWuu5b")!) {
+                        Label("Дэгуэшэн", systemImage: "square.and.arrow.up")
+                    }
+                }
+            }
+            .onAppear {
+                withAnimation {
+                    isAnimated = true
                 }
             }
             .toolbar {
