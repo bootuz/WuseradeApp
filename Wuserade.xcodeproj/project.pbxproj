@@ -31,6 +31,12 @@
 		C0357D352B868D8800440969 /* SelectableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0357D342B868D8800440969 /* SelectableTextView.swift */; };
 		C0357D372B87540B00440969 /* FontSettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0357D362B87540B00440969 /* FontSettingsManager.swift */; };
 		C0357D392B87881A00440969 /* FontSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0357D382B87881A00440969 /* FontSettingsView.swift */; };
+		C042FCA92B963FB100C26E90 /* RateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C042FCA82B963FB100C26E90 /* RateManager.swift */; };
+		C042FCAB2B97CE7300C26E90 /* PoemTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C042FCAA2B97CE7300C26E90 /* PoemTextView.swift */; };
+		C042FCAE2B98B7AC00C26E90 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = C042FCAD2B98B7AC00C26E90 /* Toast.swift */; };
+		C042FCB02B98B7CC00C26E90 /* ToastStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C042FCAF2B98B7CC00C26E90 /* ToastStyle.swift */; };
+		C042FCB22B98B7F300C26E90 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C042FCB12B98B7F300C26E90 /* ToastView.swift */; };
+		C042FCB42B98B83700C26E90 /* ToastModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = C042FCB32B98B83700C26E90 /* ToastModifier.swift */; };
 		C076E19C2B81824300CC7B52 /* SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C076E19B2B81824300CC7B52 /* SearchViewModel.swift */; };
 		C076E2052B85FCF000CC7B52 /* LikedPoemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C076E2042B85FCF000CC7B52 /* LikedPoemsView.swift */; };
 		C076E2072B86082A00CC7B52 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C076E2062B86082A00CC7B52 /* SettingsView.swift */; };
@@ -98,6 +104,12 @@
 		C0357D342B868D8800440969 /* SelectableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableTextView.swift; sourceTree = "<group>"; };
 		C0357D362B87540B00440969 /* FontSettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontSettingsManager.swift; sourceTree = "<group>"; };
 		C0357D382B87881A00440969 /* FontSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontSettingsView.swift; sourceTree = "<group>"; };
+		C042FCA82B963FB100C26E90 /* RateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateManager.swift; sourceTree = "<group>"; };
+		C042FCAA2B97CE7300C26E90 /* PoemTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemTextView.swift; sourceTree = "<group>"; };
+		C042FCAD2B98B7AC00C26E90 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
+		C042FCAF2B98B7CC00C26E90 /* ToastStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastStyle.swift; sourceTree = "<group>"; };
+		C042FCB12B98B7F300C26E90 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
+		C042FCB32B98B83700C26E90 /* ToastModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastModifier.swift; sourceTree = "<group>"; };
 		C076E19B2B81824300CC7B52 /* SearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViewModel.swift; sourceTree = "<group>"; };
 		C076E2042B85FCF000CC7B52 /* LikedPoemsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LikedPoemsView.swift; sourceTree = "<group>"; };
 		C076E2062B86082A00CC7B52 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -168,6 +180,7 @@
 				C07F16272B7E429A007F11B7 /* PoemsListView.swift */,
 				C030F8F62B892EF6009E5907 /* PoemLabel.swift */,
 				C030F8F82B89F256009E5907 /* PoemCategoryView.swift */,
+				C042FCAA2B97CE7300C26E90 /* PoemTextView.swift */,
 			);
 			path = Poems;
 			sourceTree = "<group>";
@@ -175,16 +188,29 @@
 		C0357D332B868D7800440969 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				C042FCAC2B98B79C00C26E90 /* Toast */,
 				C0357D342B868D8800440969 /* SelectableTextView.swift */,
 				C030F8E72B88980A009E5907 /* TitleView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
 		};
+		C042FCAC2B98B79C00C26E90 /* Toast */ = {
+			isa = PBXGroup;
+			children = (
+				C042FCAD2B98B7AC00C26E90 /* Toast.swift */,
+				C042FCAF2B98B7CC00C26E90 /* ToastStyle.swift */,
+				C042FCB12B98B7F300C26E90 /* ToastView.swift */,
+				C042FCB32B98B83700C26E90 /* ToastModifier.swift */,
+			);
+			path = Toast;
+			sourceTree = "<group>";
+		};
 		C076E20D2B86752000CC7B52 /* Managers */ = {
 			isa = PBXGroup;
 			children = (
 				C030F8FF2B8A18E7009E5907 /* AnalyticsManager.swift */,
+				C042FCA82B963FB100C26E90 /* RateManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -481,23 +507,29 @@
 				C030F8F92B89F256009E5907 /* PoemCategoryView.swift in Sources */,
 				C076E2072B86082A00CC7B52 /* SettingsView.swift in Sources */,
 				C01241642B7FD4C600BA9615 /* SearchView.swift in Sources */,
+				C042FCB42B98B83700C26E90 /* ToastModifier.swift in Sources */,
 				C01241582B7FBD6B00BA9615 /* MainView.swift in Sources */,
 				C07F165B2B7E445E007F11B7 /* PoemsEndpoint.swift in Sources */,
 				C07F16282B7E429A007F11B7 /* PoemsListView.swift in Sources */,
 				C07F165D2B7E4588007F11B7 /* PoemsService.swift in Sources */,
 				C012415A2B7FBF5000BA9615 /* AuthorsListView.swift in Sources */,
 				C030F8EE2B88E081009E5907 /* CategoriesService.swift in Sources */,
+				C042FCA92B963FB100C26E90 /* RateManager.swift in Sources */,
 				C01241602B7FC9A100BA9615 /* AuthorsService.swift in Sources */,
 				C030F8F22B88E0C6009E5907 /* Category.swift in Sources */,
 				C076E19C2B81824300CC7B52 /* SearchViewModel.swift in Sources */,
 				C07F16562B7E43C4007F11B7 /* HTTPClient.swift in Sources */,
 				C030F8EA2B88DD06009E5907 /* PoemCategoriesListView.swift in Sources */,
+				C042FCAE2B98B7AC00C26E90 /* Toast.swift in Sources */,
 				C012415E2B7FC8E400BA9615 /* AuthorsEndpoint.swift in Sources */,
 				C0A782E52B868B3D009FC5E8 /* PoemViewModel.swift in Sources */,
 				C030F8E82B88980A009E5907 /* TitleView.swift in Sources */,
 				C030F8F02B88E0B5009E5907 /* Author.swift in Sources */,
+				C042FCB22B98B7F300C26E90 /* ToastView.swift in Sources */,
 				C01241622B7FCA2E00BA9615 /* AuthorView.swift in Sources */,
+				C042FCB02B98B7CC00C26E90 /* ToastStyle.swift in Sources */,
 				C0357D392B87881A00440969 /* FontSettingsView.swift in Sources */,
+				C042FCAB2B97CE7300C26E90 /* PoemTextView.swift in Sources */,
 				C01241522B7EB09D00BA9615 /* PoemView.swift in Sources */,
 				C030F8F72B892EF6009E5907 /* PoemLabel.swift in Sources */,
 				C07F162A2B7E429A007F11B7 /* Item.swift in Sources */,
@@ -674,7 +706,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"wuserade/Preview Content\"";
 				DEVELOPMENT_TEAM = KHNA6PF8QV;
 				ENABLE_PREVIEWS = YES;
@@ -693,7 +725,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nart.wuserade;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -712,7 +744,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"wuserade/Preview Content\"";
 				DEVELOPMENT_TEAM = KHNA6PF8QV;
 				ENABLE_PREVIEWS = YES;
@@ -731,7 +763,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nart.wuserade;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

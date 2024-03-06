@@ -15,23 +15,27 @@ struct PoemView: View {
     @Environment(\.requestReview) var requestReview
     @EnvironmentObject private var fontManager: FontSettingsManager
     @Query private var poems: [PersistedPoem]
-    
+
     @State var viewModel: PoemViewModel
     @State private var isLiked = false
+    @State private var copyTapped = false
     @State private var shouldAnimate: Bool = false
     @State private var textViewheight: CGFloat = 0
+    @State private var toast: Toast? = nil
+    private let pastboard = UIPasteboard.general
 
     var body: some View {
         ScrollView {
             VStack(alignment: .center) {
                 PoemHeader()
                 HStack {
-                    SelectableTextView(text: viewModel.poem.content, height: $textViewheight)
-                        .frame(height: textViewheight)
+                    PoemTextView(text: viewModel.poem.content)
+                    Spacer()
                 }
             }
             .padding()
         }
+        .toastView(toast: $toast)
         .onAppear {
             if poemInFavourites() {
                 shouldAnimate = false
@@ -44,6 +48,16 @@ struct PoemView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarRole(.editor)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    pastboard.string = "\(viewModel.poem.title)\n\(viewModel.poem.author.name)\n\n\(viewModel.poem.content)"
+                    copyTapped.toggle()
+                    showToast()
+                }, label: {
+                    Image(systemName: "doc.on.doc")
+                })
+                .sensoryFeedback(.success, trigger: copyTapped)
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     withAnimation {
@@ -69,7 +83,7 @@ struct PoemView: View {
                             .transition(.identity)
                     }
                 }
-                .sensoryFeedback(.impact(flexibility: .solid), trigger: isLiked)
+                .sensoryFeedback(.impact(weight: .heavy, intensity: 5.0), trigger: isLiked)
             }
         }
         .analyticsScreen(name: "PoemView", extraParameters: ["poem" : viewModel.poem.title])
@@ -108,9 +122,15 @@ struct PoemView: View {
             }
 
             Divider()
-                .padding(.top, 7)
+                .padding(.top, 8)
         }
         .padding(.bottom, 10)
+    }
+
+    private func showToast() {
+        withAnimation {
+            toast = Toast(style: .copy, message: "Копие тепхащ", width: 160)
+        }
     }
 }
 

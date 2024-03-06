@@ -10,32 +10,88 @@ import SwiftUI
 struct FontSettingsView: View {
     @EnvironmentObject var fontManager: FontSettingsManager
     @Environment(\.dismiss) private var dismiss
+    @State private var setDefaultTapped: Bool = false
     var body: some View {
         VStack {
-            VStack {
-                Form {
-                    Section(header: Text("")) {
-                        Picker("Тхыпхъэр", selection: $fontManager.currentSettings.fontName) {
-                            Text("System").tag("System")
-                            Text("MarckScript").tag("MarckScript-Regular")
-                            Text("Georgia").tag("Georgia")
-                            Text("Times New Roman").tag("Times New Roman")
-                        }
+            PoemExampleView()
+            Form {
+                Section("Теплъэр") {
+                    Picker(selection: $fontManager.currentSettings.fontName) {
+                        Text("System").tag("System")
+                        Text("MarckScript").tag("MarckScript-Regular")
+                        Text("Georgia").tag("Georgia")
+                        Text("Times New Roman").tag("Times New Roman")
+                    } label: {
                         HStack {
-                            Slider(value: $fontManager.currentSettings.fontSize, in: 10...30, step: 1)
-                            Text("\(Int(fontManager.currentSettings.fontSize)) pt")
-                                .frame(width: 50)
+                            Text("Aa")
+                                .font(.custom(fontManager.currentSettings.fontName, size: 18))
+                                .padding(.trailing, 10)
+                            Text("Тхыпхъэр")
+                        }
+                    }
+
+                    Stepper(value: $fontManager.currentSettings.fontSize, in: 10...30, step: 1) {
+                        Label("Инагъыр: \(Int(fontManager.currentSettings.fontSize)) pt", systemImage: "textformat.size")
+                    }
+
+                    Toggle(isOn: $fontManager.currentSettings.isBold) {
+                        Label("Пlащэу", systemImage: "bold")
+                    }
+                    .tint(.green)
+
+                }
+
+                Section("") {
+                    HStack {
+                        Image(systemName: "arrow.up.and.down.text.horizontal")
+                        Slider(value: $fontManager.currentSettings.lineSpacing, in: 0...10, step: 0.25) {
+                        } minimumValueLabel: {
+                            Text("")
+                                .frame(width: 0)
+                        } maximumValueLabel: {
+                            Text(String(format: "%.2f", fontManager.currentSettings.lineSpacing))
+                                .frame(width: 45)
+                        }
+                    }
+
+                    VStack {
+                        HStack {
+                            VStack(alignment: .center) {
+                                Text("abc")
+                                    .font(.system(size: 13))
+                                Image(systemName: "arrow.left.and.right")
+                                    .font(.system(size: 16))
+                            }
+                            .padding(.horizontal, 4)
+
+                            Slider(value: $fontManager.currentSettings.characterSpacing, in: -2...2, step: 0.20) {
+
+                            } minimumValueLabel: {
+                                Text("")
+                                    .frame(width: 0)
+                            } maximumValueLabel: {
+                                Text(String(format: "%.2f", fontManager.currentSettings.characterSpacing))
+                                    .frame(width: 45)
+                            }
                         }
                     }
                 }
-            }
-            .frame(height: 150)
 
-            PoemExampleView()
+                Button(action: {
+                    fontManager.setToDefaultSettings()
+                    setDefaultTapped.toggle()
+                }, label: {
+                    Text("Зэрыщытам хуэгъэкlуэжын")
+                        .frame(maxWidth: .infinity)
+                        .foregroundStyle(.red)
+                })
+                .sensoryFeedback(.impact(weight: .heavy), trigger: setDefaultTapped)
+            }
+            .frame(height: 400)
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
-                TitleView(title: "тхыпхъэр")
+                TitleView(title: "текстыр")
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button(action: {
@@ -66,9 +122,10 @@ struct FontSettingsView: View {
             .padding(.bottom, 10)
 
             HStack {
-                SelectableTextView(text: Poem.example.content, height: .constant(0))
+                PoemTextView(text: Poem.example.content)
                 Spacer()
             }
+            Spacer()
         }
         .padding()
     }

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct OnboardingView: View {
-    @AppStorage("colorScheme") private var colorScheme: Bool = false
+    @Environment(\.colorScheme) private var colorScheme: ColorScheme
     @AppStorage("firstLaunch") private var firstLaunch = true
 
     var body: some View {
@@ -52,7 +52,7 @@ struct OnboardingView: View {
                 Text("Хъуащ")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
-                    .foregroundStyle(colorScheme ? .black : .white)
+                    .foregroundStyle(colorScheme == .dark ? .black : .white)
             })
             .buttonStyle(.borderedProminent)
             .tint(.primary)
