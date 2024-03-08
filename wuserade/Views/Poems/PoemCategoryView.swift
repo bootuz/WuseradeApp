@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SFSafeSymbols
 
 struct PoemCategoryView: View {
     @State private var viewModel = PoemCategoriesViewModel(service: PoemCategoriesService(httpClient: URLSession.shared))
@@ -40,7 +41,7 @@ struct PoemCategoryView: View {
                 ProgressView()
             } else if viewModel.poems.isEmpty {
                 ContentUnavailableView(label: {
-                    Label("Мэхь мэхь", systemImage: "pencil.and.scribble")
+                    Label("Мэхь мэхь", systemSymbol: SFSymbol.pencilAndScribble)
                 }, description: {
                     Text("Мы категорием усэ зэкlэ хэткъым")
                 })

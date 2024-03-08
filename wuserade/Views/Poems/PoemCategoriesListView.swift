@@ -23,11 +23,9 @@ struct PoemCategoriesListView: View {
         }
         .listStyle(.plain)
         .task {
-            print(viewModel.categories)
             if viewModel.categories.isEmpty {
                 await viewModel.fetchCategories()
             }
-            print(viewModel.categories)
         }
         .overlay {
             if viewModel.isLoading {
