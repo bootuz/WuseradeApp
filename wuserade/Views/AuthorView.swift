@@ -9,6 +9,7 @@ import SwiftUI
 
 struct AuthorView: View {
     @State private var viewModel = AuthorsViewModel(service: AuthorsService(httpClient: URLSession.shared))
+    @State private var showSwipeView: Bool = false
     var author: Author
 
     init(author: Author) {
@@ -41,6 +42,17 @@ struct AuthorView: View {
                     .replacingOccurrences(of: "ӏ", with: "l")
                 TitleView(title: name)
             }
+
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    showSwipeView.toggle()
+                }, label: {
+                    Image(systemName: "rectangle.portrait.on.rectangle.portrait.angled")
+                })
+                .fullScreenCover(isPresented: $showSwipeView, content: {
+                    PoemSwipeView(poems: viewModel.poems)
+                })
+            }
         }
         .listStyle(.plain)
         .task {
@@ -56,5 +68,7 @@ struct AuthorView: View {
     NavigationStack {
         AuthorView(author: Author(id: 1, name: "Усакlуэм и цlэр"))
             .navigationBarTitleDisplayMode(.inline)
+            .environmentObject(FontSettingsManager())
+            .tint(.primary)
     }
 }

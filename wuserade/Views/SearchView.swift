@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SFSafeSymbols
 
 struct SearchView: View {
     @State private var viewModel = SearchViewModel(service: PoemsService(httpClient: URLSession.shared))
@@ -16,7 +17,7 @@ struct SearchView: View {
             ZStack {
                 if viewModel.poems.isEmpty {
                     ContentUnavailableView {
-                        Label("", systemImage: "magnifyingglass")
+                        Label("", systemSymbol: SFSymbol.magnifyingglass)
                     } description: {
                         Text("Узылъыхъуэ усэр мыбдеж къридзэнущ")
                             .padding(.top, -15)

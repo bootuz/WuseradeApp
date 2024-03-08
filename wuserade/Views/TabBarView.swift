@@ -15,7 +15,7 @@ struct TabBarView: View {
 
     var body: some View {
         TabView {
-            PoemsListView().tabItem { Label("Усэхэр", systemSymbol: SFSymbol.pencilAndScribble) }.tag(1)
+            MainView().tabItem { Label("Усэхэр", systemSymbol: SFSymbol.pencilAndScribble) }.tag(1)
             AuthorsListView().tabItem { Label("Усакlуэхэр", systemSymbol: SFSymbol.person2) }.tag(2)
             LikedPoemsView().tabItem { Label("Сигу ирихьахэр", systemSymbol: SFSymbol.heart) }.tag(3)
         }

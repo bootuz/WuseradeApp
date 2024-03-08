@@ -7,9 +7,9 @@
 
 import SwiftUI
 
-struct PresenterButton<Destination: View>: View {
+struct PresenterButton<Destination: View, Label: View>: View {
     let destination: () -> Destination
-    let systemImageName: String
+    let label: () -> Label
 
     @State private var showDestinationView: Bool = false
     @AppStorage("colorScheme") private var colorScheme: Bool = false
@@ -18,7 +18,7 @@ struct PresenterButton<Destination: View>: View {
         Button {
             showDestinationView.toggle()
         } label: {
-            Image(systemName: systemImageName)
+            label()
         }
         .sheet(isPresented: $showDestinationView, content: {
             destination()
@@ -28,5 +28,10 @@ struct PresenterButton<Destination: View>: View {
 }
 
 #Preview {
-    PresenterButton()
+    PresenterButton(destination: {
+        SettingsView()
+    }, label: {
+        Image(systemName: "gearshape")
+    })
+    .tint(.primary)
 }

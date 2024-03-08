@@ -7,38 +7,27 @@
 
 import SwiftUI
 import SwiftData
+import SFSafeSymbols
 
 struct LikedPoemsView: View {
-    @Query(sort: \PersistedPoem.persistedDate, order: .reverse) private var poems: [PersistedPoem]
+    @Query(sort: \PersistedPoem.persistedDate, order: .reverse) private var persistedPoems: [PersistedPoem]
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(poems) { poem in
-                    let poem: Poem = .toPoem(from: poem)
-                    NavigationLink {
-                        PoemView(viewModel: PoemViewModel(poem: poem))
-                    } label: {
-                        VStack(alignment: .leading) {
-                            Text(poem.title)
-                                .lineLimit(0)
-                            Text(poem.author.name)
-                                .foregroundStyle(.secondary)
-                                .italic()
-                                .fontDesign(.serif)
-                        }
-                    }
+                ForEach(persistedPoems) { persistedPoem in
+                    PoemRow(poem: .toPoem(from: persistedPoem))
                 }
             }
+            .toolbarRole(.editor)
             .listStyle(.plain)
             .navigationBarTitleDisplayMode(.inline)
             .overlay {
-                if poems.isEmpty {
+                if persistedPoems.isEmpty {
                     ContentUnavailableView(label: {
-                        Label("", systemImage: "heart.fill")
+                        Label("Уигу ирихьа", systemSymbol: SFSymbol.heartFill)
                     }, description: {
-                        Text("Уигу ирихьа усэхэр мыбдеж къридзэнущ")
-                            .padding(.top, -15)
+                        Text("усэхэр мыбдеж къридзэнущ.")
                     })
                 }
             }

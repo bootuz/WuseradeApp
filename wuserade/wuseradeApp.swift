@@ -12,6 +12,7 @@ import FirebaseCore
 @main
 struct wuseradeApp: App {
     @AppStorage("firstLaunch") private var firstLaunch = true
+    @StateObject private var fontSettingsManager = FontSettingsManager()
 
     init() {
         FirebaseApp.configure()
@@ -31,11 +32,9 @@ struct wuseradeApp: App {
         }
     }()
 
-    @StateObject private var fontSettingsManager = FontSettingsManager()
-
     var body: some Scene {
         WindowGroup {
-            MainView()
+            TabBarView()
                 .environmentObject(fontSettingsManager)
                 .tint(.primary)
                 .sheet(isPresented: $firstLaunch, content: {

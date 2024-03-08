@@ -32,6 +32,17 @@ class PoemsViewModel {
     func fetchPoems() async {
         isLoading = true
         defer { isLoading = false }
+        do {
+            let response = try await service.fetchPoems(page: page)
+            poems = response.poems
+            totalPages = response.totalPages
+        } catch {
+            print(error)
+        }
+    }
+
+    @MainActor
+    func refreshPoems() async {
         page = 1
         do {
             let response = try await service.fetchPoems(page: page)

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SFSafeSymbols
 
 struct FontSettingsView: View {
     @EnvironmentObject var fontManager: FontSettingsManager
@@ -31,19 +32,18 @@ struct FontSettingsView: View {
                     }
 
                     Stepper(value: $fontManager.currentSettings.fontSize, in: 10...30, step: 1) {
-                        Label("Инагъыр: \(Int(fontManager.currentSettings.fontSize)) pt", systemImage: "textformat.size")
+                        Label("Инагъыр: \(Int(fontManager.currentSettings.fontSize))", systemSymbol: SFSymbol.textformatSize)
                     }
 
                     Toggle(isOn: $fontManager.currentSettings.isBold) {
-                        Label("Пlащэу", systemImage: "bold")
+                        Label("Пlащэу", systemSymbol: SFSymbol.bold)
                     }
                     .tint(.green)
-
                 }
 
                 Section("") {
                     HStack {
-                        Image(systemName: "arrow.up.and.down.text.horizontal")
+                        Image(systemSymbol: SFSymbol.arrowUpAndDownTextHorizontal)
                         Slider(value: $fontManager.currentSettings.lineSpacing, in: 0...10, step: 0.25) {
                         } minimumValueLabel: {
                             Text("")
@@ -59,7 +59,7 @@ struct FontSettingsView: View {
                             VStack(alignment: .center) {
                                 Text("abc")
                                     .font(.system(size: 13))
-                                Image(systemName: "arrow.left.and.right")
+                                Image(systemSymbol: SFSymbol.arrowLeftAndRight)
                                     .font(.system(size: 16))
                             }
                             .padding(.horizontal, 4)
@@ -76,7 +76,6 @@ struct FontSettingsView: View {
                         }
                     }
                 }
-
                 Button(action: {
                     fontManager.setToDefaultSettings()
                     setDefaultTapped.toggle()
@@ -87,7 +86,7 @@ struct FontSettingsView: View {
                 })
                 .sensoryFeedback(.impact(weight: .heavy), trigger: setDefaultTapped)
             }
-            .frame(height: 400)
+            .frame(height: 430)
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
@@ -97,7 +96,7 @@ struct FontSettingsView: View {
                 Button(action: {
                     dismiss()
                 }, label: {
-                    Image(systemName: "checkmark")
+                    Image(systemSymbol: SFSymbol.checkmark)
                 })
             }
         }
@@ -108,18 +107,8 @@ struct FontSettingsView: View {
 
     private func PoemExampleView() -> some View {
         VStack(alignment: .center) {
-            VStack(alignment: .center) {
-                Text(Poem.example.title)
-                    .font(.custom(fontManager.currentSettings.fontName, size: 30))
-                    .multilineTextAlignment(.center)
-                Text(Poem.example.author.name)
-                    .font(.custom(fontManager.currentSettings.fontName, size: 18))
-                    .italic()
-                    .padding(.vertical, 1)
-
-                Divider()
-            }
-            .padding(.bottom, 10)
+            PoemHeaderView(poem: Poem.example)
+                .disabled(true)
 
             HStack {
                 PoemTextView(text: Poem.example.content)

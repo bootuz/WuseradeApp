@@ -8,11 +8,17 @@
 import SwiftUI
 
 struct PoemRow: View {
+    var poem: Poem
+
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        NavigationLink {
+            PoemView(viewModel: PoemViewModel(poem: poem))
+        } label: {
+            PoemLabel(poem: poem)
+        }
     }
 }
 
 #Preview {
-    PoemRow()
+    PoemRow(poem: Poem.example)
 }

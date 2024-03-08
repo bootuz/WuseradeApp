@@ -24,8 +24,8 @@ class AuthorsService {
         return try ResponseMapper.map(data: data, response: response)
     }
 
-    func fetchPoemsOfAuthor(id: Int, page: Int) async throws -> [Poem] {
-        let (data, response) = try await httpClient.perform(request: AuthorsEndpoint.fetchPoemsOfAuthor(id: id, page: page).urlRequest)
+    func fetchPoemsOfAuthor(id: Int) async throws -> [Poem] {
+        let (data, response) = try await httpClient.perform(request: AuthorsEndpoint.fetchPoemsOfAuthor(id: id).urlRequest)
         return try ResponseMapper.map(data: data, response: response)
     }
 }

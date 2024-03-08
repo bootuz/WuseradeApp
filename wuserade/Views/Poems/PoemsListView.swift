@@ -8,11 +8,41 @@
 import SwiftUI
 
 struct PoemsListView: View {
+    @State var viewModel: PoemsViewModel = PoemsViewModel(service: PoemsService(httpClient: URLSession.shared))
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        List {
+            ForEach(viewModel.poems) { poem in
+                PoemRow(poem: poem)
+                .task {
+                    await viewModel.fetchMorePoemsIfNeeded(poem: poem)
+                }
+            }
+        }
+        .refreshable {
+            Task {
+                await viewModel.refreshPoems()
+            }
+        }
+        .overlay {
+            if viewModel.isLoading {
+                ProgressView()
+            }
+        }
+        .task {
+            if viewModel.poems.isEmpty {
+                await viewModel.fetchPoems()
+            }
+        }
+        .listStyle(.plain)
+        .analyticsScreen(name: "PoemsListView")
     }
 }
 
 #Preview {
-    PoemsListView()
+    NavigationStack {
+        PoemsListView()
+    }
+    .environmentObject(FontSettingsManager())
+    .modelContainer(for: [PersistedPoem.self], inMemory: true)
+    .tint(.primary)
 }

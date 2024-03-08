@@ -10,7 +10,7 @@ import Foundation
 enum AuthorsEndpoint {
     case fetchAuthors(page: Int)
     case fetchAuthor(id: Int)
-    case fetchPoemsOfAuthor(id: Int, page: Int)
+    case fetchPoemsOfAuthor(id: Int)
     case fetchAuthorsV2
 }
 
@@ -21,7 +21,7 @@ extension AuthorsEndpoint: Endpoint {
                 return "/authors"
             case .fetchAuthor(let id):
                 return "/authors/\(id)"
-            case .fetchPoemsOfAuthor(let id, _):
+            case .fetchPoemsOfAuthor(let id):
                 return "/authors/\(id)/poems"
             case .fetchAuthorsV2:
                 return "/authors/v2"
@@ -44,8 +44,8 @@ extension AuthorsEndpoint: Endpoint {
         switch self {
             case .fetchAuthors(let page):
                 return [URLQueryItem(name: "page", value: String(page))]
-            case .fetchPoemsOfAuthor(_, let page):
-                return [URLQueryItem(name: "page", value: String(page))]
+            case .fetchPoemsOfAuthor:
+                return nil
             case .fetchAuthor:
                 return nil
             case .fetchAuthorsV2:
