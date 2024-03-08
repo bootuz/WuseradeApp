@@ -36,6 +36,7 @@ struct PoemView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 CopyButton(for: viewModel.poem, toast: $toast)
             }
+            
             ToolbarItem(placement: .topBarTrailing) {
                 LikeButton(for: viewModel.poem, onAnalyticsEvent: AnalyticsManager.shared.logEvent)
             }
