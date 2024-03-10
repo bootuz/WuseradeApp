@@ -10,6 +10,7 @@ import FirebaseAnalytics
 import SFSafeSymbols
 
 struct TabBarView: View {
+    @ObservedObject var notificationManager: NotificationManager
     @AppStorage("colorScheme") private var colorScheme: Bool = false
     @AppStorage("firstLaunch") private var firstLaunch = true
 
@@ -24,14 +25,19 @@ struct TabBarView: View {
         .onAppear {
             if firstLaunch {
                 Analytics.setUserID(UUID().uuidString)
-                firstLaunch = false
+            }
+            
+            if !firstLaunch {
+                Task {
+                    await notificationManager.request()
+                }
             }
         }
     }
 }
 
 #Preview {
-    TabBarView()
+    TabBarView(notificationManager: NotificationManager())
         .environmentObject(FontSettingsManager())
         .modelContainer(for: PersistedPoem.self, inMemory: true)
 }
