@@ -67,7 +67,6 @@
 		C0DB621F2B9B3E0B00B30187 /* SFSafeSymbols in Frameworks */ = {isa = PBXBuildFile; productRef = C0DB621E2B9B3E0B00B30187 /* SFSafeSymbols */; };
 		C0DB62212B9B49A600B30187 /* PoemsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DB62202B9B49A600B30187 /* PoemsListView.swift */; };
 		C0DB62232B9B4DD500B30187 /* PoemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DB62222B9B4DD500B30187 /* PoemRow.swift */; };
-		C0DB62252B9BA69200B30187 /* TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DB62242B9BA69200B30187 /* TestView.swift */; };
 		C0DB62272B9DB7C000B30187 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = C0DB62262B9DB7C000B30187 /* FirebaseMessaging */; };
 		C0DB622A2B9DBC4200B30187 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DB62292B9DBC4200B30187 /* NotificationManager.swift */; };
 		C0EA77052B8FCF3F00E736C0 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0EA77042B8FCF3F00E736C0 /* OnboardingView.swift */; };
@@ -152,7 +151,6 @@
 		C0DB621B2B9B206C00B30187 /* PresenterButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenterButton.swift; sourceTree = "<group>"; };
 		C0DB62202B9B49A600B30187 /* PoemsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemsListView.swift; sourceTree = "<group>"; };
 		C0DB62222B9B4DD500B30187 /* PoemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemRow.swift; sourceTree = "<group>"; };
-		C0DB62242B9BA69200B30187 /* TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestView.swift; sourceTree = "<group>"; };
 		C0DB62282B9DB7E300B30187 /* Wuserade.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = Wuserade.entitlements; path = Wuserade/Wuserade.entitlements; sourceTree = "<group>"; };
 		C0DB62292B9DBC4200B30187 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		C0EA77042B8FCF3F00E736C0 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -207,7 +205,6 @@
 				C0DB62172B9A74CC00B30187 /* PoemHeaderView.swift */,
 				C0DB62202B9B49A600B30187 /* PoemsListView.swift */,
 				C0DB62222B9B4DD500B30187 /* PoemRow.swift */,
-				C0DB62242B9BA69200B30187 /* TestView.swift */,
 			);
 			path = Poems;
 			sourceTree = "<group>";
@@ -581,7 +578,6 @@
 				C012415C2B7FC1E800BA9615 /* AuthorsViewModel.swift in Sources */,
 				C0DB62232B9B4DD500B30187 /* PoemRow.swift in Sources */,
 				C07F16542B7E4317007F11B7 /* Endpoint.swift in Sources */,
-				C0DB62252B9BA69200B30187 /* TestView.swift in Sources */,
 				C07F165F2B7E4611007F11B7 /* ResponseMapper.swift in Sources */,
 				C030F8F42B88E163009E5907 /* PoemCategoriesViewModel.swift in Sources */,
 				C030F9002B8A18E7009E5907 /* AnalyticsManager.swift in Sources */,
