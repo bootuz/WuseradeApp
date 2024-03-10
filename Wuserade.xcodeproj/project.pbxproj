@@ -45,7 +45,7 @@
 		C076E20C2B863F7500CC7B52 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = C076E20B2B863F7500CC7B52 /* .gitignore */; };
 		C07F16262B7E429A007F11B7 /* wuseradeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07F16252B7E429A007F11B7 /* wuseradeApp.swift */; };
 		C07F16282B7E429A007F11B7 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07F16272B7E429A007F11B7 /* MainView.swift */; };
-		C07F162A2B7E429A007F11B7 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07F16292B7E429A007F11B7 /* Item.swift */; };
+		C07F162A2B7E429A007F11B7 /* PersistedPoem.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07F16292B7E429A007F11B7 /* PersistedPoem.swift */; };
 		C07F162C2B7E429B007F11B7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C07F162B2B7E429B007F11B7 /* Assets.xcassets */; };
 		C07F162F2B7E429B007F11B7 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C07F162E2B7E429B007F11B7 /* Preview Assets.xcassets */; };
 		C07F16392B7E429B007F11B7 /* wuseradeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07F16382B7E429B007F11B7 /* wuseradeTests.swift */; };
@@ -67,6 +67,9 @@
 		C0DB621F2B9B3E0B00B30187 /* SFSafeSymbols in Frameworks */ = {isa = PBXBuildFile; productRef = C0DB621E2B9B3E0B00B30187 /* SFSafeSymbols */; };
 		C0DB62212B9B49A600B30187 /* PoemsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DB62202B9B49A600B30187 /* PoemsListView.swift */; };
 		C0DB62232B9B4DD500B30187 /* PoemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DB62222B9B4DD500B30187 /* PoemRow.swift */; };
+		C0DB62252B9BA69200B30187 /* TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DB62242B9BA69200B30187 /* TestView.swift */; };
+		C0DB62272B9DB7C000B30187 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = C0DB62262B9DB7C000B30187 /* FirebaseMessaging */; };
+		C0DB622A2B9DBC4200B30187 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DB62292B9DBC4200B30187 /* NotificationManager.swift */; };
 		C0EA77052B8FCF3F00E736C0 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0EA77042B8FCF3F00E736C0 /* OnboardingView.swift */; };
 /* End PBXBuildFile section */
 
@@ -126,7 +129,7 @@
 		C07F16222B7E429A007F11B7 /* Wuserade.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wuserade.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C07F16252B7E429A007F11B7 /* wuseradeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = wuseradeApp.swift; sourceTree = "<group>"; };
 		C07F16272B7E429A007F11B7 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
-		C07F16292B7E429A007F11B7 /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
+		C07F16292B7E429A007F11B7 /* PersistedPoem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistedPoem.swift; sourceTree = "<group>"; };
 		C07F162B2B7E429B007F11B7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C07F162E2B7E429B007F11B7 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		C07F16342B7E429B007F11B7 /* WuseradeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WuseradeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -149,6 +152,9 @@
 		C0DB621B2B9B206C00B30187 /* PresenterButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenterButton.swift; sourceTree = "<group>"; };
 		C0DB62202B9B49A600B30187 /* PoemsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemsListView.swift; sourceTree = "<group>"; };
 		C0DB62222B9B4DD500B30187 /* PoemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemRow.swift; sourceTree = "<group>"; };
+		C0DB62242B9BA69200B30187 /* TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestView.swift; sourceTree = "<group>"; };
+		C0DB62282B9DB7E300B30187 /* Wuserade.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = Wuserade.entitlements; path = Wuserade/Wuserade.entitlements; sourceTree = "<group>"; };
+		C0DB62292B9DBC4200B30187 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		C0EA77042B8FCF3F00E736C0 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -157,6 +163,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C0DB62272B9DB7C000B30187 /* FirebaseMessaging in Frameworks */,
 				C0DB621F2B9B3E0B00B30187 /* SFSafeSymbols in Frameworks */,
 				C030F8FE2B8A0F3A009E5907 /* FirebaseAnalytics in Frameworks */,
 				C076E20A2B860E3B00CC7B52 /* Pow in Frameworks */,
@@ -200,6 +207,7 @@
 				C0DB62172B9A74CC00B30187 /* PoemHeaderView.swift */,
 				C0DB62202B9B49A600B30187 /* PoemsListView.swift */,
 				C0DB62222B9B4DD500B30187 /* PoemRow.swift */,
+				C0DB62242B9BA69200B30187 /* TestView.swift */,
 			);
 			path = Poems;
 			sourceTree = "<group>";
@@ -231,8 +239,10 @@
 		C076E20D2B86752000CC7B52 /* Managers */ = {
 			isa = PBXGroup;
 			children = (
+				C0357D362B87540B00440969 /* FontSettingsManager.swift */,
 				C030F8FF2B8A18E7009E5907 /* AnalyticsManager.swift */,
 				C042FCA82B963FB100C26E90 /* RateManager.swift */,
+				C0DB62292B9DBC4200B30187 /* NotificationManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -240,6 +250,7 @@
 		C07F16192B7E429A007F11B7 = {
 			isa = PBXGroup;
 			children = (
+				C0DB62282B9DB7E300B30187 /* Wuserade.entitlements */,
 				C076E20B2B863F7500CC7B52 /* .gitignore */,
 				C01241562B7F810600BA9615 /* Info.plist */,
 				C07F16242B7E429A007F11B7 /* wuserade */,
@@ -270,11 +281,10 @@
 				C07F16512B7E42FF007F11B7 /* Services */,
 				C07F16632B7E4784007F11B7 /* ViewModels */,
 				C07F16662B7E51F2007F11B7 /* Views */,
-				C07F16252B7E429A007F11B7 /* wuseradeApp.swift */,
-				C07F16292B7E429A007F11B7 /* Item.swift */,
 				C07F162B2B7E429B007F11B7 /* Assets.xcassets */,
 				C07F162D2B7E429B007F11B7 /* Preview Content */,
 				C07F16572B7E43F6007F11B7 /* Constants.swift */,
+				C07F16252B7E429A007F11B7 /* wuseradeApp.swift */,
 			);
 			path = wuserade;
 			sourceTree = "<group>";
@@ -339,6 +349,7 @@
 		C07F16602B7E4632007F11B7 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				C07F16292B7E429A007F11B7 /* PersistedPoem.swift */,
 				C07F16612B7E463F007F11B7 /* Poem.swift */,
 				C030F8EF2B88E0B5009E5907 /* Author.swift */,
 				C030F8F12B88E0C6009E5907 /* Category.swift */,
@@ -353,7 +364,6 @@
 				C012415B2B7FC1E800BA9615 /* AuthorsViewModel.swift */,
 				C076E19B2B81824300CC7B52 /* SearchViewModel.swift */,
 				C0A782E42B868B3D009FC5E8 /* PoemViewModel.swift */,
-				C0357D362B87540B00440969 /* FontSettingsManager.swift */,
 				C030F8F32B88E163009E5907 /* PoemCategoriesViewModel.swift */,
 			);
 			path = ViewModels;
@@ -404,6 +414,7 @@
 				C076E2092B860E3B00CC7B52 /* Pow */,
 				C030F8FD2B8A0F3A009E5907 /* FirebaseAnalytics */,
 				C0DB621E2B9B3E0B00B30187 /* SFSafeSymbols */,
+				C0DB62262B9DB7C000B30187 /* FirebaseMessaging */,
 			);
 			productName = wuserade;
 			productReference = C07F16222B7E429A007F11B7 /* Wuserade.app */;
@@ -533,6 +544,7 @@
 				C030F8F92B89F256009E5907 /* PoemCategoryView.swift in Sources */,
 				C076E2072B86082A00CC7B52 /* SettingsView.swift in Sources */,
 				C01241642B7FD4C600BA9615 /* SearchView.swift in Sources */,
+				C0DB622A2B9DBC4200B30187 /* NotificationManager.swift in Sources */,
 				C042FCB42B98B83700C26E90 /* ToastModifier.swift in Sources */,
 				C0DB62212B9B49A600B30187 /* PoemsListView.swift in Sources */,
 				C01241582B7FBD6B00BA9615 /* TabBarView.swift in Sources */,
@@ -562,13 +574,14 @@
 				C042FCAB2B97CE7300C26E90 /* PoemTextView.swift in Sources */,
 				C01241522B7EB09D00BA9615 /* PoemView.swift in Sources */,
 				C030F8F72B892EF6009E5907 /* PoemLabel.swift in Sources */,
-				C07F162A2B7E429A007F11B7 /* Item.swift in Sources */,
+				C07F162A2B7E429A007F11B7 /* PersistedPoem.swift in Sources */,
 				C07F16652B7E4794007F11B7 /* PoemsViewModel.swift in Sources */,
 				C0DB62182B9A74CC00B30187 /* PoemHeaderView.swift in Sources */,
 				C0EA77052B8FCF3F00E736C0 /* OnboardingView.swift in Sources */,
 				C012415C2B7FC1E800BA9615 /* AuthorsViewModel.swift in Sources */,
 				C0DB62232B9B4DD500B30187 /* PoemRow.swift in Sources */,
 				C07F16542B7E4317007F11B7 /* Endpoint.swift in Sources */,
+				C0DB62252B9BA69200B30187 /* TestView.swift in Sources */,
 				C07F165F2B7E4611007F11B7 /* ResponseMapper.swift in Sources */,
 				C030F8F42B88E163009E5907 /* PoemCategoriesViewModel.swift in Sources */,
 				C030F9002B8A18E7009E5907 /* AnalyticsManager.swift in Sources */,
@@ -737,6 +750,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Wuserade/Wuserade.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"wuserade/Preview Content\"";
@@ -775,6 +789,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Wuserade/Wuserade.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"wuserade/Preview Content\"";
@@ -967,6 +982,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C0DB621D2B9B3E0B00B30187 /* XCRemoteSwiftPackageReference "SFSafeSymbols" */;
 			productName = SFSafeSymbols;
+		};
+		C0DB62262B9DB7C000B30187 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C030F8FC2B8A0F3A009E5907 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
