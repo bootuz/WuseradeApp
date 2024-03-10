@@ -28,7 +28,9 @@ struct PoemView: View {
         }
         .toastView(toast: $toast)
         .onDisappear {
-            requestReview()
+            Task {
+                requestReview()
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbarRole(.editor)

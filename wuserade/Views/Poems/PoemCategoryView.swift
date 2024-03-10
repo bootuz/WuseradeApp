@@ -18,11 +18,7 @@ struct PoemCategoryView: View {
     var body: some View {
         List {
             ForEach(viewModel.poems) { poem in
-                NavigationLink {
-                    PoemView(viewModel: PoemViewModel(poem: poem))
-                } label: {
-                    PoemLabel(poem: poem)
-                }
+                PoemRow(poem: poem)
             }
         }
         .listStyle(.plain)
@@ -56,4 +52,7 @@ struct PoemCategoryView: View {
         PoemCategoryView(category: PoemCategory(id: 2, title: "Test"))
             .navigationBarTitleDisplayMode(.inline)
     }
+    .environmentObject(FontSettingsManager())
+    .modelContainer(for: PersistedPoem.self, inMemory: true)
+    .tint(.primary)
 }

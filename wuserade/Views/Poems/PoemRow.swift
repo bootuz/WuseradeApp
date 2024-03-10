@@ -20,5 +20,9 @@ struct PoemRow: View {
 }
 
 #Preview {
-    PoemRow(poem: Poem.example)
+    NavigationStack {
+        PoemRow(poem: Poem.example)
+    }
+    .environmentObject(FontSettingsManager())
+    .tint(.primary)
 }

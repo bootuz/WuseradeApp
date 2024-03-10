@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SFSafeSymbols
 
 struct PoemHeaderView: View {
     @EnvironmentObject private var fontManager: FontSettingsManager
@@ -38,7 +39,7 @@ struct PoemHeaderView: View {
                 .font(.custom(fontManager.currentSettings.fontName, size: 18))
                 .italic()
                 .padding(.vertical, 1)
-            Image(systemName: "chevron.right")
+            Image(systemSymbol: SFSymbol.chevronRight)
                 .font(.subheadline)
         }
     }
@@ -47,7 +48,7 @@ struct PoemHeaderView: View {
 #Preview {
     NavigationStack {
         PoemHeaderView(poem: Poem.example)
-            .environmentObject(FontSettingsManager())
-            .tint(.primary)
     }
+    .environmentObject(FontSettingsManager())
+    .tint(.primary)
 }

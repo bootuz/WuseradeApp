@@ -9,6 +9,7 @@ import SwiftUI
 
 struct PoemsListView: View {
     @State var viewModel: PoemsViewModel = PoemsViewModel(service: PoemsService(httpClient: URLSession.shared))
+    
     var body: some View {
         List {
             ForEach(viewModel.poems) { poem in
@@ -18,6 +19,7 @@ struct PoemsListView: View {
                 }
             }
         }
+        .listStyle(.plain)
         .refreshable {
             Task {
                 await viewModel.refreshPoems()
@@ -33,7 +35,6 @@ struct PoemsListView: View {
                 await viewModel.fetchPoems()
             }
         }
-        .listStyle(.plain)
         .analyticsScreen(name: "PoemsListView")
     }
 }
