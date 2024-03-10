@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SwiftData
 import FirebaseAnalytics
 import SFSafeSymbols
 
@@ -48,25 +47,21 @@ struct MainView: View {
                 })
                 .tabViewStyle(.page(indexDisplayMode: .never))
             }
-            .animation(.easeInOut(duration: 0.3), value: selectedTab)
+            .animation(.easeInOut, value: selectedTab)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    PresenterButton(presentationType: .sheet, destination: { SettingsView() }) {
+                        Image(systemSymbol: SFSymbol.gearshape)
+                    }
+                }
+
                 ToolbarItem(placement: .principal) {
                     TitleView(title: "усэхэр")
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    PresenterButton {
-                        SearchView()
-                    } label: {
+                    PresenterButton(presentationType: .sheet, destination: { SearchView() }) {
                         Image(systemSymbol: SFSymbol.magnifyingglass)
-                    }
-                }
-
-                ToolbarItem(placement: .topBarLeading) {
-                    PresenterButton {
-                        SettingsView()
-                    } label: {
-                        Image(systemSymbol: SFSymbol.gearshape)
                     }
                 }
             }
