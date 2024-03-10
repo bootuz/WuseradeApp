@@ -9,7 +9,6 @@ import SwiftUI
 
 struct PoemSwipeView: View {
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var fontManager: FontSettingsManager
     
     let poems: [Poem]
 
