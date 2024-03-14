@@ -9,10 +9,10 @@ import SwiftUI
 import SFSafeSymbols
 
 struct PoemCategoryView: View {
-    @State private var viewModel = PoemCategoriesViewModel(service: PoemCategoriesService(httpClient: URLSession.shared))
-    let category: PoemCategory
+    @State private var viewModel = CategoriesViewModel(service: CategoriesService(httpClient: URLSession.shared))
+    let category: Category
 
-    init(category: PoemCategory) {
+    init(category: Category) {
         self.category = category
     }
     var body: some View {
@@ -49,7 +49,7 @@ struct PoemCategoryView: View {
 
 #Preview {
     NavigationStack {
-        PoemCategoryView(category: PoemCategory(id: 2, title: "Test"))
+        PoemCategoryView(category: Category(id: 2, title: "Test"))
             .navigationBarTitleDisplayMode(.inline)
     }
     .environmentObject(FontSettingsManager())

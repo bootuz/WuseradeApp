@@ -11,9 +11,3 @@ struct Author: Codable, Identifiable, Hashable {
     let id: Int
     let name: String
 }
-
-struct AllAuthors: Codable {
-    let authors: [Author]
-    let totalPages: Int
-    let currentPage: String
-}

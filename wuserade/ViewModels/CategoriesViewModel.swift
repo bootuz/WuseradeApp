@@ -9,15 +9,15 @@ import Foundation
 
 
 @Observable
-class PoemCategoriesViewModel {
+class CategoriesViewModel<Service: CategoriesServiceProtocol> {
     @ObservationIgnored
-    private var service: PoemCategoriesService
-    
-    var categories: [PoemCategory] = []
+    private var service: Service
+
+    var categories: [Category] = []
     var poems: [Poem] = []
     var isLoading: Bool = false
 
-    init(service: PoemCategoriesService) {
+    init(service: Service) {
         self.service = service
     }
 
@@ -26,7 +26,7 @@ class PoemCategoriesViewModel {
         isLoading = true
         defer { isLoading = false }
         do {
-            categories = try await service.fetchCategories()
+            categories = try await service.fetch(.categories)
         } catch {
             print(error)
         }
@@ -37,7 +37,7 @@ class PoemCategoriesViewModel {
         isLoading = true
         defer { isLoading = false }
         do {
-            poems = try await service.fetchPoemsByCategory(id: id)
+            poems = try await service.fetch(.poemsByCategory(id: id))
         } catch {
             print(error)
         }

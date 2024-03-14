@@ -7,12 +7,6 @@
 
 import Foundation
 
-struct AllPoems: Codable {
-    let poems: [Poem]
-    let totalPages: Int
-    let currentPage: String
-}
-
 struct Poem: Codable, Identifiable, Hashable, Copyable {
     let id: Int
     let title: String

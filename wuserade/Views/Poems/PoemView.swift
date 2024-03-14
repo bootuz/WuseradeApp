@@ -12,8 +12,12 @@ import SwiftData
 
 struct PoemView: View {
     @Environment(\.requestReview) var requestReview
-    @State var viewModel: PoemViewModel
+    @State private var viewModel: PoemViewModel
     @State private var toast: Toast? = nil
+
+    init(viewModel: PoemViewModel) {
+        self._viewModel = State(wrappedValue: viewModel)
+    }
 
     var body: some View {
         ScrollView {

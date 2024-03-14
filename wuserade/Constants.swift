@@ -13,6 +13,7 @@ struct Constants {
         static let somethingWentWrong = "Something went wrong."
         static let invalidResponse = "Invalid response."
         static let invalidCode = "Invalid code."
+        static let decodeError = "Could not load data"
     }
 
     static let alphabet: [String] = [

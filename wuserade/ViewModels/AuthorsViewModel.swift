@@ -46,9 +46,9 @@ extension String {
 }
 
 @Observable
-class AuthorsViewModel {
+class AuthorsViewModel<Service: AuthorsServiceProtocol> {
     @ObservationIgnored
-    private var service: AuthorsService
+    private var service: Service
 
     @ObservationIgnored
     private var page: Int = 1
@@ -61,7 +61,7 @@ class AuthorsViewModel {
     var poems: [Poem]
 
 
-    init(service: AuthorsService, poems: [Poem] = []) {
+    init(service: Service, poems: [Poem] = []) {
         self.poems = poems
         self.service = service
     }
@@ -80,7 +80,7 @@ class AuthorsViewModel {
         isLoading = true
         defer { isLoading = false }
         do {
-            authors = try await service.fetchAuthors()
+            authors = try await service.fetch(.authorsV2)
         } catch {
             print(error)
         }
@@ -89,7 +89,7 @@ class AuthorsViewModel {
     @MainActor
     func refreshAuthors() async {
         do {
-            authors = try await service.fetchAuthors()
+            authors = try await service.fetch(.authorsV2)
         } catch {
             print(error)
         }
@@ -101,7 +101,7 @@ class AuthorsViewModel {
         isLoading = true
         defer { isLoading = false}
         do {
-            poems = try await service.fetchPoemsOfAuthor(id: id)
+            poems = try await service.fetch(.poemsOfAuthor(id: id))
         } catch {
             print(error)
         }

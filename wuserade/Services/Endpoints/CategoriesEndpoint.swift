@@ -7,17 +7,17 @@
 
 import Foundation
 
-enum PoemCategoriesEndpoint {
-    case fetchCategories
-    case fetchPoemsByCategory(id: Int)
+enum CategoriesEndpoint {
+    case categories
+    case poemsByCategory(id: Int)
 }
 
-extension PoemCategoriesEndpoint: Endpoint {
+extension CategoriesEndpoint: Endpoint {
     var path: String {
         switch self {
-            case .fetchCategories:
+            case .categories:
                 return "/themes"
-            case .fetchPoemsByCategory(let id):
+            case .poemsByCategory(let id):
                 return "/themes/\(id)/poems"
         }
     }

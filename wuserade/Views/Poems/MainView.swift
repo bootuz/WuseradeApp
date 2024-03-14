@@ -10,7 +10,7 @@ import FirebaseAnalytics
 import SFSafeSymbols
 
 struct MainView: View {
-    @State private var categoriesViewModel = PoemCategoriesViewModel(service: PoemCategoriesService(httpClient: URLSession.shared))
+    @State private var categoriesViewModel = CategoriesViewModel(service: CategoriesService(httpClient: URLSession.shared))
     @State private var selectedTab: Tab = .poems
 
     enum Tab {
@@ -42,7 +42,7 @@ struct MainView: View {
                         content:  {
                     PoemsListView()
                         .tag(Tab.poems)
-                    PoemCategoriesListView(viewModel: categoriesViewModel)
+                    CategoriesView(viewModel: categoriesViewModel)
                         .tag(Tab.categories)
                 })
                 .tabViewStyle(.page(indexDisplayMode: .never))

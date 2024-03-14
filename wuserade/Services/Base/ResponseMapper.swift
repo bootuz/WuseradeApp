@@ -8,7 +8,7 @@
 import Foundation
 
 struct ResponseMapper {
-    static func map<T>(data: Data, response: HTTPURLResponse) throws -> T where T: Decodable {
+    static func map<T: Decodable>(data: Data, response: HTTPURLResponse) throws -> T {
         guard response.statusCode == 200 else {
             throw RequestError.invalidResponse(message: Constants.ErrorMessages.invalidResponse)
         }
@@ -17,7 +17,7 @@ struct ResponseMapper {
         decoder.keyDecodingStrategy = .convertFromSnakeCase
 
         guard let data = try? decoder.decode(T.self, from: data) else {
-            throw RequestError.decodeError(message: "failed to decode response")
+            throw RequestError.decodeError(message: Constants.ErrorMessages.decodeError)
         }
         return data
     }

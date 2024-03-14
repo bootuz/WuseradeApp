@@ -24,7 +24,7 @@ class SearchViewModel {
     @MainActor
     func searchPoems(query: String) async {
         do {
-            poems = try await service.searchPoems(query: query)
+            poems = try await service.fetch(.searchPoems(query: query))
         } catch {
             print(error)
         }
