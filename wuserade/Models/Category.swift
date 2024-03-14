@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct PoemCategory: Codable, Identifiable {
+struct Category: Codable, Identifiable {
     let id: Int
     let title: String
 }

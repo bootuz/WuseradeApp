@@ -7,20 +7,17 @@
 
 import Foundation
 
-class PoemCategoriesService {
+protocol CategoriesServiceProtocol: Service where EndpointType == CategoriesEndpoint { }
+
+class CategoriesService: CategoriesServiceProtocol {
     private var httpClient: HTTPClient
 
     init(httpClient: HTTPClient) {
         self.httpClient = httpClient
     }
 
-    func fetchCategories() async throws -> [PoemCategory] {
-        let (data, response) = try await httpClient.perform(request: PoemCategoriesEndpoint.fetchCategories.urlRequest)
-        return try ResponseMapper.map(data: data, response: response)
-    }
-
-    func fetchPoemsByCategory(id: Int) async throws -> [Poem] {
-        let (data, response) = try await httpClient.perform(request: PoemCategoriesEndpoint.fetchPoemsByCategory(id: id).urlRequest)
+    func fetch<T: Decodable>(_ endpoint: CategoriesEndpoint) async throws -> T {
+        let (data, response) = try await httpClient.perform(request: endpoint.urlRequest)
         return try ResponseMapper.map(data: data, response: response)
     }
 }

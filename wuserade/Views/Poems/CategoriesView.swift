@@ -7,8 +7,8 @@
 
 import SwiftUI
 
-struct PoemCategoriesListView: View {
-    @Bindable var viewModel: PoemCategoriesViewModel
+struct CategoriesView: View {
+    @Bindable var viewModel: CategoriesViewModel<CategoriesService>
 
     var body: some View {
         List {
@@ -23,11 +23,9 @@ struct PoemCategoriesListView: View {
         }
         .listStyle(.plain)
         .task {
-            print(viewModel.categories)
             if viewModel.categories.isEmpty {
                 await viewModel.fetchCategories()
             }
-            print(viewModel.categories)
         }
         .overlay {
             if viewModel.isLoading {
@@ -40,6 +38,6 @@ struct PoemCategoriesListView: View {
 
 #Preview {
     NavigationStack {
-        PoemCategoriesListView(viewModel: PoemCategoriesViewModel(service: PoemCategoriesService(httpClient: URLSession.shared)))
+        CategoriesView(viewModel: CategoriesViewModel(service: CategoriesService(httpClient: URLSession.shared)))
     }
 }

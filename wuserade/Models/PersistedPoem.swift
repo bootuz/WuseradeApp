@@ -34,14 +34,3 @@ final class PersistedPoem {
         return persistedPoem
     }
 }
-
-@Model
-final class PersistedAuthor {
-    let authorID: Int
-    let name: String
-
-    init(authorID: Int, name: String) {
-        self.authorID = authorID
-        self.name = name
-    }
-}

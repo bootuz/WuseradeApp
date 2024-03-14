@@ -6,22 +6,19 @@
 //
 
 import SwiftUI
+import SFSafeSymbols
 
 struct PoemCategoryView: View {
-    @State private var viewModel = PoemCategoriesViewModel(service: PoemCategoriesService(httpClient: URLSession.shared))
-    let category: PoemCategory
+    @State private var viewModel = CategoriesViewModel(service: CategoriesService(httpClient: URLSession.shared))
+    let category: Category
 
-    init(category: PoemCategory) {
+    init(category: Category) {
         self.category = category
     }
     var body: some View {
         List {
             ForEach(viewModel.poems) { poem in
-                NavigationLink {
-                    PoemView(viewModel: PoemViewModel(poem: poem))
-                } label: {
-                    PoemLabel(poem: poem)
-                }
+                PoemRow(poem: poem)
             }
         }
         .listStyle(.plain)
@@ -40,7 +37,7 @@ struct PoemCategoryView: View {
                 ProgressView()
             } else if viewModel.poems.isEmpty {
                 ContentUnavailableView(label: {
-                    Label("Мэхь мэхь", systemImage: "pencil.and.scribble")
+                    Label("Мэхь мэхь", systemSymbol: SFSymbol.pencilAndScribble)
                 }, description: {
                     Text("Мы категорием усэ зэкlэ хэткъым")
                 })
@@ -52,7 +49,10 @@ struct PoemCategoryView: View {
 
 #Preview {
     NavigationStack {
-        PoemCategoryView(category: PoemCategory(id: 2, title: "Test"))
+        PoemCategoryView(category: Category(id: 2, title: "Test"))
             .navigationBarTitleDisplayMode(.inline)
     }
+    .environmentObject(FontSettingsManager())
+    .modelContainer(for: PersistedPoem.self, inMemory: true)
+    .tint(.primary)
 }

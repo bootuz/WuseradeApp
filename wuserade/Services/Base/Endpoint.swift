@@ -7,15 +7,6 @@
 
 import Foundation
 
-enum HTTPMethod: String {
-    case DELETE
-    case GET
-    case PATCH
-    case POST
-    case PUT
-}
-
-
 protocol Endpoint {
     var scheme: String { get }
     var host: String { get }
@@ -29,19 +20,27 @@ protocol Endpoint {
 
 extension Endpoint {
     var scheme: String {
+        #if DEBUG
+        return "http"
+        #else
         return "https"
-//        return "http"
+        #endif
     }
 
     var host: String {
+        #if DEBUG
+        return "localhost"
+        #else
         return "wuserade.onrender.com"
-//        return "localhost"
+        #endif
     }
 
     var urlRequest: URLRequest {
         get throws {
             var urlComponents = URLComponents()
-//            urlComponents.port = 8000
+            #if DEBUG
+            urlComponents.port = 8000
+            #endif
             urlComponents.scheme = scheme
             urlComponents.host = host
             urlComponents.path = path

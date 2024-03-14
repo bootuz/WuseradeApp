@@ -7,13 +7,7 @@
 
 import Foundation
 
-struct AllPoems: Codable {
-    let poems: [Poem]
-    let totalPages: Int
-    let currentPage: String
-}
-
-struct Poem: Codable, Identifiable, Hashable {
+struct Poem: Codable, Identifiable, Hashable, Copyable {
     let id: Int
     let title: String
     let author: Author
@@ -27,6 +21,10 @@ struct Poem: Codable, Identifiable, Hashable {
             Абы нэрылъагъуу къридзэнущ
             """
         )
+    }
+
+    var copyableText: String {
+        return "\(title)\n\(author.name)\n\n\(content)"
     }
 
     static func toPoem(from persisted: PersistedPoem) -> Poem {

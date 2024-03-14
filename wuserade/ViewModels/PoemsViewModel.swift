@@ -9,10 +9,10 @@ import Foundation
 import Observation
 
 @Observable
-class PoemsViewModel {
+class PoemsViewModel<Service: PoemsServiceProtocol> {
     @ObservationIgnored
-    private var service: PoemsService
-    
+    private var service: Service
+
     @ObservationIgnored
     private var page: Int = 1
 
@@ -24,22 +24,21 @@ class PoemsViewModel {
     @ObservationIgnored
     private var totalPages: Int = 0
 
-    init(service: PoemsService) {
+    init(service: Service) {
         self.service = service
     }
 
     @MainActor
-    func fetchPoems() async {
+    func AllPoems() async {
         isLoading = true
         defer { isLoading = false }
+        await fetchPoems()
+    }
+
+    @MainActor
+    func refreshPoems() async {
         page = 1
-        do {
-            let response = try await service.fetchPoems(page: page)
-            poems = response.poems
-            totalPages = response.totalPages
-        } catch {
-            print(error)
-        }
+        await fetchPoems()
     }
 
     @MainActor
@@ -48,7 +47,7 @@ class PoemsViewModel {
         page += 1
         do {
             if page <= totalPages {
-                let response = try await service.fetchPoems(page: page)
+                let response: PoemsResponse = try await service.fetch(.poems(page: page))
                 poems += response.poems
             }
         } catch {
@@ -59,7 +58,7 @@ class PoemsViewModel {
     @MainActor
     func fetchLatestPoems() async {
         do {
-            latestPoems = try await service.fetchLatestPoems()
+            latestPoems = try await service.fetch(.fetchLatestPoems)
         } catch {
             print(error)
         }
@@ -68,5 +67,15 @@ class PoemsViewModel {
     private func isLast(_ poem: Poem) -> Bool {
         let thresholdIndex = poems.index(poems.endIndex, offsetBy: -10)
         return poems.firstIndex(where: { $0.id == poem.id }) == thresholdIndex
+    }
+
+    private func fetchPoems() async {
+        do {
+            let response: PoemsResponse = try await service.fetch(.poems(page: page))
+            poems = response.poems
+            totalPages = response.totalPages
+        } catch {
+            print(error)
+        }
     }
 }

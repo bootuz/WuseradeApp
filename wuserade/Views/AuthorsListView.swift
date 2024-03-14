@@ -32,7 +32,7 @@ struct AuthorsListView: View {
             }
             .refreshable {
                 Task {
-                    await viewModel.fetchAllAuthors()
+                    await viewModel.refreshAuthors()
                 }
             }
             .toolbar {

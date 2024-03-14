@@ -6,9 +6,11 @@
 //
 
 import SwiftUI
+import SFSafeSymbols
 
 struct AuthorView: View {
     @State private var viewModel = AuthorsViewModel(service: AuthorsService(httpClient: URLSession.shared))
+    @State private var showSwipeView: Bool = false
     var author: Author
 
     init(author: Author) {
@@ -57,4 +59,7 @@ struct AuthorView: View {
         AuthorView(author: Author(id: 1, name: "Усакlуэм и цlэр"))
             .navigationBarTitleDisplayMode(.inline)
     }
+    .environmentObject(FontSettingsManager())
+    .modelContainer(for: PersistedPoem.self, inMemory: true)
+    .tint(.primary)
 }

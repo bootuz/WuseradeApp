@@ -8,6 +8,7 @@
 import SwiftUI
 import StoreKit
 import Pow
+import SFSafeSymbols
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -24,13 +25,13 @@ struct SettingsView: View {
                     NavigationLink {
                         FontSettingsView()
                     } label: {
-                        Label("Теплъэр теухуэн", systemImage: "textformat")
+                        Label("Теплъэр теухуэн", systemSymbol: SFSymbol.textformat)
                     }
                 }
 
                 Section("Плъыфэр") {
                     Toggle(isOn: $colorScheme, label: {
-                        Label(colorScheme ? "Хужьу" : "Фlыцly", systemImage: "circle.lefthalf.filled")
+                        Label(colorScheme ? "Хужьу" : "Фlыцly", systemSymbol: SFSymbol.circleLefthalfFilled)
                     })
                     .tint(.green)
                 }
@@ -39,13 +40,13 @@ struct SettingsView: View {
                     Button(action: {
                         RateManager.shared.rateApp()
                     }, label: {
-                        Label("Усэрадэр къэлъытэн", systemImage: "star")
+                        Label("Усэрадэр къэлъытэн", systemSymbol: SFSymbol.star)
                     })
 
                     Button(action: {
                         showDialog.toggle()
                     }, label: {
-                        Label("Къэтхэн", systemImage: "bubble")
+                        Label("Къэтхэн", systemSymbol: SFSymbol.bubble)
                     })
                     .confirmationDialog("", isPresented: $showDialog) {
                         Link("Telegram", destination: URL(string: "https://t.me/nart_kenobi")!)
@@ -54,7 +55,7 @@ struct SettingsView: View {
                     }
 
                     ShareLink(item: URL(string: "https://apple.co/3OWuu5b")!) {
-                        Label("Дэгуэшэн", systemImage: "square.and.arrow.up")
+                        Label("Дэгуэшэн", systemSymbol: SFSymbol.squareAndArrowUp)
                     }
                 }
             }
@@ -79,7 +80,7 @@ struct SettingsView: View {
                 ToolbarItem(placement: .bottomBar) {
                     HStack(spacing: 3) {
                         Text("Made with ")
-                        Image(systemName: "heart.fill")
+                        Image(systemSymbol: SFSymbol.heartFill)
                             .font(.system(size: 15))
                             .foregroundStyle(.red)
                             .padding(.leading, -3)
@@ -97,4 +98,5 @@ struct SettingsView: View {
 #Preview {
     SettingsView()
         .tint(.primary)
+        .environmentObject(FontSettingsManager())
 }

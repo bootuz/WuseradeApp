@@ -8,7 +8,7 @@
 import Foundation
 
 enum PoemsEndpoint {
-    case fetchPoems(page: Int)
+    case poems(page: Int)
     case fetchPoem(id: Int)
     case fetchLatestPoems
     case searchPoems(query: String)
@@ -17,7 +17,7 @@ enum PoemsEndpoint {
 extension PoemsEndpoint: Endpoint {
     var path: String {
         switch self {
-            case .fetchPoems:
+            case .poems:
                 return "/poems"
             case .fetchPoem(let id):
                 return "/poems/\(id)"
@@ -42,7 +42,7 @@ extension PoemsEndpoint: Endpoint {
     
     var query: [URLQueryItem]? {
         switch self {
-            case .fetchPoems(let page):
+            case .poems(let page):
                 return [URLQueryItem(name: "page", value: String(page))]
             case .searchPoems(let query):
                 return [URLQueryItem(name: "q", value: query)]
