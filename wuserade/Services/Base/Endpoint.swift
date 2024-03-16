@@ -20,27 +20,27 @@ protocol Endpoint {
 
 extension Endpoint {
     var scheme: String {
-        #if DEBUG
-        return "http"
-        #else
+//        #if DEBUG
+//        return "http"
+//        #else
         return "https"
-        #endif
+//        #endif
     }
 
     var host: String {
-        #if DEBUG
-        return "localhost"
-        #else
+//        #if DEBUG
+//        return "localhost"
+//        #else
         return "wuserade.onrender.com"
-        #endif
+//        #endif
     }
 
     var urlRequest: URLRequest {
         get throws {
             var urlComponents = URLComponents()
-            #if DEBUG
-            urlComponents.port = 8000
-            #endif
+//            #if DEBUG
+//            urlComponents.port = 8000
+//            #endif
             urlComponents.scheme = scheme
             urlComponents.host = host
             urlComponents.path = path

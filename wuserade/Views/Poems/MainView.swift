@@ -38,13 +38,12 @@ struct MainView: View {
                 .padding(.horizontal)
                 .padding(.top, 8)
 
-                TabView(selection: $selectedTab,
-                        content:  {
+                TabView(selection: $selectedTab) {
                     PoemsListView()
                         .tag(Tab.poems)
                     CategoriesView(viewModel: categoriesViewModel)
                         .tag(Tab.categories)
-                })
+                }
                 .tabViewStyle(.page(indexDisplayMode: .never))
             }
             .animation(.easeInOut, value: selectedTab)

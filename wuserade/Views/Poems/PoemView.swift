@@ -12,42 +12,55 @@ import SwiftData
 
 struct PoemView: View {
     @Environment(\.requestReview) var requestReview
-    @State private var viewModel: PoemViewModel
+    @State private var viewModel = PoemViewModel(service: PoemsService(httpClient: URLSession.shared))
     @State private var toast: Toast? = nil
 
-    init(viewModel: PoemViewModel) {
-        self._viewModel = State(wrappedValue: viewModel)
+    private var poemID: Int
+
+    init(poemID: Int) {
+        self.poemID = poemID
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .center) {
-                PoemHeaderView(poem: viewModel.poem)
-                HStack {
-                    PoemTextView(text: viewModel.poem.content)
-                    Spacer()
+        ZStack {
+            if let poem = viewModel.poem {
+                ScrollView {
+                    VStack(alignment: .center) {
+                        PoemHeaderView(poem: poem)
+                        HStack {
+                            PoemTextView(text: poem.content)
+                            if UIDevice.current.userInterfaceIdiom == .phone {
+                                Spacer()
+                            }
+                        }
+                    }
+                    .padding()
                 }
+                .toastView(toast: $toast)
+                .onDisappear {
+                    Task {
+                        requestReview()
+                    }
+                }
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        CopyButton(for: poem, toast: $toast)
+                    }
+
+                    ToolbarItem(placement: .topBarTrailing) {
+                        LikeButton(for: poem, onAnalyticsEvent: AnalyticsManager.shared.logEvent)
+                    }
+                }
+                .analyticsScreen(name: "PoemView", extraParameters: ["poem" : poem.title])
+            } else {
+                ProgressView()
             }
-            .padding()
         }
-        .toastView(toast: $toast)
-        .onDisappear {
-            Task {
-                requestReview()
-            }
+        .task {
+            await viewModel.fetchPoem(by: poemID)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbarRole(.editor)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                CopyButton(for: viewModel.poem, toast: $toast)
-            }
-            
-            ToolbarItem(placement: .topBarTrailing) {
-                LikeButton(for: viewModel.poem, onAnalyticsEvent: AnalyticsManager.shared.logEvent)
-            }
-        }
-        .analyticsScreen(name: "PoemView", extraParameters: ["poem" : viewModel.poem.title])
     }
 }
 
@@ -55,7 +68,7 @@ struct PoemView: View {
 
 #Preview {
     NavigationStack {
-        PoemView(viewModel: PoemViewModel(poem: Poem.example))
+        PoemView(poemID: 203)
             .tint(.primary)
             .environmentObject(FontSettingsManager())
             .modelContainer(for: PersistedPoem.self, inMemory: true)

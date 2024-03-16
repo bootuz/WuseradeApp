@@ -29,7 +29,7 @@ class PoemsViewModel<Service: PoemsServiceProtocol> {
     }
 
     @MainActor
-    func AllPoems() async {
+    func allPoems() async {
         isLoading = true
         defer { isLoading = false }
         await fetchPoems()
@@ -39,6 +39,16 @@ class PoemsViewModel<Service: PoemsServiceProtocol> {
     func refreshPoems() async {
         page = 1
         await fetchPoems()
+    }
+
+    @MainActor
+    func fetchPoem(by id: Int) async -> Poem? {
+        do {
+            return try await service.fetch(.fetchPoem(id: id))
+        } catch {
+            print(error)
+            return nil
+        }
     }
 
     @MainActor

@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import wuserade
+@testable import Wuserade
 
 final class wuseradeTests: XCTestCase {
 

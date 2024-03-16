@@ -12,7 +12,7 @@ struct PoemRow: View {
 
     var body: some View {
         NavigationLink {
-            PoemView(viewModel: PoemViewModel(poem: poem))
+            PoemView(poemID: poem.id)
         } label: {
             PoemLabel(poem: poem)
         }

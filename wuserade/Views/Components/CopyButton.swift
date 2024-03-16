@@ -11,7 +11,6 @@ struct CopyButton<Item: Copyable>: View {
     @Binding var toast: Toast?
     @State var buttonTapped = false
     private let pasteboard = UIPasteboard.general
-
     let item: Item
 
     init(for item: Item, toast: Binding<Toast?>) {

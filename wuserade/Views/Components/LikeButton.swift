@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import Pow
 
 struct LikeButton: View {
     @Environment(\.modelContext) var context
@@ -37,14 +38,10 @@ struct LikeButton: View {
                 onAnalyticsEvent?("poem", ["like": poem.title])
             }
         } label: {
-            if isLiked {
-                Image(systemName: "heart.fill")
-                    .foregroundColor(.red)
-                    .transition(shouldAnimate ? .movingParts.pop(.red) : .identity)
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                iPadToggleImage()
             } else {
-                Image(systemName: "heart")
-                    .foregroundStyle(.primary)
-                    .transition(.identity)
+                toggleImage()
             }
         }
         .buttonStyle(LikeButtonStyle())
@@ -53,6 +50,30 @@ struct LikeButton: View {
                 shouldAnimate = false
                 isLiked = true
             }
+        }
+    }
+    
+    @ViewBuilder
+    private func toggleImage() -> some View {
+        if isLiked {
+            Image(systemName: "heart.fill")
+                .foregroundColor(.red)
+                .transition(shouldAnimate ? .movingParts.pop(.red) : .identity)
+        } else {
+            Image(systemName: "heart")
+                .foregroundStyle(.primary)
+                .transition(.identity)
+        }
+    }
+
+    @ViewBuilder
+    private func iPadToggleImage() -> some View {
+        if isLiked {
+            Image(systemName: "heart.fill")
+                .foregroundColor(.red)
+        } else {
+            Image(systemName: "heart")
+                .foregroundStyle(.primary)
         }
     }
 

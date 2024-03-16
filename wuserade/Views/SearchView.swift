@@ -26,7 +26,7 @@ struct SearchView: View {
                     List {
                         ForEach(viewModel.poems) { poem in
                             NavigationLink {
-                                PoemView(viewModel: PoemViewModel(poem: poem))
+                                PoemView(poemID: poem.id)
                             } label: {
                                 VStack(alignment: .leading) {
                                     Text(poem.title)
@@ -39,15 +39,21 @@ struct SearchView: View {
             }
             .analyticsScreen(name: "SearchView")
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(action: {
-                        dismiss()
-                    }, label: {
-                        Image(systemName: "xmark")
-                    })
-                }
-                ToolbarItem(placement: .principal) {
-                    TitleView(title: "лъыхъуапlэ")
+                if UIDevice.current.userInterfaceIdiom == .pad {
+                    ToolbarItem(placement: .topBarLeading) {
+                        TitleView(title: "лъыхъуапlэ")
+                    }
+                } else {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(action: {
+                            dismiss()
+                        }, label: {
+                            Image(systemName: "xmark")
+                        })
+                    }
+                    ToolbarItem(placement: .principal) {
+                        TitleView(title: "лъыхъуапlэ")
+                    }
                 }
             }
             .navigationBarTitleDisplayMode(.inline)

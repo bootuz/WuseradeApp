@@ -32,7 +32,7 @@ struct PoemsListView: View {
         }
         .task {
             if viewModel.poems.isEmpty {
-                await viewModel.AllPoems()
+                await viewModel.allPoems()
             }
         }
         .analyticsScreen(name: "PoemsListView")

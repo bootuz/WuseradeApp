@@ -9,10 +9,21 @@ import Foundation
 
 
 @Observable
-class PoemViewModel {
-    var poem: Poem
+class PoemViewModel<Service: PoemsServiceProtocol> {
+    var poem: Poem?
 
-    init(poem: Poem) {
-        self.poem = poem
+    private var service: Service
+
+    init(service: Service) {
+        self.service = service
+    }
+
+    @MainActor
+    func fetchPoem(by id: Int) async {
+        do {
+            poem = try await service.fetch(PoemsEndpoint.fetchPoem(id: id))
+        } catch {
+            print(error)
+        }
     }
 }
