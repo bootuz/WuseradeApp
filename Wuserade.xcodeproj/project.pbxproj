@@ -30,6 +30,7 @@
 		C030F9002B8A18E7009E5907 /* AnalyticsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C030F8FF2B8A18E7009E5907 /* AnalyticsManager.swift */; };
 		C0357D372B87540B00440969 /* FontSettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0357D362B87540B00440969 /* FontSettingsManager.swift */; };
 		C0357D392B87881A00440969 /* FontSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0357D382B87881A00440969 /* FontSettingsView.swift */; };
+		C039B2502BA64964008CE383 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C039B24F2BA64964008CE383 /* Launch Screen.storyboard */; };
 		C042FCA92B963FB100C26E90 /* RateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C042FCA82B963FB100C26E90 /* RateManager.swift */; };
 		C042FCAB2B97CE7300C26E90 /* PoemTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C042FCAA2B97CE7300C26E90 /* PoemTextView.swift */; };
 		C042FCAE2B98B7AC00C26E90 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = C042FCAD2B98B7AC00C26E90 /* Toast.swift */; };
@@ -117,6 +118,7 @@
 		C030F8FF2B8A18E7009E5907 /* AnalyticsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsManager.swift; sourceTree = "<group>"; };
 		C0357D362B87540B00440969 /* FontSettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontSettingsManager.swift; sourceTree = "<group>"; };
 		C0357D382B87881A00440969 /* FontSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontSettingsView.swift; sourceTree = "<group>"; };
+		C039B24F2BA64964008CE383 /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 		C042FCA82B963FB100C26E90 /* RateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateManager.swift; sourceTree = "<group>"; };
 		C042FCAA2B97CE7300C26E90 /* PoemTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoemTextView.swift; sourceTree = "<group>"; };
 		C042FCAD2B98B7AC00C26E90 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
@@ -287,6 +289,7 @@
 				C07F162D2B7E429B007F11B7 /* Preview Content */,
 				C07F16572B7E43F6007F11B7 /* Constants.swift */,
 				C07F16252B7E429A007F11B7 /* wuseradeApp.swift */,
+				C039B24F2BA64964008CE383 /* Launch Screen.storyboard */,
 			);
 			path = wuserade;
 			sourceTree = "<group>";
@@ -515,6 +518,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C039B2502BA64964008CE383 /* Launch Screen.storyboard in Resources */,
 				C076E20C2B863F7500CC7B52 /* .gitignore in Resources */,
 				C07F162F2B7E429B007F11B7 /* Preview Assets.xcassets in Resources */,
 				C030F8FB2B8A0D90009E5907 /* GoogleService-Info.plist in Resources */,
