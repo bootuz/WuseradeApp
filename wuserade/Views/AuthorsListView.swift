@@ -8,14 +8,15 @@
 import SwiftUI
 
 struct AuthorsListView: View {
-    @State private var viewModel = AuthorsViewModel(service: AuthorsService(httpClient: URLSession.shared))
+    @Environment(CatalogStore.self) private var store
+    @State private var viewModel = AuthorsViewModel()
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(viewModel.groupedAndSortedAuthors, id: \.key) { group in
+                ForEach(viewModel.grouped(store.authors), id: \.key) { group in
                     Section(header: Text(group.key.capitalized)) {
-                        ForEach(group.value, id: \.name) { author in
+                        ForEach(group.value) { author in
                             NavigationLink(destination: {
                                 AuthorView(author: author)
                             }, label: {
@@ -26,14 +27,12 @@ struct AuthorsListView: View {
                 }
             }
             .overlay {
-                if viewModel.isLoading {
-                    ProgressView()
+                if store.catalog == nil {
+                    CatalogStatusView()
                 }
             }
             .refreshable {
-                Task {
-                    await viewModel.refreshAuthors()
-                }
+                await store.refresh()
             }
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -42,16 +41,14 @@ struct AuthorsListView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .listStyle(.plain)
-            .task {
-                if viewModel.authors.isEmpty {
-                    await viewModel.fetchAllAuthors()
-                }
-            }
             .analyticsScreen(name: "AuthorsListView")
         }
     }
 }
 
+#if DEBUG
 #Preview {
     AuthorsListView()
+        .environment(CatalogStore.preview())
 }
+#endif

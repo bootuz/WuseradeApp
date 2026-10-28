@@ -6,27 +6,38 @@
 //
 
 import Foundation
+import Observation
 
-
+/// Searches the cached catalog as the user types.
+@MainActor
 @Observable
-class SearchViewModel {
-    @ObservationIgnored
-    private var service: PoemsService
+final class SearchViewModel {
+    /// A pause in typing this long runs the search, so a burst of keystrokes costs one search
+    /// (a search over ~5k entries takes ~14 ms).
+    static let debounce: Duration = .milliseconds(150)
 
-    var poems: [Poem] = [Poem]()
-    var query: String = ""
+    var query = ""
+    private(set) var results: [PoemSummary] = []
 
-    init(service: PoemsService) {
-        self.service = service
-    }
-
-    
-    @MainActor
-    func searchPoems(query: String) async {
-        do {
-            poems = try await service.fetch(.searchPoems(query: query))
-        } catch {
-            print(error)
+    /// Searches `entries` for the current `query` after `debounce`. Meant to be called from `.task(id:)`
+    /// keyed on the query and catalog version: SwiftUI cancels the pending call when either changes,
+    /// which is what debounces typing. A blank query clears the results at once.
+    func search(in entries: [PoemSummary]) async {
+        let query = query
+        guard !CatalogSearch.normalize(query).isEmpty else {
+            results = []
+            return
         }
+        do {
+            try await Task.sleep(for: Self.debounce)
+        } catch {
+            return // Cancelled: a newer query or catalog took over.
+        }
+        // Off the main actor, so typing stays smooth while it runs.
+        let found = await Task.detached(priority: .userInitiated) {
+            CatalogSearch.search(query, in: entries)
+        }.value
+        guard !Task.isCancelled else { return }
+        results = found
     }
 }

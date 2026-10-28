@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Privacy Policy – Wuserade</title>
+<meta name="description" content="How the Wuserade app handles your data: accounts, likes, analytics and notifications, and how to delete them.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #faf9f6;
+    --fg: #1c1b19;
+    --muted: #5f5b53;
+    --accent: #8a3b12;
+    --rule: #e2ded4;
+    --note: #f0ece1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161513;
+      --fg: #ece8df;
+      --muted: #a7a196;
+      --accent: #e8a27a;
+      --rule: #33302a;
+      --note: #211f1b;
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 1rem/1.65 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  main {
+    max-width: 38rem;
+    margin: 0 auto;
+    padding: 1.5rem 16px 3rem;
+  }
+  h1, h2 {
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    line-height: 1.25;
+    font-weight: 600;
+  }
+  h1 { font-size: 1.85rem; margin: 1rem 0 0.25rem; }
+  h2 {
+    font-size: 1.25rem;
+    margin: 2.25rem 0 0.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--rule);
+  }
+  p, ul { margin: 0.75rem 0; }
+  ul { padding-left: 1.25rem; }
+  li { margin: 0.4rem 0; }
+  a { color: var(--accent); text-underline-offset: 0.15em; overflow-wrap: anywhere; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  .updated { color: var(--muted); font-size: 0.9375rem; margin: 0; }
+  .lead { margin-top: 1.25rem; }
+  .note {
+    background: var(--note);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    color: var(--muted);
+  }
+  .note p { margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Wuserade Privacy Policy</h1>
+    <p class="updated">Last updated: 28 October 2026</p>
+  </header>
+
+  <p class="lead">
+    Wuserade (<span lang="kbd">Усэрадэ</span>) is an iOS app for reading Kabardian poetry.
+    It is offered by its developer, “the Wuserade developer” (“we”). This page explains what
+    the app collects, why, and how you can have it deleted. You can read poems without
+    signing in.
+  </p>
+
+  <section>
+    <h2>What we collect</h2>
+    <ul>
+      <li>
+        <strong>An account ID.</strong> When you first open the app, it quietly creates an
+        anonymous Firebase account for you, which is just a random user ID. We use it so
+        your liked poems can be saved. No name or email is needed for this.
+      </li>
+      <li>
+        <strong>Sign in with Apple or Google (optional).</strong> If you choose to sign in,
+        your Apple or Google account is linked to that same account, so your likes stay. If you
+        already have a Wuserade account with that Apple or Google account (for example from
+        another device), you are signed in to it instead: your likes move into it and the
+        anonymous account is deleted. Firebase Authentication then receives your account
+        identifier and the email address and name that Apple or Google shares with us. Apple
+        may give us a private relay email address instead of your real one.
+      </li>
+      <li>
+        <strong>Your likes.</strong> For each poem you like, we store the poem’s ID, the time
+        you liked it, and a copy of the poem’s title, author name and text. This is saved under
+        your account in Cloud Firestore (a Google Firebase service), in the europe-west3
+        (Frankfurt) region.
+      </li>
+      <li>
+        <strong>Usage data (Firebase Analytics).</strong> Which screens you view and what you
+        do in the app, for example which poem you open, what you search for and what you
+        like. Firebase Analytics also collects some details on its own: your device model,
+        operating system version, app version and language, an app instance ID (a random ID
+        for this copy of the app), and your approximate location (country or city), which
+        Google works out from your IP address. This is tied to your Firebase user ID.
+      </li>
+      <li>
+        <strong>A push token (Firebase Cloud Messaging).</strong> A code that identifies your
+        device so we can send notifications. The app creates this token when it starts, even if
+        you decline notifications. Your choice only controls whether notifications are shown to
+        you.
+      </li>
+    </ul>
+    <p>
+      Your display settings (such as font and dark mode) stay on your device and are not sent
+      to us.
+    </p>
+  </section>
+
+  <section>
+    <h2>How we use it</h2>
+    <p>
+      We use this data only to run the app: to keep your likes, to let you sign in on
+      another device, to send notifications, and to understand how the app is used so we can
+      improve it.
+    </p>
+  </section>
+
+  <section>
+    <h2>What we do not do</h2>
+    <ul>
+      <li>We do not sell your data.</li>
+      <li>The app has no ads.</li>
+      <li>We do not track you across other companies’ apps or websites.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Who handles your data</h2>
+    <p>
+      The app runs on Google Firebase (Authentication, Cloud Firestore, Analytics and Cloud
+      Messaging). Google processes your data on our behalf. Your likes are stored in
+      Frankfurt; other Firebase services may process data in other countries. See
+      <a href="https://firebase.google.com/support/privacy" rel="noopener">Firebase privacy
+      and security</a> for how Google handles it.
+    </p>
+  </section>
+
+  <section>
+    <h2>Deleting your data</h2>
+    <ul>
+      <li>
+        <strong>Signed in with Apple or Google:</strong> open Settings in the app and tap
+        Delete account. This deletes your account, all your likes and your profile, and
+        revokes Sign in with Apple.
+      </li>
+      <li>
+        <strong>Using the app without signing in:</strong> your likes are saved under a random
+        ID that is not linked to your name or email. Deleting the app does not remove them from
+        our servers. To delete them, sign in with Apple or Google (your likes move to that
+        account), then go to Settings and tap Delete account, which deletes your account and
+        all your likes.
+      </li>
+      <li>
+        <strong>Usage data:</strong> analytics data is kept and handled according to Google
+        Firebase’s data retention. You can email us to request deletion of the analytics data
+        tied to your ID.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Children</h2>
+    <p>
+      Wuserade has a section of poems for children. The app creates the same anonymous ID and
+      usage data for every user, including children. No account is needed to read. A parent or
+      guardian can email us to ask for access to, or deletion of, data linked to a child’s use
+      of the app.
+    </p>
+  </section>
+
+  <section>
+    <h2>Your rights and contact</h2>
+    <p>
+      You can ask us for a copy of the data we hold about you, or ask us to delete it, by
+      emailing
+      <a href="mailto:astemirboziy@gmail.com">astemirboziy@gmail.com</a>.
+    </p>
+  </section>
+
+  <section>
+    <h2>Changes to this policy</h2>
+    <p>
+      If the app starts collecting something new, we will update this page and the date at the
+      top.
+    </p>
+  </section>
+
+  <!--
+    PLACEHOLDER (owner to fill in): optional Kabardian and/or Russian version of this policy.
+    When a translation is ready, replace the visible note below with the translated text
+    (use lang="kbd" for Kabardian or lang="ru" for Russian on the wrapping element), and
+    keep the English text above as is.
+  -->
+  <section>
+    <h2>Other languages</h2>
+    <div class="note">
+      <p>A Kabardian and/or Russian version of this policy may be added here later.</p>
+    </div>
+  </section>
+</main>
+</body>
+</html>

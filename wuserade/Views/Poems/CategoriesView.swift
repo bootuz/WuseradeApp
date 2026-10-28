@@ -8,11 +8,11 @@
 import SwiftUI
 
 struct CategoriesView: View {
-    @Bindable var viewModel: CategoriesViewModel<CategoriesService>
+    @Environment(CatalogStore.self) private var store
 
     var body: some View {
         List {
-            ForEach(viewModel.categories) { category in
+            ForEach(store.themes) { category in
                 NavigationLink {
                     PoemCategoryView(category: category)
                         .toolbarRole(.editor)
@@ -22,22 +22,23 @@ struct CategoriesView: View {
             }
         }
         .listStyle(.plain)
-        .task {
-            if viewModel.categories.isEmpty {
-                await viewModel.fetchCategories()
-            }
+        .refreshable {
+            await store.refresh()
         }
         .overlay {
-            if viewModel.isLoading {
-                ProgressView()
+            if store.catalog == nil {
+                CatalogStatusView()
             }
         }
         .analyticsScreen(name: "PoemCategoriesListView")
     }
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
-        CategoriesView(viewModel: CategoriesViewModel(service: CategoriesService(httpClient: URLSession.shared)))
+        CategoriesView()
     }
+    .environment(CatalogStore.preview())
 }
+#endif

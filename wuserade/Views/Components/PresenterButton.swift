@@ -70,6 +70,7 @@ struct PresenterButton<Label, Destination>: View where Label : View, Destination
     }
 }
 
+#if DEBUG
 #Preview {
     PresenterButton(presentationType: .fullScreen, destination: {
         SettingsView()
@@ -77,4 +78,6 @@ struct PresenterButton<Label, Destination>: View where Label : View, Destination
         Image(systemName: "gearshape")
     })
     .tint(.primary)
+    .environment(AccountManager.preview())
 }
+#endif

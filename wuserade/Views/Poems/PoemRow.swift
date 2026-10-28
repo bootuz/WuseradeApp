@@ -8,21 +8,34 @@
 import SwiftUI
 
 struct PoemRow: View {
-    var poem: Poem
+    let poemID: Int
+    let title: String
+    let authorName: String
+    let preloaded: Poem?
+
+    init(poemID: Int, title: String, authorName: String, preloaded: Poem? = nil) {
+        self.poemID = poemID
+        self.title = title
+        self.authorName = authorName
+        self.preloaded = preloaded
+    }
 
     var body: some View {
         NavigationLink {
-            PoemView(poemID: poem.id)
+            PoemView(poemID: poemID, preloaded: preloaded)
         } label: {
-            PoemLabel(poem: poem)
+            PoemLabel(title: title, authorName: authorName)
         }
     }
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
-        PoemRow(poem: Poem.example)
+        PoemRow(poemID: Poem.example.id, title: Poem.example.title, authorName: Poem.example.author.name)
     }
     .environmentObject(FontSettingsManager())
+    .environment(CatalogStore.preview())
     .tint(.primary)
 }
+#endif

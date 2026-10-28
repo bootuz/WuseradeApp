@@ -10,8 +10,8 @@ import SwiftData
 
 @Model
 final class PersistedAuthor {
-    let authorID: Int
-    let name: String
+    var authorID: Int
+    var name: String
 
     init(authorID: Int, name: String) {
         self.authorID = authorID

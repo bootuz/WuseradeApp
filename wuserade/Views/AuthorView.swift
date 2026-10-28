@@ -9,17 +9,18 @@ import SwiftUI
 import SFSafeSymbols
 
 struct AuthorView: View {
-    @State private var viewModel = AuthorsViewModel(service: AuthorsService(httpClient: URLSession.shared))
-    @State private var showSwipeView: Bool = false
-    var author: Author
+    @Environment(CatalogStore.self) private var store
+    let author: Author
 
     init(author: Author) {
         self.author = author
     }
 
     var body: some View {
+        let poems = store.catalog?.poems(byAuthor: author.id) ?? []
         List {
-            ForEach(viewModel.poems) { poem in
+            ForEach(poems) { poem in
+                // Title only: every poem on this screen is by the same author.
                 NavigationLink {
                     PoemView(poemID: poem.id)
                 } label: {
@@ -31,9 +32,12 @@ struct AuthorView: View {
             }
         }
         .overlay {
-            if viewModel.isLoading {
-                ProgressView()
+            if store.catalog == nil {
+                CatalogStatusView()
             }
+        }
+        .refreshable {
+            await store.refresh()
         }
         .toolbarRole(.editor)
         .toolbar {
@@ -45,21 +49,20 @@ struct AuthorView: View {
             }
         }
         .listStyle(.plain)
-        .task {
-            if viewModel.poems.isEmpty {
-                await viewModel.fetchPoemsOfAuthor(id: author.id)
-            }
-        }
         .analyticsScreen(name: "AuthorView", extraParameters: ["author" : author.name])
     }
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
-        AuthorView(author: Author(id: 1, name: "Усакlуэм и цlэр"))
+        AuthorView(author: PreviewContent.authors[0].author)
             .navigationBarTitleDisplayMode(.inline)
     }
+    .environment(CatalogStore.preview())
     .environmentObject(FontSettingsManager())
-    .modelContainer(for: PersistedPoem.self, inMemory: true)
+    .environment(LikesController.preview())
+    .environment(AccountManager.preview())
     .tint(.primary)
 }
+#endif

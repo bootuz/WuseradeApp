@@ -8,84 +8,24 @@
 import Foundation
 import Observation
 
+/// Pages a list that is already fully in memory (the cached catalog): the list starts with `pageSize`
+/// rows and grows by another page as the user scrolls near the end of what is shown.
 @Observable
-class PoemsViewModel<Service: PoemsServiceProtocol> {
-    @ObservationIgnored
-    private var service: Service
+final class PoemsViewModel {
+    static let pageSize = 20
+    /// How close to the end of the visible rows (in rows) a row must be to bring in the next page.
+    static let prefetchDistance = 10
 
-    @ObservationIgnored
-    private var page: Int = 1
+    private(set) var visibleCount = PoemsViewModel.pageSize
 
-    var isLoading: Bool = false
-    var poems: [Poem] = [Poem]()
-    var latestPoems: [Poem] = [Poem]()
-    
-
-    @ObservationIgnored
-    private var totalPages: Int = 0
-
-    init(service: Service) {
-        self.service = service
+    func visible(_ all: [PoemSummary]) -> ArraySlice<PoemSummary> {
+        all.prefix(visibleCount)
     }
 
-    @MainActor
-    func allPoems() async {
-        isLoading = true
-        defer { isLoading = false }
-        await fetchPoems()
-    }
-
-    @MainActor
-    func refreshPoems() async {
-        page = 1
-        await fetchPoems()
-    }
-
-    @MainActor
-    func fetchPoem(by id: Int) async -> Poem? {
-        do {
-            return try await service.fetch(.fetchPoem(id: id))
-        } catch {
-            print(error)
-            return nil
-        }
-    }
-
-    @MainActor
-    func fetchMorePoemsIfNeeded(poem: Poem) async {
-        guard isLast(poem) else { return }
-        page += 1
-        do {
-            if page <= totalPages {
-                let response: PoemsResponse = try await service.fetch(.poems(page: page))
-                poems += response.poems
-            }
-        } catch {
-            print(error)
-        }
-    }
-
-    @MainActor
-    func fetchLatestPoems() async {
-        do {
-            latestPoems = try await service.fetch(.fetchLatestPoems)
-        } catch {
-            print(error)
-        }
-    }
-
-    private func isLast(_ poem: Poem) -> Bool {
-        let thresholdIndex = poems.index(poems.endIndex, offsetBy: -10)
-        return poems.firstIndex(where: { $0.id == poem.id }) == thresholdIndex
-    }
-
-    private func fetchPoems() async {
-        do {
-            let response: PoemsResponse = try await service.fetch(.poems(page: page))
-            poems = response.poems
-            totalPages = response.totalPages
-        } catch {
-            print(error)
-        }
+    /// Shows the next page when `current` is `prefetchDistance` or fewer rows from the end of the visible slice.
+    func loadMoreIfNeeded(current: PoemSummary, in all: [PoemSummary]) {
+        guard visibleCount < all.count else { return }
+        guard visible(all).suffix(Self.prefetchDistance).contains(where: { $0.id == current.id }) else { return }
+        visibleCount = min(visibleCount + Self.pageSize, all.count)
     }
 }

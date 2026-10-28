@@ -53,9 +53,12 @@ struct PoemSwipeView: View {
     }
 }
 
+#if DEBUG
 #Preview {
     PoemSwipeView(poems: [Poem.example, Poem.example])
+        .environment(CatalogStore.preview())
         .environmentObject(FontSettingsManager())
         .modelContainer(for: [PersistedPoem.self], inMemory: true)
         .tint(.primary)
 }
+#endif
