@@ -5,7 +5,7 @@
 import SwiftUI
 
 struct HomeView: View {
-    @Environment(Catalog.self) private var catalog
+    @Environment(Library.self) private var library
     @Environment(\.navigate) private var navigate
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -13,12 +13,12 @@ struct HomeView: View {
 
     var body: some View {
         Group {
-            if let latest = catalog.latest, let themes = catalog.themes {
+            if let latest = library.latest, let themes = library.themes {
                 content(newest: Array(latest.prefix(Self.newestCount)), themes: themes)
                     .transition(.opacity)
-            } else if catalog.homeFailed {
+            } else if library.homeFailed {
                 ScrollView {
-                    OfflineStateView { await catalog.refreshHome() }
+                    OfflineStateView { await library.refreshHome() }
                 }
             } else {
                 ScrollView {
@@ -29,15 +29,15 @@ struct HomeView: View {
                 .scrollDisabled(true)
             }
         }
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: catalog.latest == nil)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: library.latest == nil)
         .background(Palette.page)
         .navigationTitle("Усэхэр")
-        .task { await catalog.loadHome() }
+        .task { await library.loadHome() }
     }
 
     private func content(newest: [PoemSummary], themes: [Category]) -> some View {
         List {
-            if let poem = catalog.daysPoem {
+            if let poem = library.daysPoem {
                 DaysPageView(poem: poem) {
                     navigate(.reader(ReaderContext(single: PoemSummary(poem))))
                 }
@@ -64,11 +64,11 @@ struct HomeView: View {
                 .contentRow()
             }
 
-            if catalog.refreshFailed {
+            if library.refreshFailed {
                 RefreshFailedFootnote()
             }
         }
         .pageList()
-        .refreshable { await catalog.refreshHome() }
+        .refreshable { await library.refreshHome() }
     }
 }

@@ -1,37 +1,35 @@
 // Minimum iOS 17.
-//  Сигу ирихьахэр: liked poems, newest like first. A trailing swipe unlikes at once. Likes live on this device
-//  until accounts move them to Firestore, and they open in the reader without a connection.
+//  Сигу ирихьахэр: liked poems, newest like first. A trailing swipe unlikes at once. Likes belong to the
+//  account and sync through Firestore; each keeps the poem's text, so it opens in the reader without a connection.
 
 import FirebaseAnalytics
-import SwiftData
 import SwiftUI
 
 struct LikedView: View {
-    @Environment(Catalog.self) private var catalog
-    @Environment(\.modelContext) private var context
-    @Query(sort: \PersistedPoem.persistedDate, order: .reverse) private var liked: [PersistedPoem]
+    @Environment(Library.self) private var library
+    @Environment(LikesController.self) private var likes
 
     var body: some View {
         Group {
-            if liked.isEmpty {
+            if likes.likes.isEmpty {
                 ScrollView {
                     EmptyStateView(title: "Уигу ирихьа усэхэр мыбдеж къридзэнущ.", message: OwnerCopy.likedEmptyBody)
                 }
             } else {
-                PoemList(poems: liked.map(PoemSummary.init), onUnlike: unlike)
+                PoemList(poems: likes.likes.map(PoemSummary.init), onUnlike: unlike)
             }
         }
         .background(Palette.page)
         .navigationTitle("Сигу ирихьахэр")
-        .onChange(of: liked.count, initial: true) {
-            catalog.remember(liked.map(Poem.toPoem))
+        .onChange(of: likes.likes, initial: true) {
+            library.remember(likes.likes.map(\.poem))
         }
         .analyticsScreen(name: "LikedPoemsView")
     }
 
     private func unlike(_ poem: PoemSummary) {
-        guard let persisted = liked.first(where: { $0.poemID == poem.id }) else { return }
-        context.delete(persisted)
-        AnalyticsManager.shared.logEvent(name: "poem", params: ["unlike": persisted.title])
+        guard let like = likes.likes.first(where: { $0.poemId == poem.id }) else { return }
+        Task { await likes.toggle(like.poem) }
+        AnalyticsManager.shared.logEvent(name: "poem", params: ["unlike": like.title])
     }
 }

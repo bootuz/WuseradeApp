@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Page not found – Wuserade</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #faf9f6;
+    --fg: #1c1b19;
+    --muted: #5f5b53;
+    --accent: #8a3b12;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161513;
+      --fg: #ece8df;
+      --muted: #a7a196;
+      --accent: #e8a27a;
+    }
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 1rem/1.65 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  main { max-width: 38rem; margin: 0 auto; padding: 3rem 16px; }
+  h1 { font-family: ui-serif, Georgia, "Times New Roman", serif; font-weight: 600; margin: 0 0 0.5rem; }
+  p { color: var(--muted); }
+  a { color: var(--accent); text-underline-offset: 0.15em; }
+</style>
+</head>
+<body>
+<main>
+  <!-- TODO(owner): copy — placeholder text. -->
+  <h1>Page not found</h1>
+  <p>This page doesn’t exist. <a href="/">Go to the Wuserade home page</a>.</p>
+</main>
+</body>
+</html>

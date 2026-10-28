@@ -6,7 +6,7 @@ import FirebaseAnalytics
 import SwiftUI
 
 struct PoetsView: View {
-    @Environment(Catalog.self) private var catalog
+    @Environment(Library.self) private var library
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var sections: [LetterSection] = []
@@ -16,7 +16,7 @@ struct PoetsView: View {
 
     var body: some View {
         Group {
-            if catalog.poets != nil {
+            if library.poets != nil {
                 List {
                     ForEach(sections) { section in
                         Section {
@@ -34,10 +34,10 @@ struct PoetsView: View {
                     }
                 }
                 .pageList()
-                .refreshable { await catalog.refreshPoets() }
-            } else if catalog.poetsFailed {
+                .refreshable { await library.refreshPoets() }
+            } else if library.poetsFailed {
                 ScrollView {
-                    OfflineStateView { await catalog.refreshPoets() }
+                    OfflineStateView { await library.refreshPoets() }
                 }
             } else {
                 LoadingPlaceholder(kind: .nameRows, count: 10)
@@ -47,8 +47,8 @@ struct PoetsView: View {
         }
         .background(Palette.page)
         .navigationTitle("УсакӀуэхэр")
-        .task { await catalog.loadPoets() }
-        .onChange(of: catalog.poets, initial: true) { _, poets in group(poets ?? []) }
+        .task { await library.loadPoets() }
+        .onChange(of: library.poets, initial: true) { _, poets in group(poets ?? []) }
         .analyticsScreen(name: "AuthorsListView")
     }
 

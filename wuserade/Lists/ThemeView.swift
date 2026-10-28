@@ -7,12 +7,11 @@ import SwiftUI
 struct ThemeView: View {
     let theme: Category
 
-    @Environment(Catalog.self) private var catalog
+    @Environment(Library.self) private var library
 
     var body: some View {
-        PoemCollectionView(name: theme.title, subtitle: .author, emptyTitle: OwnerCopy.emptyTheme) {
-            try await catalog.poems(ofTheme: theme.id)
-        }
+        PoemCollectionView(name: theme.title, subtitle: .author, emptyTitle: OwnerCopy.emptyTheme,
+                           poems: library.poems(ofTheme: theme.id))
         .analyticsScreen(name: "PoemCategoryView", extraParameters: ["category": theme.title])
     }
 }

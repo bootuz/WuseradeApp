@@ -6,22 +6,29 @@
 import Foundation
 
 struct DailyRotation: DaysPoemSource {
-    private let service = PoemsService(httpClient: URLSession.shared)
+    let repository: ContentRepository
     private let defaults = UserDefaults.standard
+
+    /// How many neighbours to try when the pick is too short for a page.
+    private static let attempts = 5
 
     private enum Key {
         static let day = "daysPoem.day"
         static let poem = "daysPoem.poem"
     }
 
-    func poem(for date: Date) async -> Poem? {
+    init(repository: ContentRepository) {
+        self.repository = repository
+    }
+
+    func poem(for date: Date, in entries: [PoemSummary]) async -> Poem? {
         let day = Self.dayNumber(of: date)
         if defaults.integer(forKey: Key.day) == day,
            let data = defaults.data(forKey: Key.poem),
            let kept = try? JSONDecoder().decode(Poem.self, from: data) {
             return kept
         }
-        guard let pick = try? await pick(for: day) else { return nil }
+        guard let pick = await pick(for: day, in: entries) else { return nil }
         if let data = try? JSONEncoder().encode(pick) {
             defaults.set(day, forKey: Key.day)
             defaults.set(data, forKey: Key.poem)
@@ -29,24 +36,17 @@ struct DailyRotation: DaysPoemSource {
         return pick
     }
 
-    /// The catalogue is paged newest first, 20 to a page. The day's hash picks a page and a place on it; a poem
-    /// with fewer than two lines is passed over for the next one on the same page.
-    private func pick(for day: Int) async throws -> Poem? {
-        let first: PoemsResponse = try await service.fetch(.poems(page: 1))
-        let hash = Self.mix(UInt64(bitPattern: Int64(day)))
-        let page = Int(hash % UInt64(max(first.totalPages, 1))) + 1
-        let poems: [Poem]
-        if page == 1 {
-            poems = first.poems
-        } else {
-            let response: PoemsResponse = try await service.fetch(.poems(page: page))
-            poems = response.poems
+    /// The day's hash picks a place in the catalog, in id order so every device agrees. A poem with fewer than
+    /// two lines is passed over for the next one.
+    private func pick(for day: Int, in entries: [PoemSummary]) async -> Poem? {
+        let ids = entries.map(\.id).sorted()
+        guard !ids.isEmpty else { return nil }
+        let start = Int(Self.mix(UInt64(bitPattern: Int64(day))) % UInt64(ids.count))
+        for offset in 0..<min(Self.attempts, ids.count) {
+            guard let poem = try? await repository.fetchPoem(id: ids[(start + offset) % ids.count]) else { return nil }
+            if poem.content.split(whereSeparator: \.isNewline).count >= 2 { return poem }
         }
-        guard !poems.isEmpty else { return nil }
-        let start = Int((hash >> 32) % UInt64(poems.count))
-        return poems.indices
-            .map { poems[(start + $0) % poems.count] }
-            .first { $0.content.split(whereSeparator: \.isNewline).count >= 2 }
+        return nil
     }
 
     /// Days since 1 January 2024 in the reader's own calendar day.

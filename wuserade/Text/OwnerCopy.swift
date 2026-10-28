@@ -33,6 +33,14 @@ enum OwnerCopy {
     static let unlikeSwipe = "[owner copy: unlike]"
     static let googleSignInConfirm = "[owner copy: Google sign-in wording]"
 
+    static let likeNeedsAccount = "[owner copy: liking waits until you have an account]"
+    static let signedInWithApple = "[owner copy: signed in with Apple]"
+    static let signedInWithGoogle = "[owner copy: signed in with Google]"
+    static let signOutQuestion = "[owner copy: sign out?]"
+    static let signOutMessage = "[owner copy: liked poems stay empty until you sign in again]"
+    static let signOutFooter = "[owner copy: what signing out does]"
+    static let deleteFooter = "[owner copy: what deleting the account removes]"
+
     /// The day's-page date read in words, such as '28 October'.
     static func dayAndMonth(_ date: Date) -> String {
         "[owner copy: day and month in words]"

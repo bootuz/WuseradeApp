@@ -15,28 +15,26 @@ final class ReaderPager {
     private(set) var loading: Set<Int> = []
     var titleUnderBar: [Int: Bool] = [:]
 
-    @ObservationIgnored private let service = PoemsService(httpClient: URLSession.shared)
-
-    /// Uses `cached` when the poem already arrived whole with a list or from the reader's likes.
-    func load(_ id: Int, cached: Poem? = nil) async {
+    /// Uses the library's copy when the poem was opened before or came with the reader's likes; otherwise one
+    /// read of `poems/{id}`.
+    func load(_ id: Int, from library: Library) async {
         guard poems[id] == nil, !loading.contains(id) else { return }
-        if let cached {
+        if let cached = library.poem(id) {
             store(cached)
             return
         }
         loading.insert(id)
         defer { loading.remove(id) }
         do {
-            let poem: Poem = try await service.fetch(.fetchPoem(id: id))
-            store(poem)
+            store(try await library.fetchPoem(id))
         } catch {
             failed.insert(id)
         }
     }
 
-    func retry(_ id: Int) async {
+    func retry(_ id: Int, from library: Library) async {
         failed.remove(id)
-        await load(id)
+        await load(id, from: library)
     }
 
     private func store(_ poem: Poem) {

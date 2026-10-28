@@ -1,6 +1,6 @@
 // Minimum iOS 17.
 //  A full-screen cover that cannot be dismissed, for when the back end's minimum version is above this build.
-//  Not presented yet: the minimum version arrives with the Firebase plan (minimumAppVersion).
+//  The app presents it when `meta/content.minimumAppVersion` is above this build.
 
 import SwiftUI
 

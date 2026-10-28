@@ -14,7 +14,7 @@ struct ReaderPage: View {
     var onNext: (PoemSummary) -> Void
 
     @Environment(ReaderPager.self) private var pager
-    @Environment(Catalog.self) private var catalog
+    @Environment(Library.self) private var library
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var stanzaGap: CGFloat = 28
 
@@ -63,7 +63,7 @@ struct ReaderPage: View {
         .onChange(of: scrolled > titleBottom, initial: true) { _, under in
             pager.titleUnderBar[summary.id] = under
         }
-        .task(id: summary.id) { await pager.load(summary.id, cached: catalog.poem(summary.id)) }
+        .task(id: summary.id) { await pager.load(summary.id, from: library) }
     }
 
     @ViewBuilder
@@ -71,7 +71,7 @@ struct ReaderPage: View {
         if let poem = pager.poems[summary.id], let parsed = pager.parsed[summary.id] {
             loaded(poem, parsed: parsed)
         } else if pager.failed.contains(summary.id) {
-            OfflineStateView { await pager.retry(summary.id) }
+            OfflineStateView { await pager.retry(summary.id, from: library) }
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 titleBlock

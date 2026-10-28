@@ -33,7 +33,7 @@ struct PoemRowLabel: View {
     private var subtitleText: String? {
         switch subtitle {
         case .author: poem.author.name
-        case .firstLine: poem.isUntitled ? nil : poem.firstLine
+        case .firstLine: poem.isUntitled || poem.firstLine.isEmpty ? nil : poem.firstLine
         case .none: nil
         }
     }

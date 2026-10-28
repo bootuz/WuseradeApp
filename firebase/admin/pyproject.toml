@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wuserade-admin"
+version = "0.1.0"
+description = "Admin tool that migrates Wuserade content into Firestore and rebuilds the catalog."
+requires-python = ">=3.11"
+dependencies = [
+    "firebase-admin",
+    "psycopg[binary]",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["wuserade_admin"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = [
+    # Google libraries warn that Python 3.11 loses support in 2027. Not actionable yet.
+    "ignore:You are using a Python version:FutureWarning",
+]

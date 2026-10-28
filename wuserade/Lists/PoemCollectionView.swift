@@ -8,10 +8,10 @@ struct PoemCollectionView: View {
     let name: String
     var subtitle: PoemRowLabel.Subtitle = .author
     var emptyTitle: String
-    let load: () async throws -> [PoemSummary]
+    /// Nil until the catalog has loaded.
+    let poems: [PoemSummary]?
 
-    @State private var poems: [PoemSummary]?
-    @State private var failed = false
+    @Environment(Library.self) private var library
 
     var body: some View {
         Group {
@@ -20,7 +20,7 @@ struct PoemCollectionView: View {
                     DetailHeader(name: name, count: poems.count)
                         .contentRow(separator: .hidden)
                 }
-                .refreshable { await reload() }
+                .refreshable { await library.refreshHome() }
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
@@ -28,8 +28,8 @@ struct PoemCollectionView: View {
                             .padding(.horizontal, Space.readingMargin)
                         if poems != nil {
                             EmptyStateView(title: emptyTitle)
-                        } else if failed {
-                            OfflineStateView { await reload() }
+                        } else if library.homeFailed {
+                            OfflineStateView { await library.refreshHome() }
                         } else {
                             LoadingPlaceholder(kind: .poemRows)
                                 .padding(.horizontal, Space.readingMargin)
@@ -48,16 +48,7 @@ struct PoemCollectionView: View {
             }
         }
         .task {
-            if poems == nil { await reload() }
-        }
-    }
-
-    private func reload() async {
-        do {
-            poems = try await load()
-            failed = false
-        } catch {
-            if poems == nil { failed = true }
+            if poems == nil { await library.loadHome() }
         }
     }
 }

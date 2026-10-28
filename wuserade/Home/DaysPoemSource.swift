@@ -5,9 +5,10 @@
 import Foundation
 
 protocol DaysPoemSource {
-    func poem(for date: Date) async -> Poem?
+    /// Picks from `entries`, the whole catalog.
+    func poem(for date: Date, in entries: [PoemSummary]) async -> Poem?
 }
 
 struct NoDaysPoem: DaysPoemSource {
-    func poem(for date: Date) async -> Poem? { nil }
+    func poem(for date: Date, in entries: [PoemSummary]) async -> Poem? { nil }
 }

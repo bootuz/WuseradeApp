@@ -10,6 +10,6 @@ enum AppLinks {
     static let telegram = URL(string: "https://t.me/nart_kenobi")!
     static let instagram = URL(string: "https://www.instagram.com/astemirboziy")!
     static let email = URL(string: "mailto:astemirboziy@gmail.com")!
-    /// The hosted privacy page. The row stays hidden until the owner gives its address.
-    static let privacy: URL? = nil
+    /// The hosted privacy page, on Firebase Hosting.
+    static let privacy: URL? = URL(string: "https://wuserade.com/privacy")
 }

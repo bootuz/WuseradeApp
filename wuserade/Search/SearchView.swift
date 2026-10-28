@@ -7,7 +7,7 @@ import FirebaseAnalytics
 import SwiftUI
 
 struct SearchView: View {
-    @Environment(Catalog.self) private var catalog
+    @Environment(Library.self) private var library
 
     @AppStorage("search.recents") private var recentsStore = ""
     @State private var query = ""
@@ -43,8 +43,8 @@ struct SearchView: View {
         .onSubmit(of: .search) { remember(trimmed) }
         .task(id: trimmed) { await search() }
         .task {
-            await catalog.loadHome()
-            await catalog.loadPoets()
+            await library.loadHome()
+            await library.loadPoets()
         }
         .analyticsScreen(name: "SearchView")
     }
@@ -79,7 +79,7 @@ struct SearchView: View {
                     }
                 }
             }
-            if let themes = catalog.themes {
+            if let themes = library.themes {
                 Section {
                     ForEach(themes) { themeRow($0) }
                 } header: {
@@ -125,7 +125,7 @@ struct SearchView: View {
 
     @ViewBuilder
     private var poetResults: some View {
-        let poets = (catalog.poets ?? []).filter { KabardianText.searchKey($0.name).contains(key) }
+        let poets = (library.poets ?? []).filter { KabardianText.searchKey($0.name).contains(key) }
         if poets.isEmpty {
             ScrollView { EmptyStateView(title: OwnerCopy.noResults) }
         } else {
@@ -140,7 +140,7 @@ struct SearchView: View {
     }
 
     private var matchingThemes: [Category] {
-        guard let themes = catalog.themes else { return [] }
+        guard let themes = library.themes else { return [] }
         return Array(themes.filter { KabardianText.searchKey($0.title).contains(key) }.prefix(Self.themeMatchLimit))
     }
 
@@ -161,7 +161,7 @@ struct SearchView: View {
         }
         do {
             try await Task.sleep(for: .milliseconds(300))
-            results = try await catalog.search(trimmed)
+            results = try await library.search(trimmed)
             failed = false
         } catch {
             if !Task.isCancelled { failed = true }

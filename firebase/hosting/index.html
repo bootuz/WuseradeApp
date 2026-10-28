@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Wuserade – Kabardian poetry</title>
+<meta name="description" content="Wuserade (Усэрадэ) is an iPhone app for reading Kabardian poetry.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #faf9f6;
+    --fg: #1c1b19;
+    --muted: #5f5b53;
+    --accent: #8a3b12;
+    --on-accent: #faf9f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161513;
+      --fg: #ece8df;
+      --muted: #a7a196;
+      --accent: #e8a27a;
+      --on-accent: #161513;
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 1rem/1.65 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  main {
+    max-width: 38rem;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding: 3rem 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  h1 {
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    font-size: 2.5rem;
+    line-height: 1.2;
+    font-weight: 600;
+    margin: 0;
+  }
+  .lead { color: var(--muted); font-size: 1.125rem; margin: 0.5rem 0 2rem; }
+  .store {
+    display: inline-block;
+    align-self: flex-start;
+    background: var(--accent);
+    color: var(--on-accent);
+    padding: 0.75rem 1.25rem;
+    border-radius: 999px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  a { color: var(--accent); text-underline-offset: 0.15em; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  footer { margin-top: 3rem; color: var(--muted); font-size: 0.9375rem; }
+</style>
+</head>
+<body>
+<main>
+  <!-- TODO(owner): copy — all text on this page is placeholder, including the title and description. -->
+  <h1 lang="kbd">Усэрадэ</h1>
+  <p class="lead">An iPhone app for reading Kabardian poetry.</p>
+  <a class="store" href="https://apple.co/3OWuu5b">Get it on the App Store</a>
+  <footer>
+    <a href="/privacy">Privacy policy</a>
+  </footer>
+</main>
+</body>
+</html>

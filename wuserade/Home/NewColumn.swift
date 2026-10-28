@@ -5,13 +5,13 @@
 import SwiftUI
 
 struct NewColumn: View {
-    @Environment(Catalog.self) private var catalog
+    @Environment(Library.self) private var library
 
     var body: some View {
         Group {
-            if let latest = catalog.latest {
+            if let latest = library.latest {
                 PoemList(poems: latest) {
-                    if let poem = catalog.daysPoem {
+                    if let poem = library.daysPoem {
                         SectionLabel(text: OwnerCopy.daysPageLabel)
                             .contentRow(separator: .hidden)
                         PoemRowLabel(poem: PoemSummary(poem))
@@ -19,10 +19,10 @@ struct NewColumn: View {
                             .contentRow(selectable: true)
                     }
                 }
-                .refreshable { await catalog.refreshHome() }
-            } else if catalog.homeFailed {
+                .refreshable { await library.refreshHome() }
+            } else if library.homeFailed {
                 ScrollView {
-                    OfflineStateView { await catalog.refreshHome() }
+                    OfflineStateView { await library.refreshHome() }
                 }
             } else {
                 LoadingPlaceholder(kind: .poemRows)
@@ -32,6 +32,6 @@ struct NewColumn: View {
         }
         .background(Palette.page)
         .navigationTitle("УсэщӀэхэр")
-        .task { await catalog.loadHome() }
+        .task { await library.loadHome() }
     }
 }

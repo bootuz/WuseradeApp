@@ -7,12 +7,11 @@ import SwiftUI
 struct PoetView: View {
     let poet: Author
 
-    @Environment(Catalog.self) private var catalog
+    @Environment(Library.self) private var library
 
     var body: some View {
-        PoemCollectionView(name: poet.name, subtitle: .firstLine, emptyTitle: OwnerCopy.emptyPoet) {
-            try await catalog.poems(ofPoet: poet.id)
-        }
+        PoemCollectionView(name: poet.name, subtitle: .firstLine, emptyTitle: OwnerCopy.emptyPoet,
+                           poems: library.poems(ofPoet: poet.id))
         .analyticsScreen(name: "AuthorView", extraParameters: ["author": poet.name])
     }
 }

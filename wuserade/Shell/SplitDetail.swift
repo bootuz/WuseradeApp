@@ -8,7 +8,7 @@ struct SplitDetail: View {
     let selection: SplitSelection
     var showsDaysPage = false
 
-    @Environment(Catalog.self) private var catalog
+    @Environment(Library.self) private var library
 
     var body: some View {
         NavigationStack {
@@ -18,7 +18,7 @@ struct SplitDetail: View {
                         selection.poemID = next.id
                     }
                     .id(id)
-                } else if showsDaysPage, let poem = catalog.daysPoem {
+                } else if showsDaysPage, let poem = library.daysPoem {
                     ScrollView {
                         DaysPageView(poem: poem) {
                             selection.poemID = poem.id
@@ -40,8 +40,8 @@ struct SplitDetail: View {
 
     private var readerContext: ReaderContext? {
         if let context = selection.readerContext { return context }
-        if let id = selection.poemID, let poem = catalog.poem(id) {
-            return ReaderContext(single: PoemSummary(poem))
+        if let id = selection.poemID, let summary = library.summary(id) {
+            return ReaderContext(single: summary)
         }
         return nil
     }

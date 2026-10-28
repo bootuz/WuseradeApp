@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // True when the caller is signed in (anonymous accounts included) as `uid`.
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // users/{uid}: createdAt:timestamp, optional displayName:string, nothing else.
+    function validUser() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['createdAt', 'displayName'])
+        && d.keys().hasAll(['createdAt'])
+        && d.createdAt is timestamp
+        && (!('displayName' in d) || d.displayName is string);
+    }
+
+    // users/{uid}/likes/{likeId}: exactly these fields, and poemId == int(likeId).
+    function validLike(likeId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['poemId', 'likedAt', 'title', 'authorId', 'authorName', 'text'])
+        && d.keys().hasAll(['poemId', 'likedAt', 'title', 'authorId', 'authorName', 'text'])
+        && d.poemId is int
+        && d.poemId == int(likeId)
+        && d.likedAt is timestamp
+        && d.title is string
+        && d.authorId is int
+        && d.authorName is string
+        && d.text is string;
+    }
+
+    // Content: anyone can get a document by its ID, which is all the app does. Listing or querying
+    // a collection is denied: one query on poems would bill ~4,000 reads. Written only through the
+    // Admin SDK (which bypasses rules).
+    match /poems/{poemId} {
+      allow get: if true;
+    }
+    match /authors/{authorId} {
+      allow get: if true;
+    }
+    match /themes/{themeId} {
+      allow get: if true;
+    }
+    match /catalog/{chunkId} {
+      allow get: if true;
+    }
+    match /meta/{docId} {
+      allow get: if true;
+    }
+
+    // Per-user data: only the signed-in owner, with validated shapes.
+    match /users/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validUser();
+
+      match /likes/{likeId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validLike(likeId);
+      }
+    }
+
+    // Everything else is denied (no catch-all allow).
+  }
+}

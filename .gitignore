@@ -88,3 +88,12 @@ fastlane/test_output
 # https://github.com/johnno1962/injectionforxcode
 
 iOSInjectionProject/
+
+# Firebase
+firebase/**/node_modules
+firebase/admin/.env
+firebase/**/*-key.json
+firebase/**/*adminsdk*.json
+firebase/**/.venv
+firebase/*.log
+firebase/.firebase/

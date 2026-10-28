@@ -5,11 +5,11 @@
 import SwiftUI
 
 struct ThemesListView: View {
-    @Environment(Catalog.self) private var catalog
+    @Environment(Library.self) private var library
 
     var body: some View {
         Group {
-            if let themes = catalog.themes {
+            if let themes = library.themes {
                 List(themes) { theme in
                     NavigationLink(value: Route.theme(theme)) {
                         NameRowLabel(name: theme.title)
@@ -17,10 +17,10 @@ struct ThemesListView: View {
                     .contentRow()
                 }
                 .pageList()
-                .refreshable { await catalog.refreshHome() }
-            } else if catalog.homeFailed {
+                .refreshable { await library.refreshHome() }
+            } else if library.homeFailed {
                 ScrollView {
-                    OfflineStateView { await catalog.refreshHome() }
+                    OfflineStateView { await library.refreshHome() }
                 }
             } else {
                 LoadingPlaceholder(kind: .nameRows)
@@ -30,6 +30,6 @@ struct ThemesListView: View {
         }
         .background(Palette.page)
         .navigationTitle("Зытеухуар")
-        .task { await catalog.loadHome() }
+        .task { await library.loadHome() }
     }
 }

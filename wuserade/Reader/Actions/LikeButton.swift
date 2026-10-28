@@ -1,26 +1,23 @@
 // Minimum iOS 17.
 //  The heart: heart.fill in `like` when liked, heart in ink when not. The shape carries the state.
-//  Liking swaps the symbol and bounces it once, with the selection haptic.
-//  Likes stay on this device in SwiftData until the accounts work moves them to Firestore.
+//  Liking swaps the symbol and bounces it once, with the selection haptic. Likes belong to the Firebase account;
+//  until one exists (offline at first launch) the heart stays tappable and a one-line notice says liking waits.
 
-import SwiftData
 import SwiftUI
 
 struct LikeButton: View {
     let poem: Poem
 
-    @Environment(\.modelContext) private var context
+    @Environment(LikesController.self) private var likes
+    @Environment(AccountManager.self) private var account
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Query private var liked: [PersistedPoem]
     @State private var bounce = 0
+    @State private var showsNotice = false
 
-    init(poem: Poem) {
-        self.poem = poem
-        let id = poem.id
-        _liked = Query(filter: #Predicate<PersistedPoem> { $0.poemID == id })
-    }
+    private var isLiked: Bool { likes.isLiked(poem.id) }
 
-    private var isLiked: Bool { !liked.isEmpty }
+    /// No account yet, or an account operation is running (a like written during a sign-in merge could be lost).
+    private var canLike: Bool { likes.uid != nil && !account.isBusy }
 
     var body: some View {
         Button {
@@ -33,16 +30,29 @@ struct LikeButton: View {
         }
         .sensoryFeedback(.selection, trigger: isLiked)
         .accessibilityAddTraits(isLiked ? .isSelected : [])
+        .popover(isPresented: $showsNotice) {
+            Text(OwnerCopy.likeNeedsAccount)
+                .font(.footnote)
+                .foregroundStyle(Palette.ink)
+                .padding(Space.three)
+                .presentationCompactAdaptation(.popover)
+                .task {
+                    try? await Task.sleep(for: .seconds(3))
+                    showsNotice = false
+                }
+        }
     }
 
     private func toggle() {
-        if let existing = liked.first {
-            context.delete(existing)
-            AnalyticsManager.shared.logEvent(name: "poem", params: ["unlike": poem.title])
-        } else {
-            context.insert(PersistedPoem.toPersistedPoem(from: poem))
-            if !reduceMotion { bounce += 1 }
-            AnalyticsManager.shared.logEvent(name: "poem", params: ["like": poem.title])
+        guard canLike else {
+            showsNotice = true
+            AccessibilityNotification.Announcement(OwnerCopy.likeNeedsAccount).post()
+            return
         }
+        let isLiking = !isLiked
+        if isLiking, !reduceMotion { bounce += 1 }
+        // The change shows at once; the write can take as long as it takes to reconnect.
+        Task { await likes.toggle(poem) }
+        AnalyticsManager.shared.logEvent(name: "poem", params: [isLiking ? "like" : "unlike": poem.title])
     }
 }

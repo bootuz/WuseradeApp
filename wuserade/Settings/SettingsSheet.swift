@@ -1,7 +1,6 @@
 // Minimum iOS 17.
 //  ГъэпсыпӀэ: one sheet (a form sheet on iPad) on page-elevated. Subviews push inside it.
-//  The Аккаунт section waits for the accounts work in the Firebase plan; the Плъыфэр toggle is gone, since the
-//  palette follows the system appearance.
+//  Аккаунт comes first. The Плъыфэр toggle is gone, since the palette follows the system appearance.
 
 import FirebaseAnalytics
 import SwiftUI
@@ -13,6 +12,8 @@ struct SettingsSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                AccountSection()
+
                 Section {
                     NavigationLink {
                         ReadingStyleForm()
