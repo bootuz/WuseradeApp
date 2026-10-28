@@ -58,7 +58,7 @@
 
 - [ ] **Step 1: Scaffold config**
 
-`.firebaserc` default project `wuserade`. `firebase.json` contains `firestore.rules`, `firestore.indexes.json`, emulator ports (firestore 8080, hosting 5000, ui disabled), and a `hosting` block with `public: "hosting"` and `cleanUrls: true`. `firestore.indexes.json`: `indexes: []` and `fieldOverrides` that disable indexing (`indexes: []`) for `poems.text` and `catalog.entries`.
+`.firebaserc` default project `wuserade`. `firebase.json` contains `firestore.rules`, `firestore.indexes.json`, emulator ports (firestore 8080, hosting 5050, ui disabled), and a `hosting` block with `public: "hosting"` and `cleanUrls: true`. `firestore.indexes.json`: `indexes: []` and `fieldOverrides` that disable indexing (`indexes: []`) for `poems.text` and `catalog.entries`.
 
 - [ ] **Step 2: Write the failing rules tests** in `rules.test.mjs` (node:test + `@firebase/rules-unit-testing`, projectId `demo-wuserade`):
 
@@ -156,7 +156,7 @@ Expected: FAIL (the default rules deny everything, so the read and owner tests f
 - Create: `firebase/hosting/privacy/index.html` (self-contained HTML, inline CSS, readable on a phone, dark-mode aware)
 
 - [ ] **Step 1: Draft the policy in English.** Cover exactly what the spec's Privacy policy section lists: sign-in data (uid, plus the email and name that Apple/Google share, including Apple private relay), likes, Firebase Analytics usage data tied to the uid, the FCM token, in-app account deletion and what it removes, data processors (Google Firebase), and contact `astemirboziy@gmail.com`. Add a "Last updated" date and a placeholder for an optional Kabardian/Russian version.
-- [ ] **Step 2: Verify it serves.** Run (in `firebase/`): `npx -y firebase-tools@latest emulators:exec --project demo-wuserade --only hosting "curl -sfL http://127.0.0.1:5000/privacy | grep -q 'Wuserade'"`. Expected: exit 0.
+- [ ] **Step 2: Verify it serves.** Run (in `firebase/`): `npx -y firebase-tools@latest emulators:exec --project demo-wuserade --only hosting "curl -sfL http://127.0.0.1:5050/privacy | grep -q 'Wuserade'"`. Expected: exit 0.
 - [ ] **Step 3: Commit** `feat(hosting): privacy policy page`. The owner reviews the wording before it is deployed in Task 5.
 
 ---
