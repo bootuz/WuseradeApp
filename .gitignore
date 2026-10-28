@@ -93,5 +93,6 @@ iOSInjectionProject/
 firebase/**/node_modules
 firebase/admin/.env
 firebase/**/*-key.json
+firebase/**/*adminsdk*.json
 firebase/**/.venv
 firebase/*.log
