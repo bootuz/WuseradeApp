@@ -92,7 +92,10 @@
       </li>
       <li>
         <strong>Sign in with Apple or Google (optional).</strong> If you choose to sign in,
-        it links to that same account. Firebase Authentication then receives your account
+        your Apple or Google account is linked to that same account, so your likes stay. If you
+        already have a Wuserade account with that Apple or Google account (for example from
+        another device), you are signed in to it instead: your likes move into it and the
+        anonymous account is deleted. Firebase Authentication then receives your account
         identifier and the email address and name that Apple or Google shares with us. Apple
         may give us a private relay email address instead of your real one.
       </li>
@@ -105,7 +108,10 @@
       <li>
         <strong>Usage data (Firebase Analytics).</strong> Which screens you view and what you
         do in the app, for example which poem you open, what you search for and what you
-        like. This is tied to your Firebase user ID.
+        like. Firebase Analytics also collects some details on its own: your device model,
+        operating system version, app version and language, an app instance ID (a random ID
+        for this copy of the app), and your approximate location (country or city), which
+        Google works out from your IP address. This is tied to your Firebase user ID.
       </li>
       <li>
         <strong>A push token (Firebase Cloud Messaging).</strong> A code that identifies your
