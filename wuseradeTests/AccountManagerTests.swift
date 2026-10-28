@@ -64,6 +64,15 @@ final class AccountManagerTests: XCTestCase {
         )
     }
 
+    /// Polls until `condition` holds (at most about two seconds).
+    private func waitUntil(_ condition: () -> Bool) async throws {
+        for _ in 0 ..< 400 {
+            if condition() { return }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        XCTFail("condition never became true")
+    }
+
     // MARK: start
 
     func testStartSignsInAnonymouslyOnce() async throws {
@@ -222,6 +231,82 @@ final class AccountManagerTests: XCTestCase {
         XCTAssertFalse(env.auth.calls.contains("link"))
         XCTAssertNotNil(env.likes.userDocuments["new-apple.com"])
         XCTAssertEqual(env.likes.likes(for: "new-apple.com"), [like(2, at: t3)])
+        XCTAssertEqual(env.pending.load(), [])
+    }
+
+    // MARK: Overlapping operations
+
+    func testOverlappingSignInsKeepTheExistingAccount() async throws {
+        let env = try makeEnv()
+        // The existing account has both providers, so both credentials are "already in use".
+        env.auth.addExistingAccount(googleUser, for: .google)
+        env.auth.addExistingAccount(googleUser, for: .apple)
+        env.likes.seed([like(1, at: t2)], uid: "google-user")
+        await env.manager.start()
+        env.likes.seed([like(1, at: t1), like(2, at: t3)], uid: "anon-1")
+        // The second flow's cleanup is slow. Run concurrently, it would land after the first flow
+        // signed in to the existing account, and delete that account's user.
+        env.likes.setDeleteAllDataDelays([nil, .milliseconds(100)])
+        env.log.reset()
+
+        let google = googleCredential()
+        let apple = appleCredential()
+        let first = Task { try await env.manager.signIn(with: google) }
+        let second = Task { try await env.manager.signIn(with: apple) }
+        let firstResult = await first.result
+        _ = await second.result
+
+        XCTAssertNoThrow(try firstResult.get())
+        // The second sign-in runs only after the first finished, so it starts from the existing
+        // (non-anonymous) account and deletes nothing.
+        XCTAssertEqual(env.log.calls, [
+            "link", "fetchLikes", "deleteAllData", "deleteCurrentUser", "signIn", "ensureUserDocument",
+            "fetchLikes", "setLikes",
+            "link",
+        ])
+        XCTAssertEqual(env.auth.deletedUids, ["anon-1"])
+        XCTAssertEqual(env.auth.currentUser?.uid, "google-user")
+        XCTAssertEqual(env.manager.state, .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
+        XCTAssertEqual(env.likes.likes(for: "google-user"), [like(2, at: t3), like(1, at: t1)])
+        XCTAssertEqual(env.pending.load(), [])
+    }
+
+    func testStartDuringMergeWaitsAndPendingLandsInExistingAccount() async throws {
+        let env = try makeEnv()
+        env.auth.addExistingAccount(googleUser, for: .google)
+        await env.manager.start()
+        env.likes.seed([like(1, at: t1), like(2, at: t3)], uid: "anon-1")
+        env.auth.setSignInDelay(.milliseconds(100))
+
+        let google = googleCredential()
+        let signIn = Task { try await env.manager.signIn(with: google) }
+        // The anonymous user is already deleted and the existing account not yet signed in.
+        try await waitUntil { env.auth.calls.contains("signIn") }
+        await env.manager.start()
+        try await signIn.value
+
+        XCTAssertEqual(env.auth.calls.filter { $0 == "signInAnonymously" }.count, 1, "no throwaway anonymous account")
+        XCTAssertEqual(env.manager.state, .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
+        XCTAssertEqual(env.likes.likes(for: "google-user"), [like(2, at: t3), like(1, at: t1)])
+        XCTAssertEqual(env.pending.load(), [])
+    }
+
+    func testMergeDeletesNothingWhenAnotherUserIsSignedInByCleanupTime() async throws {
+        let env = try makeEnv()
+        env.auth.addExistingAccount(googleUser, for: .google)
+        await env.manager.start()
+        env.likes.seed([like(2, at: t3)], uid: "anon-1")
+        let other = AuthUserInfo(uid: "other-user", isAnonymous: false, provider: .apple, email: nil)
+        env.likes.seed([like(5, at: t1)], uid: "other-user")
+        // Something outside the flow switches the session right after the anonymous likes are read.
+        env.likes.setAfterFetchHook { [auth = env.auth] in auth.setCurrentUser(other) }
+
+        try await env.manager.signIn(with: googleCredential())
+
+        XCTAssertEqual(env.auth.deletedUids, [], "only the anonymous user it read may be deleted")
+        XCTAssertEqual(env.likes.likes(for: "other-user"), [like(5, at: t1)])
+        XCTAssertEqual(env.manager.state, .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
+        XCTAssertEqual(env.likes.likes(for: "google-user"), [like(2, at: t3)])
         XCTAssertEqual(env.pending.load(), [])
     }
 

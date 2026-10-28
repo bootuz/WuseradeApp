@@ -28,6 +28,8 @@ enum AuthBackendError: Error {
     /// The credential already belongs to another account. Sign in to that account with the
     /// carried credential (Firebase's updated one, since an Apple ID token cannot be used twice).
     case credentialAlreadyInUse(ProviderCredential)
+    /// `deleteCurrentUser(expectedUID:)` found a different user signed in, and deleted nothing.
+    case currentUserMismatch
 }
 
 /// Firebase Auth, behind a protocol so `AccountManager` can be tested with a fake.
@@ -40,8 +42,10 @@ protocol AuthBackend {
     func signIn(with c: ProviderCredential) async throws -> AuthUserInfo
     func reauthenticate(with c: ProviderCredential) async throws
     func revokeAppleToken(authorizationCode: String) async throws
-    /// Deletes the current user and signs out. Does nothing when no one is signed in.
-    func deleteCurrentUser() async throws
+    /// Deletes the current user, which signs it out, but only when its uid is `expectedUID`.
+    /// Does nothing when no one is signed in. Throws `AuthBackendError.currentUserMismatch`,
+    /// deleting nothing, when someone else is.
+    func deleteCurrentUser(expectedUID: String) async throws
     func signOut() throws
 }
 
@@ -85,8 +89,9 @@ struct FirebaseAuthBackend: AuthBackend {
         try await auth.revokeToken(withAuthorizationCode: authorizationCode)
     }
 
-    func deleteCurrentUser() async throws {
+    func deleteCurrentUser(expectedUID: String) async throws {
         guard let user = auth.currentUser else { return }
+        guard user.uid == expectedUID else { throw AuthBackendError.currentUserMismatch }
         try await user.delete()
         await MainActor.run { GIDSignIn.sharedInstance.signOut() }
     }

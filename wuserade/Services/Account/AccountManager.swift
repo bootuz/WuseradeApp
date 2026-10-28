@@ -26,6 +26,11 @@ enum AccountError: Error, Equatable {
 
 /// Owns the Firebase account: a silent anonymous account on launch, upgraded by linking Apple
 /// or Google, plus sign-out and account deletion. Likes follow the account (`users/{uid}/likes`).
+///
+/// `start`, `signIn`, `signOut` and `deleteAccount` run one at a time, in the order they were
+/// called: each waits for the ones before it, then runs against the account as it is by then.
+/// So two quick taps, or a `start()` arriving mid sign-in, can never act on a half-switched
+/// session.
 @MainActor
 @Observable
 final class AccountManager {
@@ -35,9 +40,8 @@ final class AccountManager {
     @ObservationIgnored private let likes: LikesStore
     @ObservationIgnored private let pending: PendingLikesStore
     @ObservationIgnored private let setAnalyticsUserID: (String) -> Void
-    /// The latest `start()`. Each call waits for the previous one, so overlapping calls never
-    /// create two anonymous accounts.
-    @ObservationIgnored private var startTask: Task<Void, Never>?
+    /// The last queued operation. A new operation waits for it before running.
+    @ObservationIgnored private var lastOperation: Task<Result<Void, Error>, Never>?
 
     init(
         auth: AuthBackend,
@@ -56,14 +60,8 @@ final class AccountManager {
     /// Never throws: when the anonymous sign-in fails (e.g. offline) the state stays
     /// `.signedOut`, and a later call tries again.
     func start() async {
-        let previous = startTask
-        let task = Task {
-            await previous?.value
-            await performStart()
-        }
-        startTask = task
-        await task.value
-        if startTask == task { startTask = nil }
+        // `performStart` never throws, so there is no error to drop here.
+        try? await serialized { await self.performStart() }
     }
 
     /// Links the credential to the current anonymous account, keeping its uid and likes.
@@ -74,55 +72,43 @@ final class AccountManager {
     /// existing account is signed in and the likes are merged into it. If that sign-in fails the
     /// error is rethrown and the likes stay on the device until the next `start()` merges them.
     func signIn(with credential: ProviderCredential) async throws {
-        // A sign-in racing the launch `start()` must not be replaced by its anonymous account.
-        await startTask?.value
-
-        guard let current = auth.currentUser else {
-            // No account at all (the anonymous sign-in failed): sign in directly.
-            await adopt(try await auth.signIn(with: credential))
-            return
-        }
-
-        do {
-            state = AccountState(try await auth.link(credential))
-        } catch let AuthBackendError.credentialAlreadyInUse(existing) where current.isAnonymous {
-            try await switchToExistingAccount(from: current, using: existing)
-        }
+        try await serialized { try await self.performSignIn(with: credential) }
     }
 
     /// Signs out, then starts a fresh anonymous account.
     func signOut() async throws {
-        try auth.signOut()
-        state = .signedOut
-        await start()
+        try await serialized { try await self.performSignOut() }
     }
 
     /// Re-authenticates, revokes the Apple token (Apple accounts), deletes the account's data
     /// and the Firebase user, then starts a fresh anonymous account. Every step can run again,
     /// so after a failure the person can simply retry.
     func deleteAccount(reauthWith credential: ProviderCredential) async throws {
-        guard case let .signedIn(uid, provider, _) = state else { throw AccountError.notSignedIn }
-        var appleAuthorizationCode: String?
-        if provider == .apple {
-            guard credential.provider == .apple, let code = credential.appleAuthorizationCode else {
-                throw SignInError.missingToken
-            }
-            appleAuthorizationCode = code
-        }
-
-        try await auth.reauthenticate(with: credential)
-        if let appleAuthorizationCode {
-            try await auth.revokeAppleToken(authorizationCode: appleAuthorizationCode)
-        }
-        try await likes.deleteAllData(uid: uid)
-        try await auth.deleteCurrentUser()
-
-        pending.clear()
-        state = .signedOut
-        await start()
+        try await serialized { try await self.performDeleteAccount(reauthWith: credential) }
     }
 
-    // MARK: Private
+    // MARK: Operations
+    //
+    // These run inside the chain. They call each other directly, never the public methods,
+    // which would wait for the very operation that is calling them.
+
+    /// Queues `operation` behind every earlier one and waits for it to finish.
+    private func serialized(_ operation: @escaping @MainActor () async throws -> Void) async throws {
+        let previous = lastOperation
+        let task = Task { () -> Result<Void, Error> in
+            _ = await previous?.value
+            do {
+                try await operation()
+                return .success(())
+            } catch {
+                return .failure(error)
+            }
+        }
+        lastOperation = task
+        let result = await task.value
+        if lastOperation == task { lastOperation = nil }
+        try result.get()
+    }
 
     private func performStart() async {
         let user: AuthUserInfo
@@ -139,6 +125,50 @@ final class AccountManager {
         }
         await adopt(user)
     }
+
+    private func performSignIn(with credential: ProviderCredential) async throws {
+        guard let current = auth.currentUser else {
+            // No account at all (the anonymous sign-in failed): sign in directly.
+            await adopt(try await auth.signIn(with: credential))
+            return
+        }
+
+        do {
+            state = AccountState(try await auth.link(credential))
+        } catch let AuthBackendError.credentialAlreadyInUse(existing) where current.isAnonymous {
+            try await switchToExistingAccount(from: current, using: existing)
+        }
+    }
+
+    private func performSignOut() async throws {
+        try auth.signOut()
+        state = .signedOut
+        await performStart()
+    }
+
+    private func performDeleteAccount(reauthWith credential: ProviderCredential) async throws {
+        guard case let .signedIn(uid, provider, _) = state else { throw AccountError.notSignedIn }
+        var appleAuthorizationCode: String?
+        if provider == .apple {
+            guard credential.provider == .apple, let code = credential.appleAuthorizationCode else {
+                throw SignInError.missingToken
+            }
+            appleAuthorizationCode = code
+        }
+
+        try await auth.reauthenticate(with: credential)
+        if let appleAuthorizationCode {
+            try await auth.revokeAppleToken(authorizationCode: appleAuthorizationCode)
+        }
+        try await likes.deleteAllData(uid: uid)
+        try await auth.deleteCurrentUser(expectedUID: uid)
+
+        pending.clear()
+        state = .signedOut
+        await performStart()
+    }
+
+    // MARK: Helpers
 
     /// Makes `user` the current account: updates the state, makes sure `users/{uid}` exists,
     /// merges pending likes and sets the analytics user ID.
@@ -160,17 +190,22 @@ final class AccountManager {
         let anonymousLikes = try await likes.fetchLikes(uid: anonymous.uid)
         pending.save(LikesMerge.merge(existing: pending.load(), incoming: anonymousLikes))
 
-        // 2. Clean up the anonymous account. A failure only leaves orphaned anonymous data;
-        //    the likes are safe in `pending`.
-        do {
-            try await likes.deleteAllData(uid: anonymous.uid)
-        } catch {
-            Self.logger.error("Could not delete anonymous data: \(error.localizedDescription, privacy: .public)")
-        }
-        do {
-            try await auth.deleteCurrentUser()
-        } catch {
-            Self.logger.error("Could not delete the anonymous user: \(error.localizedDescription, privacy: .public)")
+        // 2. Clean up the anonymous account, but only while it is still the signed-in user: deleting
+        //    "the current user" must never hit anyone else. Skipping or failing only leaves orphaned
+        //    anonymous data; the likes are safe in `pending`.
+        if let signedIn = auth.currentUser, signedIn.uid == anonymous.uid, signedIn.isAnonymous {
+            do {
+                try await likes.deleteAllData(uid: anonymous.uid)
+            } catch {
+                Self.logger.error("Could not delete anonymous data: \(error.localizedDescription, privacy: .public)")
+            }
+            do {
+                try await auth.deleteCurrentUser(expectedUID: anonymous.uid)
+            } catch {
+                Self.logger.error("Could not delete the anonymous user: \(error.localizedDescription, privacy: .public)")
+            }
+        } else {
+            Self.logger.error("The anonymous user is no longer signed in; skipping its cleanup")
         }
         state = AccountState(auth.currentUser)
 

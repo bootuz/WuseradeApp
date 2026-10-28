@@ -132,6 +132,7 @@ final class FakeAuthBackend: AuthBackend, @unchecked Sendable {
     private var _anonymousSignInError: Error?
     private var _anonymousSignInDelay: Duration?
     private var _signInError: Error?
+    private var _signInDelay: Duration?
     private var _deleteFailuresLeft = 0
     private var _deletedUids: [String] = []
     private var _revokedCodes: [String] = []
@@ -169,6 +170,17 @@ final class FakeAuthBackend: AuthBackend, @unchecked Sendable {
     /// `signIn(with:)` throws this error until it is set back to nil.
     func setSignInError(_ error: Error?) {
         lock.withLock { _signInError = error }
+    }
+
+    /// `signIn(with:)` waits this long before answering, so tests can act while it is in flight.
+    func setSignInDelay(_ delay: Duration?) {
+        lock.withLock { _signInDelay = delay }
+    }
+
+    /// Replaces the signed-in user without recording a call, as a change made outside the
+    /// code under test would (e.g. another flow, or Firebase signing the user out).
+    func setCurrentUser(_ user: AuthUserInfo?) {
+        lock.withLock { _currentUser = user }
     }
 
     /// The next `count` calls to `deleteCurrentUser` throw `Failure`.
@@ -227,6 +239,7 @@ final class FakeAuthBackend: AuthBackend, @unchecked Sendable {
 
     func signIn(with c: ProviderCredential) async throws -> AuthUserInfo {
         record("signIn")
+        if let delay = lock.withLock({ _signInDelay }) { try await Task.sleep(for: delay) }
         return try lock.withLock {
             if let error = _signInError { throw error }
             let user = _existingAccounts[c.provider]
@@ -249,7 +262,8 @@ final class FakeAuthBackend: AuthBackend, @unchecked Sendable {
         lock.withLock { _revokedCodes.append(authorizationCode) }
     }
 
-    func deleteCurrentUser() async throws {
+    /// Like `FirebaseAuthBackend`: deletes only the expected user, and nothing when no one is signed in.
+    func deleteCurrentUser(expectedUID: String) async throws {
         record("deleteCurrentUser")
         try lock.withLock {
             if _deleteFailuresLeft > 0 {
@@ -257,6 +271,7 @@ final class FakeAuthBackend: AuthBackend, @unchecked Sendable {
                 throw Failure()
             }
             guard let user = _currentUser else { return }
+            guard user.uid == expectedUID else { throw AuthBackendError.currentUserMismatch }
             _deletedUids.append(user.uid)
             _existingAccounts = _existingAccounts.filter { $0.value.uid != user.uid }
             _currentUser = nil
@@ -284,6 +299,8 @@ final class FakeLikesStore: LikesStore, @unchecked Sendable {
     private var _userDocuments: [String: Date] = [:]
     private var _setLikesError: Error?
     private var _fetchError: Error?
+    private var _afterFetchHook: (@Sendable () -> Void)?
+    private var _deleteAllDataDelays: [Duration?] = []
     private var _observers: [String: [UUID: AsyncThrowingStream<[Like], Error>.Continuation]] = [:]
     private var _cancelledObservations: [String] = []
 
@@ -322,6 +339,17 @@ final class FakeLikesStore: LikesStore, @unchecked Sendable {
         lock.withLock { _fetchError = error }
     }
 
+    /// Runs once, right after the next successful `fetchLikes` has read its likes.
+    func setAfterFetchHook(_ hook: (@Sendable () -> Void)?) {
+        lock.withLock { _afterFetchHook = hook }
+    }
+
+    /// One entry per upcoming `deleteAllData` call, in order: how long that call waits before it
+    /// runs (and before it checks the owner). `nil` means no wait.
+    func setDeleteAllDataDelays(_ delays: [Duration?]) {
+        lock.withLock { _deleteAllDataDelays = delays }
+    }
+
     func resetCalls() {
         lock.withLock { _calls = [] }
     }
@@ -345,10 +373,14 @@ final class FakeLikesStore: LikesStore, @unchecked Sendable {
 
     func fetchLikes(uid: String) async throws -> [Like] {
         try record("fetchLikes", uid: uid)
-        return try lock.withLock {
+        let (likes, hook): ([Like], (@Sendable () -> Void)?) = try lock.withLock {
             if let error = _fetchError { throw error }
-            return sorted(_likes[uid])
+            let hook = _afterFetchHook
+            _afterFetchHook = nil
+            return (sorted(_likes[uid]), hook)
         }
+        hook?()
+        return likes
     }
 
     /// Emits the current likes at once, then again after every write for `uid`.
@@ -402,6 +434,10 @@ final class FakeLikesStore: LikesStore, @unchecked Sendable {
 
     /// Idempotent, like the real store: deleting data that is already gone succeeds.
     func deleteAllData(uid: String) async throws {
+        let delay: Duration? = lock.withLock {
+            _deleteAllDataDelays.isEmpty ? nil : _deleteAllDataDelays.removeFirst()
+        }
+        if let delay { try await Task.sleep(for: delay) }
         try record("deleteAllData", uid: uid)
         lock.withLock {
             _likes[uid] = nil
