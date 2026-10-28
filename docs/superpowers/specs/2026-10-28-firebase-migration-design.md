@@ -171,8 +171,10 @@ any future in-app review screen.
 
 ### Security rules (intent)
 
-- `poems`, `authors`, `themes`, `catalog`, `meta`: **read by anyone**. No client
-  writes; content is written only via the Admin SDK.
+- `poems`, `authors`, `themes`, `catalog`, `meta`: **anyone can read a document by
+  its ID** (`get`); listing or querying a collection is denied, so one
+  unauthenticated query can't bill thousands of reads. No client writes; content
+  is written only via the Admin SDK.
 - `users/{uid}` and `users/{uid}/likes/**`: read/write only when
   `request.auth.uid == uid`. Like documents are validated for shape (field types,
   `poemId` matches the doc ID).
