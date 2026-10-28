@@ -96,3 +96,4 @@ firebase/**/*-key.json
 firebase/**/*adminsdk*.json
 firebase/**/.venv
 firebase/*.log
+firebase/.firebase/
