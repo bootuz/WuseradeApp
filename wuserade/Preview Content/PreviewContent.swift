@@ -102,10 +102,31 @@ extension LikesController {
     }
 }
 
+/// An `AuthBackend` for previews that never reaches Firebase. `currentUser` stays signed in; every change fails.
+struct PreviewAuthBackend: AuthBackend {
+    struct Unavailable: Error {}
+
+    var currentUser: AuthUserInfo?
+
+    func signInAnonymously() async throws -> AuthUserInfo { throw Unavailable() }
+    func link(_ c: ProviderCredential) async throws -> AuthUserInfo { throw Unavailable() }
+    func signIn(with c: ProviderCredential) async throws -> AuthUserInfo { throw Unavailable() }
+    func reauthenticate(with c: ProviderCredential) async throws { throw Unavailable() }
+    func revokeAppleToken(authorizationCode: String) async throws { throw Unavailable() }
+    func deleteCurrentUser(expectedUID: String) async throws { throw Unavailable() }
+    func signOut() throws { throw Unavailable() }
+}
+
 extension AccountManager {
-    /// An account manager for previews. It is never started, so it never calls Firebase.
-    static func preview() -> AccountManager {
-        AccountManager(auth: FirebaseAuthBackend(), likes: PreviewLikesStore(), pending: PendingLikesStore())
+    /// An account manager for previews. It starts out signed out; call `start()` for `user` to become the account.
+    /// It never calls Firebase.
+    static func preview(user: AuthUserInfo? = nil) -> AccountManager {
+        AccountManager(
+            auth: PreviewAuthBackend(currentUser: user),
+            likes: PreviewLikesStore(),
+            pending: PendingLikesStore(),
+            setAnalyticsUserID: { _ in }
+        )
     }
 }
 #endif

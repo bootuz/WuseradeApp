@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 import FirebaseCore
 import FirebaseMessaging
+import GoogleSignIn
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
     
@@ -73,6 +74,12 @@ struct wuseradeApp: App {
     /// The tests run inside the app. They must not sign in to, or write to, the real Firebase project.
     private static let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 
+    /// True when `meta/content.minimumAppVersion` is above this build. Stays false until a catalog has loaded,
+    /// so a first launch offline never shows the update screen.
+    private var isUpdateRequired: Bool {
+        !AppVersion.isSupported(current: AppVersion.current, minimum: catalogStore.meta?.minimumAppVersion)
+    }
+
     var body: some Scene {
         WindowGroup {
             TabBarView(notificationManager: notificationManager)
@@ -89,6 +96,14 @@ struct wuseradeApp: App {
                 .environment(catalogStore)
                 .environment(account)
                 .environment(likes)
+                // Too old to work with the current content: nothing else is usable until the app is updated.
+                .fullScreenCover(isPresented: .constant(isUpdateRequired)) {
+                    UpdateRequiredView()
+                }
+                // Brings Google sign-in back into the app after the browser or account sheet.
+                .onOpenURL { url in
+                    GIDSignIn.sharedInstance.handle(url)
+                }
                 // Launch: sign in anonymously (or keep the existing account), show its likes, and upload the
                 // likes this device kept before accounts existed.
                 .task {
@@ -113,6 +128,11 @@ struct wuseradeApp: App {
                 .onChange(of: scenePhase) { _, phase in
                     guard phase == .active else { return }
                     Task { await catalogStore.refresh() }
+                    // An account that could not be created earlier (offline) is tried again, so liking starts working
+                    // without a relaunch. Skipped while an account operation is running, such as the launch one:
+                    // that one is already creating it. The uid `onChange` above then binds and migrates the likes.
+                    guard !Self.isRunningTests, account.state.uid == nil, !account.isBusy else { return }
+                    Task { await account.start() }
                 }
         }
         .modelContainer(sharedModelContainer)

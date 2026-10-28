@@ -21,6 +21,8 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                AccountSection()
+
                 Section("Текстыр") {
                     NavigationLink {
                         FontSettingsView()
@@ -56,6 +58,11 @@ struct SettingsView: View {
 
                     ShareLink(item: URL(string: "https://apple.co/3OWuu5b")!) {
                         Label("Дэгуэшэн", systemSymbol: SFSymbol.squareAndArrowUp)
+                    }
+
+                    Link(destination: URL(string: "https://wuserade.web.app/privacy")!) {
+                        // TODO(owner): copy. Meaning: "Privacy policy".
+                        Label("Фlэкlхэм щхьэкlэ политикэ", systemSymbol: SFSymbol.handRaised)
                     }
                 }
             }
@@ -95,8 +102,11 @@ struct SettingsView: View {
     }
 }
 
+#if DEBUG
 #Preview {
     SettingsView()
         .tint(.primary)
         .environmentObject(FontSettingsManager())
+        .environment(AccountManager.preview())
 }
+#endif
