@@ -73,7 +73,8 @@ struct MainView: View {
     MainView()
         .environment(CatalogStore.preview())
         .environmentObject(FontSettingsManager())
-        .modelContainer(for: PersistedPoem.self, inMemory: true)
+        .environment(LikesController.preview())
+        .environment(AccountManager.preview())
         .tint(.primary)
 }
 #endif

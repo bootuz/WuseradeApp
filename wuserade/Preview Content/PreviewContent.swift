@@ -75,4 +75,37 @@ extension CatalogStore {
         return CatalogStore(repository: PreviewContentRepository(isOffline: !loaded), cache: cache)
     }
 }
+
+/// Keeps likes in memory for previews, so a preview never reaches Firestore. Writes are ignored.
+struct PreviewLikesStore: LikesStore {
+    var likes: [Like] = []
+
+    func fetchLikes(uid: String) async throws -> [Like] { likes }
+
+    func observeLikes(uid: String) -> AsyncThrowingStream<[Like], Error> {
+        AsyncThrowingStream { $0.yield(likes) }
+    }
+
+    func setLike(_ like: Like, uid: String) async throws {}
+    func setLikes(_ likes: [Like], uid: String) async throws {}
+    func removeLike(poemId: Int, uid: String) async throws {}
+    func ensureUserDocument(uid: String) async throws {}
+    func deleteAllData(uid: String) async throws {}
+}
+
+extension LikesController {
+    /// A controller for previews, signed in as a made-up account whose likes are `likes`.
+    static func preview(likes: [Like] = []) -> LikesController {
+        let controller = LikesController(store: PreviewLikesStore(likes: likes))
+        controller.bind(uid: "preview")
+        return controller
+    }
+}
+
+extension AccountManager {
+    /// An account manager for previews. It is never started, so it never calls Firebase.
+    static func preview() -> AccountManager {
+        AccountManager(auth: FirebaseAuthBackend(), likes: PreviewLikesStore(), pending: PendingLikesStore())
+    }
+}
 #endif

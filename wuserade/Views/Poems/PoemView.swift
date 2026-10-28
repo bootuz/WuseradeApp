@@ -8,7 +8,6 @@
 import SwiftUI
 import StoreKit
 import Pow
-import SwiftData
 
 
 /// Shows one poem. Pass `preloaded` when the caller already has the poem; otherwise it is read from Firestore.
@@ -97,9 +96,10 @@ private struct PoemContentView: View {
         PoemView(poemID: 203)
             .tint(.primary)
             .environmentObject(FontSettingsManager())
-            .modelContainer(for: PersistedPoem.self, inMemory: true)
     }
     .environment(CatalogStore.preview())
+    .environment(LikesController.preview())
+    .environment(AccountManager.preview())
 }
 
 #Preview("Load failed") {
@@ -107,8 +107,9 @@ private struct PoemContentView: View {
         PoemView(poemID: 203)
             .tint(.primary)
             .environmentObject(FontSettingsManager())
-            .modelContainer(for: PersistedPoem.self, inMemory: true)
     }
     .environment(CatalogStore.preview(loaded: false))
+    .environment(LikesController.preview())
+    .environment(AccountManager.preview())
 }
 #endif

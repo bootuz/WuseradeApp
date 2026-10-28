@@ -64,15 +64,6 @@ final class AccountManagerTests: XCTestCase {
         )
     }
 
-    /// Polls until `condition` holds (at most about two seconds).
-    private func waitUntil(_ condition: () -> Bool) async throws {
-        for _ in 0 ..< 400 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(5))
-        }
-        XCTFail("condition never became true")
-    }
-
     // MARK: start
 
     func testStartSignsInAnonymouslyOnce() async throws {
@@ -308,6 +299,39 @@ final class AccountManagerTests: XCTestCase {
         XCTAssertEqual(env.manager.state, .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
         XCTAssertEqual(env.likes.likes(for: "google-user"), [like(2, at: t3)])
         XCTAssertEqual(env.pending.load(), [])
+    }
+
+    func testIsBusyWhileOperationsAreQueued() async throws {
+        let env = try makeEnv()
+        env.auth.setAnonymousSignInDelay(.milliseconds(150))
+        XCTAssertFalse(env.manager.isBusy)
+
+        let first = Task { await env.manager.start() }
+        try await waitUntil { env.auth.calls.contains("signInAnonymously") }
+        XCTAssertTrue(env.manager.isBusy, "busy while the first operation runs")
+
+        // Queued behind the first; it signs in again after signing out, which takes another 150 ms.
+        let second = Task { try await env.manager.signOut() }
+        try await Task.sleep(for: .milliseconds(20))
+        await first.value
+        XCTAssertTrue(env.manager.isBusy, "still busy while the second operation waits and runs")
+
+        try await second.value
+        XCTAssertFalse(env.manager.isBusy)
+        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-2"))
+    }
+
+    func testIsNotBusyAfterAFailedOperation() async throws {
+        let env = try makeEnv()
+        await env.manager.start()
+
+        do {
+            try await env.manager.deleteAccount(reauthWith: appleCredential())
+            XCTFail("deleting an anonymous account should throw")
+        } catch {
+            XCTAssertEqual(error as? AccountError, .notSignedIn)
+        }
+        XCTAssertFalse(env.manager.isBusy)
     }
 
     // MARK: signOut

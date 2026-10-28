@@ -26,14 +26,4 @@ struct Poem: Codable, Identifiable, Hashable, Copyable {
     var copyableText: String {
         return "\(title)\n\(author.name)\n\n\(content)"
     }
-
-    static func toPoem(from persisted: PersistedPoem) -> Poem {
-        let poem = Poem(
-            id: persisted.poemID,
-            title: persisted.title,
-            author: Author(id: persisted.author.authorID, name: persisted.author.name),
-            content: persisted.text
-        )
-        return poem
-    }
 }

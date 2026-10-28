@@ -8,6 +8,8 @@
 import Foundation
 import SwiftData
 
+/// A like kept on the device before likes moved to Firestore. Nothing writes these any more;
+/// `LegacyLikesMigrator` uploads them once.
 @Model
 final class PersistedPoem {
     var poemID: Int
@@ -22,15 +24,5 @@ final class PersistedPoem {
         self.author = author
         self.text = text
         self.persistedDate = persistedDate
-    }
-
-    static func toPersistedPoem(from poem: Poem) -> PersistedPoem {
-        let persistedPoem = PersistedPoem(
-            poemID: poem.id,
-            title: poem.title,
-            author: PersistedAuthor(authorID: poem.author.id, name: poem.author.name),
-            text: poem.content
-        )
-        return persistedPoem
     }
 }

@@ -1,5 +1,16 @@
 import Foundation
+import XCTest
 @testable import Wuserade
+
+/// Polls until `condition` holds (at most about two seconds), failing the test if it never does.
+@MainActor
+func waitUntil(_ condition: () -> Bool) async throws {
+    for _ in 0 ..< 400 {
+        if condition() { return }
+        try await Task.sleep(for: .milliseconds(5))
+    }
+    XCTFail("condition never became true")
+}
 
 /// In-memory `ContentRepository` for tests. Never touches Firestore or the network.
 /// Records how often each read was made so tests can prove what did, and did not, hit the repository.
@@ -291,6 +302,21 @@ final class FakeLikesStore: LikesStore, @unchecked Sendable {
     struct PermissionDenied: Error {}
     struct Failure: Error {}
 
+    /// What one `setLike` or `removeLike` call does: it waits `delay`, then throws `error` if there
+    /// is one, and otherwise stores the change. Like the real store, a call can hang before it answers.
+    struct WriteOutcome {
+        var delay: Duration?
+        var error: Error?
+
+        static func failure(after delay: Duration? = nil) -> WriteOutcome {
+            WriteOutcome(delay: delay, error: Failure())
+        }
+
+        static func success(after delay: Duration? = nil) -> WriteOutcome {
+            WriteOutcome(delay: delay, error: nil)
+        }
+    }
+
     let log: CallLog
     private let ownerUid: (@Sendable () -> String?)?
     private let lock = NSLock()
@@ -301,6 +327,8 @@ final class FakeLikesStore: LikesStore, @unchecked Sendable {
     private var _fetchError: Error?
     private var _afterFetchHook: (@Sendable () -> Void)?
     private var _deleteAllDataDelays: [Duration?] = []
+    /// Upcoming outcomes by call name ("setLike", "removeLike"), consumed in call order.
+    private var _writeOutcomes: [String: [WriteOutcome]] = [:]
     private var _observers: [String: [UUID: AsyncThrowingStream<[Like], Error>.Continuation]] = [:]
     private var _cancelledObservations: [String] = []
 
@@ -348,6 +376,16 @@ final class FakeLikesStore: LikesStore, @unchecked Sendable {
     /// runs (and before it checks the owner). `nil` means no wait.
     func setDeleteAllDataDelays(_ delays: [Duration?]) {
         lock.withLock { _deleteAllDataDelays = delays }
+    }
+
+    /// One entry per upcoming `setLike` call, in order. Calls after the list is used up succeed at once.
+    func setSetLikeOutcomes(_ outcomes: [WriteOutcome]) {
+        lock.withLock { _writeOutcomes["setLike"] = outcomes }
+    }
+
+    /// One entry per upcoming `removeLike` call, in order. Calls after the list is used up succeed at once.
+    func setRemoveLikeOutcomes(_ outcomes: [WriteOutcome]) {
+        lock.withLock { _writeOutcomes["removeLike"] = outcomes }
     }
 
     func resetCalls() {
@@ -406,6 +444,7 @@ final class FakeLikesStore: LikesStore, @unchecked Sendable {
 
     func setLike(_ like: Like, uid: String) async throws {
         try record("setLike", uid: uid)
+        try await applyNextOutcome(of: "setLike")
         lock.withLock { _likes[uid, default: [:]][like.poemId] = like }
         notify(uid)
     }
@@ -421,8 +460,22 @@ final class FakeLikesStore: LikesStore, @unchecked Sendable {
 
     func removeLike(poemId: Int, uid: String) async throws {
         try record("removeLike", uid: uid)
+        try await applyNextOutcome(of: "removeLike")
         lock.withLock { _ = _likes[uid]?.removeValue(forKey: poemId) }
         notify(uid)
+    }
+
+    /// Waits and throws as the next queued outcome of `call` says; does nothing when none is queued.
+    private func applyNextOutcome(of call: String) async throws {
+        let outcome: WriteOutcome? = lock.withLock {
+            guard var queued = _writeOutcomes[call], !queued.isEmpty else { return nil }
+            let next = queued.removeFirst()
+            _writeOutcomes[call] = queued
+            return next
+        }
+        guard let outcome else { return }
+        if let delay = outcome.delay { try await Task.sleep(for: delay) }
+        if let error = outcome.error { throw error }
     }
 
     func ensureUserDocument(uid: String) async throws {

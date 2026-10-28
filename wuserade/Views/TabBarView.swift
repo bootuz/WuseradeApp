@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import FirebaseAnalytics
 import SFSafeSymbols
 
 struct TabBarView: View {
@@ -23,10 +22,6 @@ struct TabBarView: View {
         .tint(.primary)
         .preferredColorScheme(colorScheme ? .dark : .light)
         .onAppear {
-            if firstLaunch {
-                Analytics.setUserID(UUID().uuidString)
-            }
-            
             if !firstLaunch {
                 Task {
                     await notificationManager.request()
@@ -41,6 +36,7 @@ struct TabBarView: View {
     TabBarView(notificationManager: NotificationManager())
         .environment(CatalogStore.preview())
         .environmentObject(FontSettingsManager())
-        .modelContainer(for: PersistedPoem.self, inMemory: true)
+        .environment(LikesController.preview(likes: [Like(poem: Poem.example)]))
+        .environment(AccountManager.preview())
 }
 #endif

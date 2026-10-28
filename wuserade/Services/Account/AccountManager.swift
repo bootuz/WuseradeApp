@@ -35,6 +35,10 @@ enum AccountError: Error, Equatable {
 @Observable
 final class AccountManager {
     private(set) var state: AccountState = .signedOut
+    /// True from the moment `start`, `signIn`, `signOut` or `deleteAccount` is called until every
+    /// operation queued so far has finished. Likes are off while it is true: a sign-in reads the
+    /// anonymous likes and then deletes them, so a like written in between would be lost.
+    private(set) var isBusy = false
 
     @ObservationIgnored private let auth: AuthBackend
     @ObservationIgnored private let likes: LikesStore
@@ -42,6 +46,8 @@ final class AccountManager {
     @ObservationIgnored private let setAnalyticsUserID: (String) -> Void
     /// The last queued operation. A new operation waits for it before running.
     @ObservationIgnored private var lastOperation: Task<Result<Void, Error>, Never>?
+    /// Operations that are queued or running; `isBusy` is true while there are any.
+    @ObservationIgnored private var pendingOperations = 0
 
     init(
         auth: AuthBackend,
@@ -94,6 +100,13 @@ final class AccountManager {
 
     /// Queues `operation` behind every earlier one and waits for it to finish.
     private func serialized(_ operation: @escaping @MainActor () async throws -> Void) async throws {
+        pendingOperations += 1
+        isBusy = true
+        defer {
+            pendingOperations -= 1
+            isBusy = pendingOperations > 0
+        }
+
         let previous = lastOperation
         let task = Task { () -> Result<Void, Error> in
             _ = await previous?.value
