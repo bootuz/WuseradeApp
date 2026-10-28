@@ -22,20 +22,25 @@ struct VerseView: View {
     var body: some View {
         let measure = (wide ? em * 21 / 19 : em) * Space.measureMaxEm
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(poem.blocks.enumerated()), id: \.offset) { _, block in
-                switch block {
-                case .asterism:
-                    Lozenge(kind: .asterism)
-                        .padding(.vertical, stanzaGap)
-                case .lines(let lines):
-                    if poem.lineCount > Self.lazyThreshold {
-                        LazyVStack(alignment: .leading, spacing: 0) {
-                            ForEach(Array(Self.stanzas(of: lines).enumerated()), id: \.offset) { _, stanza in
-                                text(stanza, measure: measure)
+            // One lazy stack for the whole poem. A stack per section numbered each section's stanzas from 0, and
+            // lazy stacks sharing ids in one scroll view showed an earlier section in place of a later one.
+            if poem.lineCount > Self.lazyThreshold {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(poem.lazyRows.enumerated()), id: \.offset) { _, row in
+                        // One view per row whichever kind it is, so the stack can identify rows by id alone.
+                        VStack(alignment: .leading, spacing: 0) {
+                            switch row {
+                            case .asterism: asterism
+                            case .lines(let stanza): text(stanza, measure: measure)
                             }
                         }
-                    } else {
-                        text(lines, measure: measure)
+                    }
+                }
+            } else {
+                ForEach(Array(poem.blocks.enumerated()), id: \.offset) { _, block in
+                    switch block {
+                    case .asterism: asterism
+                    case .lines(let lines): text(lines, measure: measure)
                     }
                 }
             }
@@ -71,12 +76,8 @@ struct VerseView: View {
         VerseTextView(lines: lines, wide: wide, sizeStep: sizeStep, leading: leading, face: face, bold: bold, measure: measure)
     }
 
-    /// Splits at stanza gaps, keeping each gap on the stanza it opens.
-    private static func stanzas(of lines: [VerseLine]) -> [[VerseLine]] {
-        var result: [[VerseLine]] = []
-        for line in lines {
-            if line.gapBefore || result.isEmpty { result.append([line]) } else { result[result.count - 1].append(line) }
-        }
-        return result
+    private var asterism: some View {
+        Lozenge(kind: .asterism)
+            .padding(.vertical, stanzaGap)
     }
 }

@@ -5,7 +5,8 @@
 import Foundation
 
 struct ParsedPoem: Hashable {
-    var blocks: [VerseBlock]
+    /// Fixed once parsed, so `lazyRows` never goes stale.
+    let blocks: [VerseBlock]
     var dateline: String?
 
     /// All verse lines, ignoring breaks.
@@ -18,9 +19,25 @@ struct ParsedPoem: Hashable {
 
     var lineCount: Int { lines.count }
 
+    /// Every section's stanzas, one row each, with the breaks between: the rows a long poem reads in lazily.
+    let lazyRows: [VerseBlock]
+
     init(blocks: [VerseBlock], dateline: String?) {
         self.blocks = blocks
         self.dateline = dateline
+        lazyRows = blocks.flatMap { block -> [VerseBlock] in
+            guard case .lines(let lines) = block else { return [block] }
+            return Self.stanzas(of: lines).map(VerseBlock.lines)
+        }
+    }
+
+    /// Splits at stanza gaps, keeping each gap on the stanza it opens.
+    private static func stanzas(of lines: [VerseLine]) -> [[VerseLine]] {
+        var result: [[VerseLine]] = []
+        for line in lines {
+            if line.gapBefore || result.isEmpty { result.append([line]) } else { result[result.count - 1].append(line) }
+        }
+        return result
     }
 
     init(_ text: String) {
