@@ -14,7 +14,7 @@ struct Poem: Codable, Identifiable, Hashable, Copyable {
     let content: String
 
     static var example: Poem {
-        return Poem(id: 1, title: "Усэм и цlэр", author: Author(id: 1, name: "Усакlуэм и цlэр"), content: """
+        return Poem(id: 1, title: "Усэм и цӀэр", author: Author(id: 1, name: "УсакӀуэм и цӀэр"), content: """
             Тхыпхъэм и щапхъэу
             Мыбдеж усэм и едзыгъуэ къиувэнущ,
             И инагъым зэрызихъуэжыр

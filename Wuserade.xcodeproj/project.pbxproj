@@ -58,12 +58,23 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C04FC81D2FF58F02004A18CC /* Preview Content */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "Preview Content"; sourceTree = "<group>"; };
-		C04FC83C2FF58F06004A18CC /* Views */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Views; sourceTree = "<group>"; };
-		C04FC85C2FF58F0C004A18CC /* ViewModels */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ViewModels; sourceTree = "<group>"; };
 		C04FC86F2FF58F0F004A18CC /* Services */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Services; sourceTree = "<group>"; };
 		C04FC8812FF58F14004A18CC /* Models */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Models; sourceTree = "<group>"; };
 		C04FC8892FF58F18004A18CC /* fonts */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = fonts; sourceTree = "<group>"; };
 		C04FC88F2FF58F1C004A18CC /* Managers */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Managers; sourceTree = "<group>"; };
+		D0A1E5000000000000000001 /* Catalog */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Catalog; sourceTree = "<group>"; };
+		D0A1E5000000000000000002 /* Components */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Components; sourceTree = "<group>"; };
+		D0A1E5000000000000000003 /* Design */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Design; sourceTree = "<group>"; };
+		D0A1E5000000000000000004 /* Home */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Home; sourceTree = "<group>"; };
+		D0A1E5000000000000000005 /* Lists */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Lists; sourceTree = "<group>"; };
+		D0A1E5000000000000000006 /* Navigation */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Navigation; sourceTree = "<group>"; };
+		D0A1E5000000000000000007 /* Onboarding */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Onboarding; sourceTree = "<group>"; };
+		D0A1E5000000000000000008 /* Reader */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Reader; sourceTree = "<group>"; };
+		D0A1E5000000000000000009 /* Resources */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Resources; sourceTree = "<group>"; };
+		D0A1E500000000000000000A /* Search */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Search; sourceTree = "<group>"; };
+		D0A1E500000000000000000B /* Settings */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Settings; sourceTree = "<group>"; };
+		D0A1E500000000000000000C /* Shell */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Shell; sourceTree = "<group>"; };
+		D0A1E500000000000000000D /* Text */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Text; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,12 +132,23 @@
 			isa = PBXGroup;
 			children = (
 				C030F8FA2B8A0D90009E5907 /* GoogleService-Info.plist */,
+				D0A1E5000000000000000001 /* Catalog */,
+				D0A1E5000000000000000002 /* Components */,
+				D0A1E5000000000000000003 /* Design */,
+				D0A1E5000000000000000004 /* Home */,
+				D0A1E5000000000000000005 /* Lists */,
+				D0A1E5000000000000000006 /* Navigation */,
+				D0A1E5000000000000000007 /* Onboarding */,
+				D0A1E5000000000000000008 /* Reader */,
+				D0A1E5000000000000000009 /* Resources */,
+				D0A1E500000000000000000A /* Search */,
+				D0A1E500000000000000000B /* Settings */,
+				D0A1E500000000000000000C /* Shell */,
+				D0A1E500000000000000000D /* Text */,
 				C04FC88F2FF58F1C004A18CC /* Managers */,
 				C04FC8892FF58F18004A18CC /* fonts */,
 				C04FC8812FF58F14004A18CC /* Models */,
 				C04FC86F2FF58F0F004A18CC /* Services */,
-				C04FC85C2FF58F0C004A18CC /* ViewModels */,
-				C04FC83C2FF58F06004A18CC /* Views */,
 				C07F162B2B7E429B007F11B7 /* Assets.xcassets */,
 				C04FC81D2FF58F02004A18CC /* Preview Content */,
 				C07F16572B7E43F6007F11B7 /* Constants.swift */,
@@ -179,12 +201,23 @@
 			);
 			fileSystemSynchronizedGroups = (
 				C04FC81D2FF58F02004A18CC /* Preview Content */,
-				C04FC83C2FF58F06004A18CC /* Views */,
-				C04FC85C2FF58F0C004A18CC /* ViewModels */,
 				C04FC86F2FF58F0F004A18CC /* Services */,
 				C04FC8812FF58F14004A18CC /* Models */,
 				C04FC8892FF58F18004A18CC /* fonts */,
 				C04FC88F2FF58F1C004A18CC /* Managers */,
+				D0A1E5000000000000000001 /* Catalog */,
+				D0A1E5000000000000000002 /* Components */,
+				D0A1E5000000000000000003 /* Design */,
+				D0A1E5000000000000000004 /* Home */,
+				D0A1E5000000000000000005 /* Lists */,
+				D0A1E5000000000000000006 /* Navigation */,
+				D0A1E5000000000000000007 /* Onboarding */,
+				D0A1E5000000000000000008 /* Reader */,
+				D0A1E5000000000000000009 /* Resources */,
+				D0A1E500000000000000000A /* Search */,
+				D0A1E500000000000000000B /* Settings */,
+				D0A1E500000000000000000C /* Shell */,
+				D0A1E500000000000000000D /* Text */,
 			);
 			name = Wuserade;
 			packageProductDependencies = (

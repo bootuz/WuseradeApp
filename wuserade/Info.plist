@@ -23,7 +23,11 @@
 	<false/>
 	<key>UIAppFonts</key>
 	<array>
-		<string>MarckScript-Regular.ttf</string>
+		<string>Alegreya-Regular.ttf</string>
+		<string>Alegreya-Medium.ttf</string>
+		<string>Alegreya-Bold.ttf</string>
+		<string>Alegreya-Italic.ttf</string>
+		<string>Alegreya-BoldItalic.ttf</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

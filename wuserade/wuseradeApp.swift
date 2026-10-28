@@ -7,11 +7,12 @@
 
 import SwiftUI
 import SwiftData
+import FirebaseAnalytics
 import FirebaseCore
 import FirebaseMessaging
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
-    
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         application.registerForRemoteNotifications()
         FirebaseApp.configure()
@@ -37,8 +38,11 @@ struct wuseradeApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
     @AppStorage("firstLaunch") private var firstLaunch = true
-    @StateObject private var fontSettingsManager = FontSettingsManager()
-    @StateObject private var notificationManager = NotificationManager()
+    @State private var catalog = Catalog()
+
+    init() {
+        NavigationBarStyle.apply()
+    }
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -56,17 +60,16 @@ struct wuseradeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            TabBarView(notificationManager: notificationManager)
-                .environmentObject(fontSettingsManager)
-                .tint(.primary)
-                .sheet(isPresented: $firstLaunch, onDismiss: {
-                    Task {
-                        await notificationManager.request()
-                    }
-                }, content: {
+            RootView()
+                .environment(catalog)
+                .sheet(isPresented: $firstLaunch) {
                     OnboardingView()
-                        .interactiveDismissDisabled()
-                })
+                }
+                .onAppear {
+                    if firstLaunch {
+                        Analytics.setUserID(UUID().uuidString)
+                    }
+                }
         }
         .modelContainer(sharedModelContainer)
     }
