@@ -51,12 +51,16 @@ def poem_document(p: PoemRow, author_name: str) -> dict:
 
 
 def author_document(a: AuthorRow, poems_count: int) -> dict:
-    """The `authors/{id}` document."""
+    """The `authors/{id}` document.
+
+    Django stores a missing photo as '' (ImageField blank=True, not null), so a
+    blank value is normalized to None; the app must see null, not an empty URL.
+    """
     return {
         "id": a.id,
         "name": a.name,
         "bio": a.bio,
-        "photoURL": a.photo,
+        "photoURL": a.photo or None,
         "poemsCount": poems_count,
     }
 

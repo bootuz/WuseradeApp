@@ -171,6 +171,13 @@ def test_poem_document_fields():
     }
 
 
+def test_author_document_blank_photo_becomes_null():
+    # Django's ImageField(blank=True) without null=True stores '' in Postgres, not NULL.
+    blank = AuthorRow(id=9, name="Blank", bio="", photo="")
+
+    assert author_document(blank, poems_count=1)["photoURL"] is None
+
+
 def test_author_and_theme_documents():
     author = AuthorRow(id=7, name="Name", bio="Bio text", photo="authors/7.jpg")
     no_photo = AuthorRow(id=8, name="Other", bio="", photo=None)
