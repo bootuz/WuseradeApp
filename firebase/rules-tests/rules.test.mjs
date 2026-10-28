@@ -1,6 +1,7 @@
 // Firestore security rules tests. Run through the emulator, never against production:
 //   npx -y firebase-tools@latest emulators:exec --project demo-wuserade --only firestore "npm --prefix rules-tests test"
 import { test, before, after, beforeEach } from 'node:test'
+import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import {
@@ -8,7 +9,19 @@ import {
   assertSucceeds,
   assertFails,
 } from '@firebase/rules-unit-testing'
-import { doc, getDoc, setDoc, deleteDoc, setLogLevel, Timestamp } from 'firebase/firestore'
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  setLogLevel,
+  Timestamp,
+} from 'firebase/firestore'
 
 // Denied writes are expected here; keep the SDK from logging each one.
 setLogLevel('silent')
@@ -120,6 +133,37 @@ test('owner can create, read, delete own user doc and likes', async () => {
 
   await assertSucceeds(deleteDoc(likeRef))
   await assertSucceeds(deleteDoc(userRef))
+})
+
+// What `ensureUserDocument` writes on first launch.
+test('owner can create own user doc with a server timestamp', async () => {
+  await assertSucceeds(setDoc(doc(alice(), 'users/alice'), { createdAt: serverTimestamp() }))
+  await assertFails(setDoc(doc(alice(), 'users/bob'), { createdAt: serverTimestamp() }))
+})
+
+// The likes listener and `fetchLikes` query by `likedAt`; `deleteAllData` lists the collection.
+test('owner can query own likes', async () => {
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore()
+    await setDoc(doc(db, 'users/alice/likes/5'), validLike())
+    await setDoc(doc(db, 'users/alice/likes/6'), validLike({ poemId: 6 }))
+  })
+  const likes = collection(alice(), 'users/alice/likes')
+  const ordered = await assertSucceeds(getDocs(query(likes, orderBy('likedAt', 'desc'))))
+  assert.equal(ordered.size, 2)
+  const all = await assertSucceeds(getDocs(likes))
+  assert.equal(all.size, 2)
+})
+
+test("cannot query another user's likes", async () => {
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/bob/likes/5'), validLike())
+  })
+  for (const db of [alice(), anon()]) {
+    const likes = collection(db, 'users/bob/likes')
+    await assertFails(getDocs(query(likes, orderBy('likedAt', 'desc'))))
+    await assertFails(getDocs(likes))
+  }
 })
 
 test('user doc must have exact fields', async () => {
