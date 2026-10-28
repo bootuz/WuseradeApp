@@ -13,7 +13,7 @@ struct LikedView: View {
         Group {
             if likes.likes.isEmpty {
                 ScrollView {
-                    EmptyStateView(title: "Уигу ирихьа усэхэр мыбдеж къридзэнущ.", message: OwnerCopy.likedEmptyBody)
+                    EmptyStateView(title: String(localized: "Уигу ирихьа усэхэр мыбдеж къридзэнущ."), message: OwnerCopy.likedEmptyBody)
                 }
             } else {
                 PoemList(poems: likes.likes.map(PoemSummary.init), onUnlike: unlike)

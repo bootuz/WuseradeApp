@@ -10,7 +10,7 @@ struct OfflineStateView: View {
     @State private var retrying = false
 
     var body: some View {
-        EmptyStateView(title: "Мэхь мэхь", message: "Интернетыр къэпщытэж", systemImage: "wifi.slash") {
+        EmptyStateView(title: String(localized: "Мэхь мэхь"), message: String(localized: "Интернетыр къэпщытэж"), systemImage: "wifi.slash") {
             Button {
                 Task {
                     retrying = true

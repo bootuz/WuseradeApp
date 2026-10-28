@@ -198,30 +198,30 @@ struct AccountSection: View {
     }
 
     // TODO(owner): copy. Meaning: "Signing in isn't available yet."
-    static let configurationMessage = "Хыхьэныр иджыри хузэфэк\u{04C0}ыркъым."
+    static let configurationMessage = String(localized: "Хыхьэныр иджыри хузэфэк\u{04C0}ыркъым.")
     // TODO(owner): copy. Meaning: "Something went wrong. Check your internet connection and try again."
-    static let genericMessage = "Щыуагъэ къыщыхъуащ. Интернетыр къэпщытэжи аргуэру е\u{04C0}э."
+    static let genericMessage = String(localized: "Щыуагъэ къыщыхъуащ. Интернетыр къэпщытэжи аргуэру е\u{04C0}э.")
 
     // MARK: Copy
 
     // TODO(owner): copy. Meaning: "Account".
-    private static let header = "Аккаунт"
+    private static let header = String(localized: "Аккаунт")
     // TODO(owner): copy. Meaning: "Sign in to see your liked poems on your other devices too."
-    private static let signInExplanation = "Уи усэ ныбжьэхэр нэгъуэщ\u{04C0} телефоным къыщыплъагъун папщ\u{04C0}э хыхьэ."
+    private static let signInExplanation = String(localized: "Уи усэ ныбжьэхэр нэгъуэщ\u{04C0} телефоным къыщыплъагъун папщ\u{04C0}э хыхьэ.")
     // TODO(owner): copy. Meaning: "Sign in with Google".
-    private static let googleTitle = "Google-къэ хыхьэн"
+    private static let googleTitle = String(localized: "Google-к\u{04C0}э хыхьэн")
     // TODO(owner): copy. Meaning: "Sign out".
-    private static let signOutTitle = "Дэк\u{04C0}ын"
+    private static let signOutTitle = String(localized: "Дэк\u{04C0}ын")
     // TODO(owner): copy. Meaning: "Delete account".
-    private static let deleteTitle = "Аккаунтыр хэгъэк\u{04C0}ыжьын"
+    private static let deleteTitle = String(localized: "Аккаунтыр хэгъэк\u{04C0}ыжьын")
     // TODO(owner): copy. Meaning: "Delete your account?"
-    private static let deleteDialogTitle = "Аккаунтыр хэбгъэк\u{04C0}ыжьыну п\u{04C0}эрэ?"
+    private static let deleteDialogTitle = String(localized: "Аккаунтыр хэбгъэк\u{04C0}ыжьыну п\u{04C0}эрэ?")
     // TODO(owner): copy. Meaning: "Your account and your liked poems will be deleted for good."
-    private static let deleteWarning = "Аккаунтымрэ уи усэ ныбжьэхэмрэ зэи къагъэзэжынкъым."
+    private static let deleteWarning = String(localized: "Аккаунтымрэ уи усэ ныбжьэхэмрэ зэи къагъэзэжынкъым.")
     // TODO(owner): copy. Meaning: "Error".
-    private static let alertTitle = "Щыуагъэ"
+    private static let alertTitle = String(localized: "Щыуагъэ")
     // TODO(owner): copy. Meaning: "OK".
-    private static let okTitle = "Хъунщ"
+    private static let okTitle = String(localized: "Хъунщ")
 }
 
 // MARK: - Sign in with Apple button

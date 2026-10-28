@@ -21,9 +21,9 @@ struct OnboardingView: View {
 
                     VStack(alignment: .leading, spacing: 0) {
                         Rectangle().fill(Palette.hairline).frame(height: 1)
-                        entry("Адыгэ усыгъэм хэгъуазэ", OwnerCopy.onboardingFirstLine)
-                        entry("Усэхэр зытеухуам еплъ", "ЗэмылӀэужыгъуэу къыхэтхащ")
-                        entry("УсакӀуэхэр зэгъэцӀыху", "Я лэжьыгъэхэм нэӀуасэ зыхуэщӀ")
+                        entry(String(localized: "Адыгэ усыгъэм хэгъуазэ"), OwnerCopy.onboardingFirstLine)
+                        entry(String(localized: "Усэхэр зытеухуам еплъ"), String(localized: "ЗэмылӀэужыгъуэу къыхэтхащ"))
+                        entry(String(localized: "УсакӀуэхэр зэгъэцӀыху"), String(localized: "Я лэжьыгъэхэм нэӀуасэ зыхуэщӀ"))
                     }
                     .padding(.top, Space.eight)
                 }

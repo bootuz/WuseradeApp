@@ -44,7 +44,7 @@ struct HomeView: View {
                 .contentRow(separator: .hidden)
             }
 
-            SectionLabel(text: "УсэщӀэхэр")
+            SectionLabel(text: String(localized: "УсэщӀэхэр"))
                 .padding(.top, Space.six)
                 .contentRow(separator: .hidden)
             ForEach(Array(newest.enumerated()), id: \.element.id) { index, poem in
@@ -54,7 +54,7 @@ struct HomeView: View {
                 .contentRow()
             }
 
-            SectionLabel(text: "Зытеухуар")
+            SectionLabel(text: String(localized: "Зытеухуар"))
                 .padding(.top, Space.six)
                 .contentRow(separator: .hidden)
             ForEach(themes) { theme in

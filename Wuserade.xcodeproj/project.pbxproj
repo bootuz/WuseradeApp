@@ -10,7 +10,6 @@
 		84641BACF94A8F3A59443175 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 19A2F3A3102AF46589D93098 /* FirebaseAuth */; };
 		94A0D10ADBD373B5CE944803 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 1A6D81C849FFFB27F912EE66 /* FirebaseFirestore */; };
 		C030F8FB2B8A0D90009E5907 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C030F8FA2B8A0D90009E5907 /* GoogleService-Info.plist */; };
-		C039B2502BA64964008CE383 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C039B24F2BA64964008CE383 /* Launch Screen.storyboard */; };
 		C04874A42BA4D37B0080051A /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = C04874A32BA4D37B0080051A /* FirebaseAnalyticsCore */; };
 		C04874A62BA4D37B0080051A /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = C04874A52BA4D37B0080051A /* FirebaseMessaging */; };
 		C076E20A2B860E3B00CC7B52 /* Pow in Frameworks */ = {isa = PBXBuildFile; productRef = C076E2092B860E3B00CC7B52 /* Pow */; };
@@ -21,6 +20,9 @@
 		C07F16452B7E429B007F11B7 /* wuseradeUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07F16442B7E429B007F11B7 /* wuseradeUITestsLaunchTests.swift */; };
 		C0D86F61CCBB820002D760A8 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 1E9381E1255756003CE8454B /* GoogleSignIn */; };
 		C0DB621F2B9B3E0B00B30187 /* SFSafeSymbols in Frameworks */ = {isa = PBXBuildFile; productRef = C0DB621E2B9B3E0B00B30187 /* SFSafeSymbols */; };
+		C0DDE2FA3092A3EE005CA778 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C0DDE2F93092A3EE005CA778 /* Launch Screen.storyboard */; };
+		C0DDE2FD3092A417005CA778 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C0DDE2FB3092A417005CA778 /* InfoPlist.xcstrings */; };
+		C0DDE2FE3092A417005CA778 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C0DDE2FC3092A417005CA778 /* Localizable.xcstrings */; };
 		FD7DD152D55E4C5480DB52D3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 264F5D6D5733431A8225553F /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
@@ -45,7 +47,6 @@
 		264F5D6D5733431A8225553F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C01241562B7F810600BA9615 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../wuserade/Info.plist; sourceTree = "<group>"; };
 		C030F8FA2B8A0D90009E5907 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		C039B24F2BA64964008CE383 /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 		C076E20B2B863F7500CC7B52 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		C07F16222B7E429A007F11B7 /* Wuserade.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wuserade.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C07F16252B7E429A007F11B7 /* wuseradeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = wuseradeApp.swift; sourceTree = "<group>"; };
@@ -55,6 +56,9 @@
 		C07F16422B7E429B007F11B7 /* wuseradeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = wuseradeUITests.swift; sourceTree = "<group>"; };
 		C07F16442B7E429B007F11B7 /* wuseradeUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = wuseradeUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		C0DB62282B9DB7E300B30187 /* Wuserade.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = Wuserade.entitlements; path = ../wuserade/Wuserade.entitlements; sourceTree = "<group>"; };
+		C0DDE2F83092A3EE005CA778 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = "Base.lproj/Launch Screen.storyboard"; sourceTree = "<group>"; };
+		C0DDE2FB3092A417005CA778 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		C0DDE2FC3092A417005CA778 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -136,6 +140,8 @@
 		C07F16242B7E429A007F11B7 /* wuserade */ = {
 			isa = PBXGroup;
 			children = (
+				C0DDE2FB3092A417005CA778 /* InfoPlist.xcstrings */,
+				C0DDE2FC3092A417005CA778 /* Localizable.xcstrings */,
 				C030F8FA2B8A0D90009E5907 /* GoogleService-Info.plist */,
 				D0A1E5000000000000000001 /* Catalog */,
 				D0A1E5000000000000000002 /* Components */,
@@ -157,7 +163,7 @@
 				C07F162B2B7E429B007F11B7 /* Assets.xcassets */,
 				C04FC81D2FF58F02004A18CC /* Preview Content */,
 				C07F16252B7E429A007F11B7 /* wuseradeApp.swift */,
-				C039B24F2BA64964008CE383 /* Launch Screen.storyboard */,
+				C0DDE2F93092A3EE005CA778 /* Launch Screen.storyboard */,
 				C0DB62282B9DB7E300B30187 /* Wuserade.entitlements */,
 				C01241562B7F810600BA9615 /* Info.plist */,
 				264F5D6D5733431A8225553F /* PrivacyInfo.xcprivacy */,
@@ -277,7 +283,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1520;
-				LastUpgradeCheck = 2660;
+				LastUpgradeCheck = 2720;
 				TargetAttributes = {
 					C07F16212B7E429A007F11B7 = {
 						CreatedOnToolsVersion = 15.2;
@@ -294,11 +300,15 @@
 			};
 			buildConfigurationList = C07F161D2B7E429A007F11B7 /* Build configuration list for PBXProject "Wuserade" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = en;
+			developmentRegion = kbd;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				kbd,
 				en,
 				Base,
+				ru,
+				tr,
+				ar,
 			);
 			mainGroup = C07F16192B7E429A007F11B7;
 			packageReferences = (
@@ -323,7 +333,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C039B2502BA64964008CE383 /* Launch Screen.storyboard in Resources */,
+				C0DDE2FD3092A417005CA778 /* InfoPlist.xcstrings in Resources */,
+				C0DDE2FE3092A417005CA778 /* Localizable.xcstrings in Resources */,
+				C0DDE2FA3092A3EE005CA778 /* Launch Screen.storyboard in Resources */,
 				C076E20C2B863F7500CC7B52 /* .gitignore in Resources */,
 				C030F8FB2B8A0D90009E5907 /* GoogleService-Info.plist in Resources */,
 				C07F162C2B7E429B007F11B7 /* Assets.xcassets in Resources */,
@@ -387,12 +399,24 @@
 		};
 /* End PBXTargetDependency section */
 
+/* Begin PBXVariantGroup section */
+		C0DDE2F93092A3EE005CA778 /* Launch Screen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C0DDE2F83092A3EE005CA778 /* Base */,
+			);
+			name = "Launch Screen.storyboard";
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin XCBuildConfiguration section */
 		C07F16462B7E429B007F11B7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -458,6 +482,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";

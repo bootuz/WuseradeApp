@@ -13,7 +13,7 @@ struct ReadingStyleForm: View {
     var body: some View {
         Form {
             Section {
-                StyleRow(label: "Инагъыр") {
+                StyleRow(label: String(localized: "Инагъыр")) {
                     TextSizeControl(step: $sizeStep)
                 }
                 StyleRow(label: OwnerCopy.lineSpacing) {
@@ -24,7 +24,7 @@ struct ReadingStyleForm: View {
                     .labelsHidden()
                     .fixedSize()
                 }
-                StyleRow(label: "Тхыпхъэр") {
+                StyleRow(label: String(localized: "Тхыпхъэр")) {
                     Picker("Тхыпхъэр", selection: $face) {
                         ForEach(ReadingStyle.Face.allCases) { Text($0.title).tag($0) }
                     }

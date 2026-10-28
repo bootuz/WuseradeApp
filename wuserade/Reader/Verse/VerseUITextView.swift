@@ -10,6 +10,6 @@ final class VerseUITextView: UITextView {
     override func copy(_ sender: Any?) {
         super.copy(sender)
         feedback.notificationOccurred(.success)
-        UIAccessibility.post(notification: .announcement, argument: "Копие тепхащ")
+        UIAccessibility.post(notification: .announcement, argument: String(localized: "Копие тепхащ"))
     }
 }

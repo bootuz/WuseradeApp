@@ -53,6 +53,7 @@ struct wuseradeApp: App {
     @State private var likes = LikesController(store: FirestoreLikesStore())
 
     init() {
+        AppLanguage.applyDefault()
         NavigationBarStyle.apply()
         let store = CatalogStore(repository: FirestoreContentRepository(), cache: .default)
         _catalogStore = State(initialValue: store)

@@ -9,11 +9,11 @@ enum AppTab: String, Hashable, CaseIterable {
 
     func title(compact: Bool) -> String {
         switch self {
-        case .new: compact ? "Усэхэр" : "УсэщӀэхэр"
-        case .themes: "Зытеухуар"
-        case .poets: "УсакӀуэхэр"
-        case .liked: "Сигу ирихьахэр"
-        case .search: "ЛъыхъуапӀэ"
+        case .new: compact ? String(localized: "Усэхэр") : String(localized: "УсэщӀэхэр")
+        case .themes: String(localized: "Зытеухуар")
+        case .poets: String(localized: "УсакӀуэхэр")
+        case .liked: String(localized: "Сигу ирихьахэр")
+        case .search: String(localized: "ЛъыхъуапӀэ")
         }
     }
 

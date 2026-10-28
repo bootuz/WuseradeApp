@@ -8,6 +8,7 @@ import SwiftUI
 struct SettingsSheet: View {
     @Environment(\.openURL) private var openURL
     @State private var showContact = false
+    @State private var language = AppLanguage.selected
 
     var body: some View {
         NavigationStack {
@@ -20,22 +21,40 @@ struct SettingsSheet: View {
                             .navigationTitle("Теплъэр")
                             .navigationBarTitleDisplayMode(.inline)
                     } label: {
-                        SettingsRowLabel(title: "Теплъэр теухуэн", systemImage: "textformat")
+                        SettingsRowLabel(title: String(localized: "Теплъэр теухуэн"), systemImage: "textformat")
                     }
                 } header: {
                     Text("Текстыр")
                 }
 
                 Section {
+                    // TODO(owner): copy. Meaning: "Language".
+                    Picker(selection: $language) {
+                        ForEach(AppLanguage.allCases) { language in
+                            Text(verbatim: language.name).tag(language)
+                        }
+                    } label: {
+                        SettingsRowLabel(title: String(localized: "Бзэр"), systemImage: "globe")
+                    }
+                    .onChange(of: language) { _, language in
+                        AppLanguage.selected = language
+                    }
+                } footer: {
+                    if language != AppLanguage.current {
+                        Text(OwnerCopy.languageOnNextLaunch)
+                    }
+                }
+
+                Section {
                     Button {
                         openURL(AppLinks.review)
                     } label: {
-                        SettingsRowLabel(title: "Усэрадэр къэлъытэн", systemImage: "star", leavesApp: true)
+                        SettingsRowLabel(title: String(localized: "Усэрадэр къэлъытэн"), systemImage: "star", leavesApp: true)
                     }
                     Button {
                         showContact = true
                     } label: {
-                        SettingsRowLabel(title: "Къэтхэн", systemImage: "bubble.left")
+                        SettingsRowLabel(title: String(localized: "Къэтхэн"), systemImage: "bubble.left")
                     }
                     .confirmationDialog("Къэтхэн", isPresented: $showContact, titleVisibility: .visible) {
                         Button("Telegram") { openURL(AppLinks.telegram) }
@@ -43,7 +62,7 @@ struct SettingsSheet: View {
                         Button("Email") { openURL(AppLinks.email) }
                     }
                     ShareLink(item: AppLinks.share) {
-                        SettingsRowLabel(title: "Дэгуэшэн", systemImage: "square.and.arrow.up")
+                        SettingsRowLabel(title: String(localized: "Дэгуэшэн"), systemImage: "square.and.arrow.up")
                     }
                 } header: {
                     Text("Фидбэкыр")
@@ -54,7 +73,7 @@ struct SettingsSheet: View {
                         Button {
                             openURL(privacy)
                         } label: {
-                            SettingsRowLabel(title: "ФӀэкӀхэм щхьэкӀэ политикэ", systemImage: "hand.raised", leavesApp: true)
+                            SettingsRowLabel(title: String(localized: "ФӀэкӀхэм щхьэкӀэ политикэ"), systemImage: "hand.raised", leavesApp: true)
                         }
                     }
                     NavigationLink {

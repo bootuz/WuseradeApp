@@ -83,7 +83,7 @@ struct SearchView: View {
                 Section {
                     ForEach(themes) { themeRow($0) }
                 } header: {
-                    SectionLabel(text: "Зытеухуар")
+                    SectionLabel(text: String(localized: "Зытеухуар"))
                 }
             }
         }
@@ -105,11 +105,11 @@ struct SearchView: View {
             } else {
                 PoemList(poems: results, highlight: trimmed) {
                     if !themes.isEmpty {
-                        SectionLabel(text: "Зытеухуар")
+                        SectionLabel(text: String(localized: "Зытеухуар"))
                             .contentRow(separator: .hidden)
                         ForEach(themes) { themeRow($0) }
                         if !results.isEmpty {
-                            SectionLabel(text: "Усэхэр")
+                            SectionLabel(text: String(localized: "Усэхэр"))
                                 .padding(.top, Space.four)
                                 .contentRow(separator: .hidden)
                         }
