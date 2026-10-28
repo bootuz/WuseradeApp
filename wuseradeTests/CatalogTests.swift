@@ -87,6 +87,45 @@ final class CatalogTests: XCTestCase {
         XCTAssertEqual(meta.authors[0].author, Author(id: 4, name: "Лашэ"))
         XCTAssertEqual(meta.themes, [Category(id: 9, title: "Хы")])
         XCTAssertEqual(meta.nextPoemId, 101)
-        XCTAssertNil(meta.minimumAppVersion)
+    }
+
+    // MARK: meta/content as read by FirestoreContentRepository
+
+    private let metaFields: [String: Any] = [
+        "catalogVersion": 7,
+        "catalogChunks": 2,
+        "authors": [["id": 4, "name": "Лашэ", "poemsCount": 12] as [String: Any]],
+        "themes": [["id": 9, "title": "Хы", "poemsCount": 3] as [String: Any]],
+        "nextPoemId": 101,
+    ]
+
+    func testMetaDocumentReadsMinimumAppVersionWithTheRest() throws {
+        var fields = metaFields
+        fields["minimumAppVersion"] = "1.5"
+        let document = MetaDocument(fields: fields)
+        XCTAssertEqual(document.minimumAppVersion, "1.5")
+        XCTAssertEqual(try document.meta.get().catalogVersion, 7)
+    }
+
+    /// A later `meta/content` this build cannot decode must still tell it to update.
+    func testMetaDocumentReadsMinimumAppVersionWhenTheRestDoesNotDecode() {
+        let document = MetaDocument(fields: [
+            "catalogVersion": "eight",
+            "catalogChunks": ["count": 3],
+            "minimumAppVersion": "2.0",
+        ])
+        XCTAssertEqual(document.minimumAppVersion, "2.0")
+        XCTAssertThrowsError(try document.meta.get())
+    }
+
+    func testMetaDocumentMinimumAppVersionIsNilWhenMissingNullOrNotAString() throws {
+        XCTAssertNil(MetaDocument(fields: metaFields).minimumAppVersion)
+        for value: Any in [NSNull(), 2, ["1.5"]] {
+            var fields = metaFields
+            fields["minimumAppVersion"] = value
+            let document = MetaDocument(fields: fields)
+            XCTAssertNil(document.minimumAppVersion, "\(value)")
+            XCTAssertEqual(try document.meta.get().catalogVersion, 7)
+        }
     }
 }

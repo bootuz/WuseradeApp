@@ -17,9 +17,12 @@ func waitUntil(_ condition: () -> Bool) async throws {
 final class FakeContentRepository: ContentRepository, @unchecked Sendable {
     struct Offline: Error {}
     struct NotFound: Error {}
+    struct Undecodable: Error {}
 
     private let lock = NSLock()
     private var _meta: ContentMeta
+    private var _minimumAppVersion: String?
+    private var _isMetaUndecodable = false
     private var _chunks: [Int: CatalogChunk]
     private var _poems: [Int: Poem]
     private var _isOffline = false
@@ -45,8 +48,7 @@ final class FakeContentRepository: ContentRepository, @unchecked Sendable {
         catalogChunks: 0,
         authors: [],
         themes: [],
-        nextPoemId: 1,
-        minimumAppVersion: nil
+        nextPoemId: 1
     )
 
     var metaCalls: Int { lock.withLock { _metaCalls } }
@@ -59,6 +61,17 @@ final class FakeContentRepository: ContentRepository, @unchecked Sendable {
             _meta = meta
             _chunks = Dictionary(uniqueKeysWithValues: chunks.enumerated().map { ($0.offset, $0.element) })
         }
+    }
+
+    /// `meta/content.minimumAppVersion` from now on; nil leaves it out.
+    func set(minimumAppVersion: String?) {
+        lock.withLock { _minimumAppVersion = minimumAppVersion }
+    }
+
+    /// When true, the rest of `meta/content` fails to decode (a shape this build cannot read),
+    /// while `minimumAppVersion` is still read.
+    func setMetaUndecodable(_ undecodable: Bool) {
+        lock.withLock { _isMetaUndecodable = undecodable }
     }
 
     func set(poems: [Poem]) {
@@ -83,11 +96,14 @@ final class FakeContentRepository: ContentRepository, @unchecked Sendable {
         }
     }
 
-    func fetchMeta() async throws -> ContentMeta {
+    func fetchMeta() async throws -> MetaDocument {
         try lock.withLock {
             _metaCalls += 1
             if _isOffline { throw Offline() }
-            return _meta
+            return MetaDocument(
+                minimumAppVersion: _minimumAppVersion,
+                meta: _isMetaUndecodable ? .failure(Undecodable()) : .success(_meta)
+            )
         }
     }
 

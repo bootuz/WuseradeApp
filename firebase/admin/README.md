@@ -104,6 +104,15 @@ never sees a new `catalogVersion` before its chunks exist.
 shows its "update the app" screen. Without the flag the current value is kept. `--min-version ''`
 clears it. A value must look like `1.5` or `1.5.1`.
 
+**Set the minimum version first, then change shapes.** Before publishing content that older app
+versions cannot read (a new shape for the `catalog` chunks or for `meta/content`), run
+`rebuild --min-version X`, where X is the first app version that reads the new shape, and only
+then publish the new shape. The app reads `minimumAppVersion` before anything else in
+`meta/content` and keeps it even when the rest fails to load, but setting it first means older
+versions show the update screen before they ever meet content they cannot read. For the same
+reason, never rename `minimumAppVersion` or store it as anything but a string: it is the one
+field every app version must be able to read.
+
 `nextPoemId` never goes down, even if you delete the newest poem, so a deleted id is not reused
 (likes are stored by poem id).
 

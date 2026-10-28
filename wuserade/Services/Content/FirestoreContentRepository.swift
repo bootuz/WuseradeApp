@@ -4,12 +4,19 @@ import Foundation
 /// Reads content documents written by the admin tool:
 /// `meta/content`, `catalog/{index}` and `poems/{id}`.
 struct FirestoreContentRepository: ContentRepository {
+    /// `meta/content` does not exist. A failed read, not a cleared minimum app version.
+    struct MissingMeta: LocalizedError {
+        var errorDescription: String? { "meta/content does not exist." }
+    }
+
     /// Resolved on every call rather than stored, so the repository can be created
     /// before `FirebaseApp.configure()` has run.
     private var db: Firestore { Firestore.firestore() }
 
-    func fetchMeta() async throws -> ContentMeta {
-        try await db.collection("meta").document("content").getDocument(as: ContentMeta.self)
+    func fetchMeta() async throws -> MetaDocument {
+        let snapshot = try await db.collection("meta").document("content").getDocument()
+        guard let fields = snapshot.data() else { throw MissingMeta() }
+        return MetaDocument(fields: fields)
     }
 
     func fetchCatalogChunk(index: Int) async throws -> CatalogChunk {
@@ -24,6 +31,15 @@ struct FirestoreContentRepository: ContentRepository {
             author: Author(id: record.authorId, name: record.authorName),
             content: record.text
         )
+    }
+}
+
+extension MetaDocument {
+    /// Builds from the raw fields of `meta/content`. `minimumAppVersion` is read on its own,
+    /// so it comes through even when the rest of the document does not decode.
+    init(fields: [String: Any]) {
+        minimumAppVersion = fields["minimumAppVersion"] as? String
+        meta = Result { try Firestore.Decoder().decode(ContentMeta.self, from: fields) }
     }
 }
 

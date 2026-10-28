@@ -24,8 +24,7 @@ enum PreviewContent {
         catalogChunks: 1,
         authors: authors,
         themes: themes,
-        nextPoemId: 4,
-        minimumAppVersion: nil
+        nextPoemId: 4
     )
 
     private static func entry(_ id: Int, title: String, authorId: Int, themeId: Int, daysAgo: Double) -> PoemSummary {
@@ -47,9 +46,9 @@ struct PreviewContentRepository: ContentRepository {
     /// When true every read fails, as on a first launch without network.
     var isOffline = false
 
-    func fetchMeta() async throws -> ContentMeta {
+    func fetchMeta() async throws -> MetaDocument {
         if isOffline { throw Offline() }
-        return PreviewContent.meta
+        return MetaDocument(minimumAppVersion: nil, meta: .success(PreviewContent.meta))
     }
 
     func fetchCatalogChunk(index: Int) async throws -> CatalogChunk {

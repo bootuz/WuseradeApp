@@ -35,8 +35,7 @@ final class CatalogStoreTests: XCTestCase {
             catalogChunks: chunks,
             authors: authors,
             themes: themes,
-            nextPoemId: 100,
-            minimumAppVersion: nil
+            nextPoemId: 100
         )
     }
 
@@ -217,5 +216,124 @@ final class CatalogStoreTests: XCTestCase {
 
         XCTAssertEqual(store.authors, [Author(id: 4, name: "Лашэ"), Author(id: 7, name: "Бемырзэ")])
         XCTAssertEqual(store.themes, [Category(id: 9, title: "Хы"), Category(id: 2, title: "Гущlэ")])
+    }
+
+    // MARK: Malformed catalogChunks
+
+    func testZeroCatalogChunksKeepsLoadedCatalog() async {
+        await assertRejectsChunkCount(0)
+    }
+
+    func testNegativeCatalogChunksKeepsLoadedCatalog() async {
+        await assertRejectsChunkCount(-1)
+    }
+
+    /// A hand-edited `catalogChunks` below 1 is refused like any other failed refresh:
+    /// the loaded and cached catalog stay, and the minimum app version still gets through.
+    private func assertRejectsChunkCount(_ count: Int, file: StaticString = #filePath, line: UInt = #line) async {
+        let fake = makeFake()
+        let store = makeStore(fake)
+        await store.refresh()
+        let before = store.catalog
+        XCTAssertEqual(before?.version, 3, file: file, line: line)
+
+        fake.set(meta: meta(version: 4, chunks: count), chunks: [])
+        fake.set(minimumAppVersion: "9.0")
+        fake.resetCounts()
+        await store.refresh()
+
+        XCTAssertEqual(store.lastError as? CatalogStoreError, .invalidChunkCount(count), file: file, line: line)
+        XCTAssertEqual(fake.chunkCalls, 0, file: file, line: line)
+        XCTAssertEqual(store.catalog, before, file: file, line: line)
+        XCTAssertEqual(store.meta?.catalogVersion, 3, file: file, line: line)
+        XCTAssertFalse(store.isLoading, file: file, line: line)
+        XCTAssertEqual(store.minimumAppVersion, "9.0", file: file, line: line)
+        // Neither the bad meta nor an empty catalog reached the cache.
+        let reopened = makeStore(makeFake())
+        XCTAssertEqual(reopened.catalog, before, file: file, line: line)
+        XCTAssertEqual(reopened.meta?.catalogVersion, 3, file: file, line: line)
+    }
+
+    // MARK: Minimum app version
+
+    /// One `rebuild --min-version` that also changes the chunk shape: this build cannot read the new chunks,
+    /// but must still learn that it has to be updated.
+    func testMinimumAppVersionAppliedWhenChunksFail() async {
+        let fake = makeFake()
+        let store = makeStore(fake)
+        await store.refresh()
+        let before = store.catalog
+        XCTAssertNil(store.minimumAppVersion)
+
+        // No chunk at version 4 can be read.
+        fake.set(meta: meta(version: 4, chunks: 2), chunks: [])
+        fake.set(minimumAppVersion: "9.0")
+        await store.refresh()
+
+        XCTAssertEqual(store.minimumAppVersion, "9.0")
+        XCTAssertFalse(AppVersion.isSupported(current: "1.0", minimum: store.minimumAppVersion))
+        XCTAssertNotNil(store.lastError)
+        XCTAssertEqual(store.catalog, before)
+        XCTAssertEqual(store.meta?.catalogVersion, 3)
+    }
+
+    /// A new shape for `meta/content` itself must not hide the minimum either.
+    func testMinimumAppVersionAppliedWhenRestOfMetaDoesNotDecode() async {
+        let fake = makeFake()
+        let store = makeStore(fake)
+        await store.refresh()
+        let before = store.catalog
+
+        fake.setMetaUndecodable(true)
+        fake.set(minimumAppVersion: "9.0")
+        fake.resetCounts()
+        await store.refresh()
+
+        XCTAssertEqual(store.minimumAppVersion, "9.0")
+        XCTAssertNotNil(store.lastError)
+        XCTAssertEqual(fake.chunkCalls, 0)
+        XCTAssertEqual(store.catalog, before)
+        XCTAssertEqual(store.meta?.catalogVersion, 3)
+    }
+
+    func testClearedMinimumAppVersionLiftsGate() async {
+        let fake = makeFake()
+        fake.set(minimumAppVersion: "9.0")
+        let store = makeStore(fake)
+        await store.refresh()
+        XCTAssertEqual(store.minimumAppVersion, "9.0")
+
+        fake.set(minimumAppVersion: nil)
+        await store.refresh()
+
+        XCTAssertNil(store.minimumAppVersion)
+        XCTAssertTrue(AppVersion.isSupported(current: "1.0", minimum: store.minimumAppVersion))
+        // Cleared on disk too, so the next launch does not bring the gate back.
+        let offline = makeFake()
+        offline.setOffline(true)
+        XCTAssertNil(makeStore(offline).minimumAppVersion)
+    }
+
+    func testMinimumAppVersionSurvivesRelaunchWithoutNetwork() async {
+        let fake = makeFake()
+        let store = makeStore(fake)
+        await store.refresh()
+        fake.set(meta: meta(version: 4, chunks: 2), chunks: [])
+        fake.set(minimumAppVersion: "9.0")
+        await store.refresh()
+        XCTAssertEqual(store.minimumAppVersion, "9.0")
+
+        let offline = makeFake()
+        offline.setOffline(true)
+        let relaunched = makeStore(offline)
+        // Loaded synchronously in init, before any refresh.
+        XCTAssertEqual(relaunched.minimumAppVersion, "9.0")
+        XCTAssertFalse(AppVersion.isSupported(current: "1.0", minimum: relaunched.minimumAppVersion))
+
+        await relaunched.refresh()
+
+        XCTAssertNotNil(relaunched.lastError)
+        XCTAssertEqual(relaunched.minimumAppVersion, "9.0")
+        XCTAssertEqual(relaunched.catalog?.version, 3)
     }
 }

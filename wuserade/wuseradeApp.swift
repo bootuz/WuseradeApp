@@ -74,10 +74,10 @@ struct wuseradeApp: App {
     /// The tests run inside the app. They must not sign in to, or write to, the real Firebase project.
     private static let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 
-    /// True when `meta/content.minimumAppVersion` is above this build. Stays false until a catalog has loaded,
-    /// so a first launch offline never shows the update screen.
+    /// True when `meta/content.minimumAppVersion` is above this build. Stays false until `meta/content` has been
+    /// read once, so a first launch offline never shows the update screen.
     private var isUpdateRequired: Bool {
-        !AppVersion.isSupported(current: AppVersion.current, minimum: catalogStore.meta?.minimumAppVersion)
+        !AppVersion.isSupported(current: AppVersion.current, minimum: catalogStore.minimumAppVersion)
     }
 
     var body: some Scene {
