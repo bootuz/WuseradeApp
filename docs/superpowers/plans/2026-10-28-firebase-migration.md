@@ -175,8 +175,8 @@ Every agent step here touches production and runs only after the owner says go i
   - At GoDaddy (DNS for wuserade.com), replace the current records that point at Render (the apex `A` record `216.24.57.1` and the `www` `CNAME` to `wuserade-front.onrender.com`) with exactly the records the Firebase console shows, including its `TXT` verification record.
   - Remove the custom domains from the `wuserade-front` service in Render.
   - Wait until the console shows the domain as Connected (the certificate can take up to 24 hours).
-- [ ] **Step 7 (agent):** Verify that `https://wuserade.com/` shows the home page, `https://wuserade.com/privacy` the policy, and `https://www.wuserade.com/privacy` redirects to it.
-- [ ] **Step 8: Commit** the new `GoogleService-Info.plist` together with Task 6 (not separately).
+- [ ] **Step 7 (agent):** Verify, following redirects, that `https://wuserade.com/` shows the home page, and that `https://wuserade.com/privacy` and `https://www.wuserade.com/privacy` both end at the policy with a 200 (Hosting may redirect `/privacy` to `/privacy/`).
+- [x] **Step 8:** The new `GoogleService-Info.plist` and the `REVERSED_CLIENT_ID` URL scheme landed as their own commit (bd44d0d), since Task 6 had already shipped.
 
 ---
 
@@ -456,5 +456,5 @@ Every agent step here touches production and runs only after the owner says go i
 - [ ] **Step 2: Run** all `WuseradeTests`, the rules tests (Task 1 command) and the admin tests (Task 3 command). Expected: all pass.
 - [ ] **Step 3 (owner):**
   - Final `python -m wuserade_admin migrate && python -m wuserade_admin rebuild` just before submission, then freeze edits in Django admin.
-  - In App Store Connect, set the Privacy Policy URL and update App Privacy: contact info (email), identifiers (user ID), usage data, all linked to the user.
+  - In App Store Connect, set the Privacy Policy URL to `https://wuserade.com/privacy` and update App Privacy: contact info (email), identifiers (user ID), usage data, all linked to the user.
   - Submit the build. Keep Render running; shutting it down later is the owner's call.

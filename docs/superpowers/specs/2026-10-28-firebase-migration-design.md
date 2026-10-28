@@ -15,7 +15,8 @@ and so that, later, people can **submit their own poems**, which the owner revie
 before publishing. That is the reason for moving: the whole backend goes to
 Firebase, and Render is retired.
 
-The old React website is out of scope and goes offline: the owner moves the
+The old React website is out of scope and goes offline at wuserade.com (its
+Render service can be shut down later, the owner's call): the owner moves the
 wuserade.com domain (apex and www) to Firebase Hosting, which serves a small home
 page with the App Store link, and the privacy policy.
 
