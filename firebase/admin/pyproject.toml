@@ -21,3 +21,7 @@ packages = ["wuserade_admin"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = [
+    # Google libraries warn that Python 3.11 loses support in 2027. Not actionable yet.
+    "ignore:You are using a Python version:FutureWarning",
+]
