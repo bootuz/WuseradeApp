@@ -30,21 +30,23 @@ service cloud.firestore {
         && d.text is string;
     }
 
-    // Content: readable by anyone, written only through the Admin SDK (which bypasses rules).
+    // Content: anyone can get a document by its ID, which is all the app does. Listing or querying
+    // a collection is denied: one query on poems would bill ~4,000 reads. Written only through the
+    // Admin SDK (which bypasses rules).
     match /poems/{poemId} {
-      allow read: if true;
+      allow get: if true;
     }
     match /authors/{authorId} {
-      allow read: if true;
+      allow get: if true;
     }
     match /themes/{themeId} {
-      allow read: if true;
+      allow get: if true;
     }
     match /catalog/{chunkId} {
-      allow read: if true;
+      allow get: if true;
     }
     match /meta/{docId} {
-      allow read: if true;
+      allow get: if true;
     }
 
     // Per-user data: only the signed-in owner, with validated shapes.

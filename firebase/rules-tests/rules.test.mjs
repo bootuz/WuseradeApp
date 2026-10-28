@@ -78,6 +78,25 @@ test('anyone can read content', async () => {
   }
 })
 
+// The app only ever gets content documents by ID. One unauthenticated query on poems
+// would bill ~4,000 reads, so listing a content collection is denied.
+test('nobody can list or query content', async () => {
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore()
+    await setDoc(doc(db, 'poems/1'), { id: 1 })
+    await setDoc(doc(db, 'catalog/0'), { version: 1 })
+  })
+  for (const db of [anon(), alice()]) {
+    for (const path of ['poems', 'authors', 'themes', 'catalog', 'meta']) {
+      await assertFails(getDocs(collection(db, path)))
+    }
+    await assertFails(getDocs(query(collection(db, 'poems'), orderBy('id'))))
+    // Getting one document by its ID still works.
+    await assertSucceeds(getDoc(doc(db, 'poems/1')))
+    await assertSucceeds(getDoc(doc(db, 'catalog/0')))
+  }
+})
+
 test('nobody can write content', async () => {
   const db = alice()
   for (const path of ['poems/1', 'catalog/0', 'meta/content']) {
