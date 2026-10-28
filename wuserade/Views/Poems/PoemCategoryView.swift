@@ -9,33 +9,33 @@ import SwiftUI
 import SFSafeSymbols
 
 struct PoemCategoryView: View {
-    @State private var viewModel = CategoriesViewModel(service: CategoriesService(httpClient: URLSession.shared))
+    @Environment(CatalogStore.self) private var store
     let category: Category
 
     init(category: Category) {
         self.category = category
     }
+
     var body: some View {
+        let poems = store.catalog?.poems(inTheme: category.id) ?? []
         List {
-            ForEach(viewModel.poems) { poem in
-                PoemRow(poem: poem)
+            ForEach(poems) { poem in
+                PoemRow(poemID: poem.id, title: poem.title, authorName: poem.authorName)
             }
         }
         .listStyle(.plain)
+        .refreshable {
+            await store.refresh()
+        }
         .toolbar {
             ToolbarItem(placement: .principal) {
                 TitleView(title: category.title)
             }
         }
-        .task {
-            if viewModel.poems.isEmpty {
-                await viewModel.fetchPoemsByCategory(id: category.id)
-            }
-        }
         .overlay {
-            if viewModel.isLoading {
-                ProgressView()
-            } else if viewModel.poems.isEmpty {
+            if store.catalog == nil {
+                CatalogStatusView()
+            } else if poems.isEmpty {
                 ContentUnavailableView(label: {
                     Label("Мэхь мэхь", systemSymbol: SFSymbol.pencilAndScribble)
                 }, description: {
@@ -47,12 +47,15 @@ struct PoemCategoryView: View {
     }
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
-        PoemCategoryView(category: Category(id: 2, title: "Test"))
+        PoemCategoryView(category: PreviewContent.themes[0])
             .navigationBarTitleDisplayMode(.inline)
     }
+    .environment(CatalogStore.preview())
     .environmentObject(FontSettingsManager())
     .modelContainer(for: PersistedPoem.self, inMemory: true)
     .tint(.primary)
 }
+#endif

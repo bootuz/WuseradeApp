@@ -36,9 +36,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 struct wuseradeApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("firstLaunch") private var firstLaunch = true
     @StateObject private var fontSettingsManager = FontSettingsManager()
     @StateObject private var notificationManager = NotificationManager()
+    /// The poem catalog, authors and themes every list reads. Starts from the on-disk cache.
+    @State private var catalogStore = CatalogStore(repository: FirestoreContentRepository(), cache: .default)
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -67,6 +70,15 @@ struct wuseradeApp: App {
                     OnboardingView()
                         .interactiveDismissDisabled()
                 })
+                .environment(catalogStore)
+                // Launch refresh. It runs even if the scene is held inactive at launch (e.g. by a permission alert).
+                .task { await catalogStore.refresh() }
+                // Every return to the foreground. On a cold start the first activation lands while the launch
+                // refresh is still running, and `refresh()` ignores calls while one is running.
+                .onChange(of: scenePhase) { _, phase in
+                    guard phase == .active else { return }
+                    Task { await catalogStore.refresh() }
+                }
         }
         .modelContainer(sharedModelContainer)
     }

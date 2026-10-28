@@ -45,10 +45,13 @@ struct PoemHeaderView: View {
     }
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
         PoemHeaderView(poem: Poem.example)
     }
+    .environment(CatalogStore.preview())
     .environmentObject(FontSettingsManager())
     .tint(.primary)
 }
+#endif

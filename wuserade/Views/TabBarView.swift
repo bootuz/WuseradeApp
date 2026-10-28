@@ -36,8 +36,11 @@ struct TabBarView: View {
     }
 }
 
+#if DEBUG
 #Preview {
     TabBarView(notificationManager: NotificationManager())
+        .environment(CatalogStore.preview())
         .environmentObject(FontSettingsManager())
         .modelContainer(for: PersistedPoem.self, inMemory: true)
 }
+#endif

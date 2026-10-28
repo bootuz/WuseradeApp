@@ -16,7 +16,11 @@ struct LikedPoemsView: View {
         NavigationStack {
             List {
                 ForEach(persistedPoems) { persistedPoem in
-                    PoemRow(poem: .toPoem(from: persistedPoem))
+                    PoemRow(
+                        poemID: persistedPoem.poemID,
+                        title: persistedPoem.title,
+                        authorName: persistedPoem.author.name
+                    )
                 }
             }
             .toolbarRole(.editor)

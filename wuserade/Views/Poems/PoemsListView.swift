@@ -7,43 +7,42 @@
 
 import SwiftUI
 
+/// The home list: the whole catalog, newest first, shown a page at a time.
 struct PoemsListView: View {
-    @State var viewModel: PoemsViewModel = PoemsViewModel(service: PoemsService(httpClient: URLSession.shared))
-    
+    @Environment(CatalogStore.self) private var store
+    @State private var viewModel = PoemsViewModel()
+
     var body: some View {
+        let poems = store.catalog?.newestFirst() ?? []
         List {
-            ForEach(viewModel.poems) { poem in
-                PoemRow(poem: poem)
-                .task {
-                    await viewModel.fetchMorePoemsIfNeeded(poem: poem)
-                }
+            ForEach(viewModel.visible(poems)) { poem in
+                PoemRow(poemID: poem.id, title: poem.title, authorName: poem.authorName)
+                    .onAppear {
+                        viewModel.loadMoreIfNeeded(current: poem, in: poems)
+                    }
             }
         }
         .listStyle(.plain)
         .refreshable {
-            Task {
-                await viewModel.refreshPoems()
-            }
+            await store.refresh()
         }
         .overlay {
-            if viewModel.isLoading {
-                ProgressView()
-            }
-        }
-        .task {
-            if viewModel.poems.isEmpty {
-                await viewModel.allPoems()
+            if store.catalog == nil {
+                CatalogStatusView()
             }
         }
         .analyticsScreen(name: "PoemsListView")
     }
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
         PoemsListView()
     }
+    .environment(CatalogStore.preview())
     .environmentObject(FontSettingsManager())
     .modelContainer(for: [PersistedPoem.self], inMemory: true)
     .tint(.primary)
 }
+#endif

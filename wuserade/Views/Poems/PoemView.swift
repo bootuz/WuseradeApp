@@ -66,6 +66,7 @@ struct PoemView: View {
 
 
 
+#if DEBUG
 #Preview {
     NavigationStack {
         PoemView(poemID: 203)
@@ -73,4 +74,6 @@ struct PoemView: View {
             .environmentObject(FontSettingsManager())
             .modelContainer(for: PersistedPoem.self, inMemory: true)
     }
+    .environment(CatalogStore.preview())
 }
+#endif

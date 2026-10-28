@@ -8,17 +8,19 @@
 import SwiftUI
 
 struct PoemLabel: View {
-    var poem: Poem
-    
-    init(poem: Poem) {
-        self.poem = poem
+    let title: String
+    let authorName: String
+
+    init(title: String, authorName: String) {
+        self.title = title
+        self.authorName = authorName
     }
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text(poem.title)
+            Text(title)
                 .lineLimit(0)
-            Text(poem.author.name)
+            Text(authorName)
                 .foregroundStyle(.secondary)
                 .italic()
                 .fontDesign(.serif)
@@ -27,5 +29,5 @@ struct PoemLabel: View {
 }
 
 #Preview {
-    PoemLabel(poem: Poem.example)
+    PoemLabel(title: Poem.example.title, authorName: Poem.example.author.name)
 }
