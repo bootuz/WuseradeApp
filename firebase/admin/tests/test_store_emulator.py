@@ -6,6 +6,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from google.cloud.firestore import DELETE_FIELD
+from google.cloud.firestore_v1.batch import WriteBatch
+from google.cloud.firestore_v1.document import DocumentReference
 
 from wuserade_admin import store
 from wuserade_admin.models import AuthorRow, PoemRow, ThemeRow
@@ -308,6 +310,81 @@ def test_minimum_app_version_must_look_like_a_version(db):
         store.rebuild(db, minimum_app_version="v1.5")
 
     assert not doc(db, "meta/content").exists
+
+
+def test_rebuild_refreshes_author_name_on_the_authors_poems_only(db):
+    themes, authors, poems = make_content(30)
+    store.upsert_content(db, themes, authors, poems)
+    store.rebuild(db)
+    before = {n: doc(db, f"poems/{n}") for n in range(1, 31)}
+
+    # The owner renames author 2 in the Firebase console.
+    db.document("authors/2").update({"name": "Renamed Author"})
+    store.rebuild(db)
+
+    for n in range(1, 31):
+        after = doc(db, f"poems/{n}")
+        if poems[n - 1].author_id == 2:
+            assert after.to_dict()["authorName"] == "Renamed Author"
+            assert {**after.to_dict(), "authorName": None} == {**before[n].to_dict(), "authorName": None}
+        else:
+            # Not written at all: same document, same update time.
+            assert after.to_dict() == before[n].to_dict()
+            assert after.update_time == before[n].update_time
+    entries = doc(db, "catalog/0").to_dict()["entries"]
+    assert {e["authorName"] for e in entries if e["authorId"] == 2} == {"Renamed Author"}
+    assert {a["name"] for a in meta(db)["authors"] if a["id"] == 2} == {"Renamed Author"}
+
+
+def test_rebuild_fills_in_a_missing_author_name_on_a_poem(db):
+    themes, authors, poems = make_content(5)
+    store.upsert_content(db, themes, authors, poems)
+    db.document("poems/3").update({"authorName": DELETE_FIELD})
+
+    store.rebuild(db)
+
+    assert doc(db, "poems/3").to_dict()["authorName"] == "Author 1"
+
+
+def test_author_name_refresh_is_batched_and_written_before_catalog_and_meta(db, monkeypatch):
+    themes, authors, poems = make_content(1800)  # 600 poems per author
+    store.upsert_content(db, themes, authors, poems)
+    store.rebuild(db)
+    db.document("authors/1").update({"name": "Renamed Author"})
+
+    events = []
+    batch_sizes = []
+    real_batch = db.batch
+    real_update = WriteBatch.update
+    real_set = DocumentReference.set
+
+    def spying_batch():
+        batch_sizes.append(0)
+        return real_batch()
+
+    def spying_update(self, reference, field_updates, *args, **kwargs):
+        events.append(("update", reference.path))
+        batch_sizes[-1] += 1
+        return real_update(self, reference, field_updates, *args, **kwargs)
+
+    def spying_set(self, *args, **kwargs):
+        events.append(("set", self.path))
+        return real_set(self, *args, **kwargs)
+
+    monkeypatch.setattr(db, "batch", spying_batch)
+    monkeypatch.setattr(WriteBatch, "update", spying_update)
+    monkeypatch.setattr(DocumentReference, "set", spying_set)
+
+    store.rebuild(db)
+
+    renamed = [path for kind, path in events if kind == "update" and path.startswith("poems/")]
+    assert len(renamed) == 600
+    assert max(batch_sizes) <= 500
+    last_poem_update = max(i for i, (kind, path) in enumerate(events) if path.startswith("poems/"))
+    first_chunk_write = min(i for i, (kind, path) in enumerate(events) if path.startswith("catalog/"))
+    assert last_poem_update < first_chunk_write
+    assert events[-1] == ("set", "meta/content")
+    assert all(path != "meta/content" for _, path in events[:-1])
 
 
 def test_rebuild_never_lowers_next_poem_id(db):

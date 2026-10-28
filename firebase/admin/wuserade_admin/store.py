@@ -77,7 +77,8 @@ def connect() -> firestore.Client:
 # ---------------------------------------------------------------- reading
 
 
-def _load(collection, build) -> list:
+def _load(collection, build) -> list[tuple]:
+    """(row, raw document dict) for every document of `collection`, ordered by id."""
     rows = []
     for snapshot in collection.stream():
         data = snapshot.to_dict()
@@ -89,14 +90,14 @@ def _load(collection, build) -> list:
         try:
             if data["id"] != doc_id:
                 raise ValueError(f"{path}: the id field ({data['id']!r}) does not match the document id")
-            rows.append(build(doc_id, data))
+            rows.append((build(doc_id, data), data))
         except KeyError as missing:
             raise ValueError(f"{path} is missing the field {missing.args[0]!r}") from None
-    return sorted(rows, key=lambda row: row.id)
+    return sorted(rows, key=lambda pair: pair[0].id)
 
 
-def load_content(db) -> tuple[list[ThemeRow], list[AuthorRow], list[PoemRow]]:
-    """Read every theme, author and poem back from Firestore, each list ordered by id."""
+def _read_content(db) -> tuple[list[ThemeRow], list[AuthorRow], list[PoemRow], dict[int, object]]:
+    """Like load_content, plus the authorName currently stored on each poem document."""
     themes = _load(db.collection("themes"), lambda i, d: ThemeRow(id=i, title=d["title"]))
     authors = _load(
         db.collection("authors"),
@@ -114,6 +115,18 @@ def load_content(db) -> tuple[list[ThemeRow], list[AuthorRow], list[PoemRow]]:
             updated_at=d["updatedAt"],
         ),
     )
+    stored_author_names = {poem.id: data.get("authorName") for poem, data in poems}
+    return (
+        [theme for theme, _ in themes],
+        [author for author, _ in authors],
+        [poem for poem, _ in poems],
+        stored_author_names,
+    )
+
+
+def load_content(db) -> tuple[list[ThemeRow], list[AuthorRow], list[PoemRow]]:
+    """Read every theme, author and poem back from Firestore, each list ordered by id."""
+    themes, authors, poems, _ = _read_content(db)
     return themes, authors, poems
 
 
@@ -187,14 +200,19 @@ def check_chunk_sizes(chunks: list[list[dict]], limit: int | None = None) -> Non
 
 
 def rebuild(db, minimum_app_version: str | None = None) -> RebuildResult:
-    """Recompute counts, the catalog chunks and `meta/content` from what is in Firestore.
+    """Make the derived data match the content in Firestore, e.g. after edits in the console.
+
+    Recomputes `poemsCount` on authors and themes, refreshes the author name copied onto each
+    poem (`poems/{id}.authorName`) wherever it differs from `authors/{authorId}.name`, and
+    rebuilds the catalog chunks and `meta/content`.
 
     `minimum_app_version`: None keeps the value already in `meta/content` (None if there is no
     meta yet); "" clears it; any other string sets it.
 
     Everything is checked before the first write. Writes then go in this order, so the app
-    never sees a catalogVersion whose chunks are not written yet: author and theme counts,
-    catalog chunks, stale chunks removed, `meta/content` last.
+    never sees a catalogVersion whose chunks are not written yet: author and theme counts and
+    changed poem author names (batches of at most 500, only documents that differ), catalog
+    chunks, stale chunks removed, `meta/content` last.
     """
     if minimum_app_version and not _VERSION_PATTERN.fullmatch(minimum_app_version):
         raise ValueError(
@@ -202,7 +220,7 @@ def rebuild(db, minimum_app_version: str | None = None) -> RebuildResult:
             "(use an empty string to clear it)"
         )
 
-    themes, authors, poems = load_content(db)
+    themes, authors, poems, stored_author_names = _read_content(db)
     by_id = {a.id: a for a in authors}
     _check_references(by_id, poems)
 
@@ -225,6 +243,12 @@ def rebuild(db, minimum_app_version: str | None = None) -> RebuildResult:
         [
             *((db.collection("authors").document(str(a.id)), {"poemsCount": per_author[a.id]}) for a in authors),
             *((db.collection("themes").document(str(t.id)), {"poemsCount": per_theme[t.id]}) for t in themes),
+            # Only poems whose copied author name is out of date or missing are written.
+            *(
+                (db.collection("poems").document(str(p.id)), {"authorName": by_id[p.author_id].name})
+                for p in poems
+                if stored_author_names[p.id] != by_id[p.author_id].name
+            ),
         ],
         update=True,
     )

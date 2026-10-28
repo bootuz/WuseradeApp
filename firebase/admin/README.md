@@ -49,7 +49,11 @@ Render dashboard:
 DATABASE_URL=postgresql://USER:PASSWORD@HOST/DBNAME
 ```
 
-Or pass `--dsn URL` instead. Postgres is only read, never written. The URL is never printed.
+Or pass `--dsn URL` instead. Postgres is only read, never written. The tool never prints the
+URL or its password: a URL that cannot be parsed gets a generic "not valid" message instead of
+the text from the database driver (which would quote it), other connection errors have the URL
+and password removed, and anything that looks like `user:password@` or `password=...` is
+masked in error output, including when a URL is pasted without `--dsn`.
 
 ## Commands
 
@@ -89,9 +93,12 @@ release. Things to know:
 ```
 
 Run it after any manual edit in the Firebase console. It reads all content, recomputes
-`poemsCount` on authors and themes, writes `catalog/0..n-1` with a new `version` (previous
-`catalogVersion` + 1), deletes catalog chunks that are no longer needed, and writes
-`meta/content` last, so the app never sees a new `catalogVersion` before its chunks exist.
+`poemsCount` on authors and themes, and refreshes the author name copied onto each poem
+(`poems/{id}.authorName`) wherever it no longer matches `authors/{authorId}.name`, so renaming
+an author in the console and running `rebuild` is enough (only the poems that differ are
+written). It then writes `catalog/0..n-1` with a new `version` (previous `catalogVersion` + 1),
+deletes catalog chunks that are no longer needed, and writes `meta/content` last, so the app
+never sees a new `catalogVersion` before its chunks exist.
 
 `--min-version` sets `meta/content.minimumAppVersion`, the app version below which the app
 shows its "update the app" screen. Without the flag the current value is kept. `--min-version ''`

@@ -24,7 +24,7 @@ warnings.filterwarnings("ignore", message="You are using a Python version", cate
 from dotenv import load_dotenv  # noqa: E402
 
 from . import store  # noqa: E402
-from .source import read_postgres  # noqa: E402
+from .source import mask_passwords, read_postgres  # noqa: E402
 
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 
@@ -107,8 +107,15 @@ def _add_poem(args: argparse.Namespace) -> int:
     return 0
 
 
+class _Parser(argparse.ArgumentParser):
+    """argparse echoes unrecognized arguments; a database URL pasted without --dsn must not leak."""
+
+    def error(self, message: str):
+        super().error(mask_passwords(message))
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="python -m wuserade_admin", description=__doc__.split("\n")[0])
+    parser = _Parser(prog="python -m wuserade_admin", description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
 
     migrate = commands.add_parser("migrate", help="copy content from Postgres into Firestore and rebuild")
@@ -136,7 +143,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return args.handler(args)
     except ValueError as error:
-        print(f"error: {error}", file=sys.stderr)
+        print(f"error: {mask_passwords(str(error))}", file=sys.stderr)
         return 1
 
 
