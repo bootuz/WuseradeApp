@@ -22,6 +22,7 @@
 		C07F16582B7E43F6007F11B7 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07F16572B7E43F6007F11B7 /* Constants.swift */; };
 		C0D86F61CCBB820002D760A8 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 1E9381E1255756003CE8454B /* GoogleSignIn */; };
 		C0DB621F2B9B3E0B00B30187 /* SFSafeSymbols in Frameworks */ = {isa = PBXBuildFile; productRef = C0DB621E2B9B3E0B00B30187 /* SFSafeSymbols */; };
+		FD7DD152D55E4C5480DB52D3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 264F5D6D5733431A8225553F /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +43,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		264F5D6D5733431A8225553F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C01241562B7F810600BA9615 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../wuserade/Info.plist; sourceTree = "<group>"; };
 		C030F8FA2B8A0D90009E5907 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		C039B24F2BA64964008CE383 /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
@@ -139,6 +141,7 @@
 				C039B24F2BA64964008CE383 /* Launch Screen.storyboard */,
 				C0DB62282B9DB7E300B30187 /* Wuserade.entitlements */,
 				C01241562B7F810600BA9615 /* Info.plist */,
+				264F5D6D5733431A8225553F /* PrivacyInfo.xcprivacy */,
 			);
 			path = wuserade;
 			sourceTree = "<group>";
@@ -294,6 +297,7 @@
 				C076E20C2B863F7500CC7B52 /* .gitignore in Resources */,
 				C030F8FB2B8A0D90009E5907 /* GoogleService-Info.plist in Resources */,
 				C07F162C2B7E429B007F11B7 /* Assets.xcassets in Resources */,
+				FD7DD152D55E4C5480DB52D3 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
