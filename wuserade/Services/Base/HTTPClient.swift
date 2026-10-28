@@ -23,6 +23,9 @@ extension URLSession: HTTPClient {
                 message: Constants.ErrorMessages.somethingWentWrong
             )
         }
+        guard httpResponse.statusCode == 200 else {
+            throw RequestError.invalidResponse(message: Constants.ErrorMessages.invalidResponse)
+        }
         return (data, httpResponse)
     }
 }

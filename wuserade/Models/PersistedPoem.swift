@@ -10,11 +10,11 @@ import SwiftData
 
 @Model
 final class PersistedPoem {
-    let poemID: Int
-    let title: String
-    let author: PersistedAuthor
-    let text: String
-    let persistedDate: Date
+    var poemID: Int
+    var title: String
+    var author: PersistedAuthor
+    var text: String
+    var persistedDate: Date
 
     init(poemID: Int, title: String, author: PersistedAuthor, text: String, persistedDate: Date = .now) {
         self.poemID = poemID
