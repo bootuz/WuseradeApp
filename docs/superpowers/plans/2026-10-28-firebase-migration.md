@@ -22,7 +22,7 @@
 - Never `import FirebaseFirestoreSwift`; Codable support is in `FirebaseFirestore` (SDK 11+).
 - No secrets in the repo: `DATABASE_URL`, service-account keys and `.env` files stay out of git (add `firebase/admin/.env` and `*.json` keys to `.gitignore`).
 - New user-facing strings are Kabardian placeholders marked `// TODO(owner): copy`.
-- Privacy policy URL: `https://wuserade.web.app/privacy`. App Store link for update prompts: `https://apple.co/3OWuu5b`.
+- Privacy policy URL: `https://wuserade.com/privacy` (wuserade.com and www move to Firebase Hosting in Task 5). App Store link for update prompts: `https://apple.co/3OWuu5b`.
 - Any command that touches production (database creation, `firebase deploy`, `migrate`/`rebuild` without the emulator) needs the owner's explicit go-ahead in chat at the time it runs.
 - iOS test command: `xcodebuild test -project Wuserade.xcodeproj -scheme Wuserade -destination 'platform=iOS Simulator,name=iPhone 18 Pro' -only-testing:WuseradeTests/<TestClass>`.
 - Emulator command prefix (run from `firebase/`): `npx -y firebase-tools@latest emulators:exec --project demo-wuserade --only firestore "<cmd>"`.
@@ -170,7 +170,13 @@ Every agent step here touches production and runs only after the owner says go i
 - [ ] **Step 3 (agent):** Create the database: `npx -y firebase-tools@latest firestore:databases:create "(default)" --location europe-west3 --edition standard --project wuserade`. Verify with `firestore:databases:get "(default)"`: edition STANDARD, location europe-west3.
 - [ ] **Step 4 (agent):** Deploy: `npx -y firebase-tools@latest deploy --only firestore:rules,firestore:indexes,hosting --project wuserade`. Verify that `https://wuserade.web.app/privacy` loads.
 - [ ] **Step 5 (agent):** `cd firebase/admin && python -m wuserade_admin migrate && python -m wuserade_admin rebuild`. Expected: counts match Postgres (4,091+ poems, 14 themes, at time of writing). Spot-check `poems/4130` in the console against `https://wuserade.onrender.com/api/v1/poems/4130/`.
-- [ ] **Step 6: Commit** the new `GoogleService-Info.plist` together with Task 6 (not separately).
+- [ ] **Step 6 (owner, after Step 4):** Move the domain to Firebase Hosting.
+  - In Firebase console → Hosting → Add custom domain, add `wuserade.com`, then add `www.wuserade.com` with "Redirect to wuserade.com".
+  - At GoDaddy (DNS for wuserade.com), replace the current records that point at Render (the apex `A` record `216.24.57.1` and the `www` `CNAME` to `wuserade-front.onrender.com`) with exactly the records the Firebase console shows, including its `TXT` verification record.
+  - Remove the custom domains from the `wuserade-front` service in Render.
+  - Wait until the console shows the domain as Connected (the certificate can take up to 24 hours).
+- [ ] **Step 7 (agent):** Verify that `https://wuserade.com/` shows the home page, `https://wuserade.com/privacy` the policy, and `https://www.wuserade.com/privacy` redirects to it.
+- [ ] **Step 8: Commit** the new `GoogleService-Info.plist` together with Task 6 (not separately).
 
 ---
 

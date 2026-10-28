@@ -15,7 +15,9 @@ and so that, later, people can **submit their own poems**, which the owner revie
 before publishing. That is the reason for moving: the whole backend goes to
 Firebase, and Render is retired.
 
-The website (wuserade.com) is out of scope. It is not live.
+The old React website is out of scope and goes offline: the owner moves the
+wuserade.com domain (apex and www) to Firebase Hosting, which serves a small home
+page with the App Store link, and the privacy policy.
 
 ## Goals
 
@@ -304,7 +306,8 @@ The app has no privacy policy link today, and accounts make one mandatory in-app
 Hosting.
 
 - A single static page under `firebase/hosting/` (e.g. `privacy/index.html`),
-  served at `https://wuserade.web.app/privacy`. It can move to wuserade.com later.
+  served at `https://wuserade.com/privacy` (also reachable at
+  `https://wuserade.web.app/privacy`). `www.wuserade.com` redirects to the apex.
 - The builder drafts it in English, from what the app actually collects:
   - Firebase Auth: uid, plus the email and name Apple/Google share (Apple may relay
     a private email).
@@ -359,7 +362,7 @@ Hosting.
 
 - Standard edition, `europe-west3` location.
 - List screens built from a cached catalog; full poem text loaded on open.
-- Privacy policy drafted in English, served at `wuserade.web.app/privacy`.
+- Privacy policy drafted in English, served at `wuserade.com/privacy`.
 - Silent anonymous account on launch; sign-in lives in Settings, not onboarding.
 - Like documents store a snapshot of the poem (so the Liked tab works offline, as
   today).

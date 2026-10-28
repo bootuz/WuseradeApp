@@ -60,7 +60,7 @@ struct SettingsView: View {
                         Label("Дэгуэшэн", systemSymbol: SFSymbol.squareAndArrowUp)
                     }
 
-                    Link(destination: URL(string: "https://wuserade.web.app/privacy")!) {
+                    Link(destination: URL(string: "https://wuserade.com/privacy")!) {
                         // TODO(owner): copy. Meaning: "Privacy policy".
                         Label("Фlэкlхэм щхьэкlэ политикэ", systemSymbol: SFSymbol.handRaised)
                     }
