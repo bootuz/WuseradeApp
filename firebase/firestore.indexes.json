@@ -1,0 +1,15 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "poems",
+      "fieldPath": "text",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "catalog",
+      "fieldPath": "entries",
+      "indexes": []
+    }
+  ]
+}
