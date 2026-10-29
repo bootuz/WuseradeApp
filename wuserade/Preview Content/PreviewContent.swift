@@ -27,6 +27,28 @@ enum PreviewContent {
         nextPoemId: 4
     )
 
+    /// Today's picks, for any date.
+    static func daily(date: String) -> DailyPicks {
+        DailyPicks(
+            date: date,
+            poem: DailyPoem(
+                id: Poem.example.id,
+                title: Poem.example.title,
+                authorId: Poem.example.author.id,
+                authorName: Poem.example.author.name,
+                text: Poem.example.content
+            ),
+            shortPoem: DailyPoem(id: 2, title: "", authorId: 1, authorName: authors[0].name, text: "Бжьыхьэ\nТхьэмахуэ"),
+            poet: DailyPoet(
+                id: authors[0].id,
+                name: authors[0].name,
+                poemsCount: authors[0].poemsCount,
+                photoURL: nil,
+                topPoems: [DailyPoemRef(id: 1, title: "Гъатхэ"), DailyPoemRef(id: 2, title: "Бжьыхьэ")]
+            )
+        )
+    }
+
     private static func entry(_ id: Int, title: String, authorId: Int, themeId: Int, daysAgo: Double) -> PoemSummary {
         PoemSummary(
             id: id,
@@ -59,6 +81,28 @@ struct PreviewContentRepository: ContentRepository {
     func fetchPoem(id: Int) async throws -> Poem {
         if isOffline { throw Offline() }
         return Poem.example
+    }
+}
+
+/// Serves `PreviewContent.daily` for any date, so a preview never reaches Firestore. When offline it throws.
+struct PreviewDailyStore: DailyStore {
+    var isOffline = false
+
+    func fetch(date: String) async throws -> DailyPicks? {
+        if isOffline { throw PreviewContentRepository.Offline() }
+        return PreviewContent.daily(date: date)
+    }
+}
+
+extension Library {
+    /// A library for previews over `CatalogStore.preview(loaded:)`, with today's picks from `PreviewDailyStore`
+    /// when `loaded`. It keeps no daily cache.
+    static func preview(loaded: Bool = true) -> Library {
+        Library(
+            store: .preview(loaded: loaded),
+            dailyStore: PreviewDailyStore(isOffline: !loaded),
+            dailyCache: DailyCache(directory: nil)
+        )
     }
 }
 

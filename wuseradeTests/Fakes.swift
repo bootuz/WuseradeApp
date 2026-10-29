@@ -643,3 +643,38 @@ final class FakePhotoDeleter: @unchecked Sendable {
         }
     }
 }
+
+// MARK: - Daily picks
+
+/// In-memory `DailyStore`. `documents` holds the `daily/{date}` documents that exist; a missing date fetches nil.
+/// Records the date of every fetch, in order.
+final class FakeDailyStore: DailyStore, @unchecked Sendable {
+    struct Offline: Error {}
+
+    private let lock = NSLock()
+    private var _documents: [String: DailyPicks] = [:]
+    private var _error: Error?
+    private var _fetches: [String] = []
+
+    var documents: [String: DailyPicks] {
+        get { lock.withLock { _documents } }
+        set { lock.withLock { _documents = newValue } }
+    }
+
+    /// `fetch` throws this error until it is set back to nil.
+    var error: Error? {
+        get { lock.withLock { _error } }
+        set { lock.withLock { _error = newValue } }
+    }
+
+    /// The date of every fetch, in call order.
+    var fetches: [String] { lock.withLock { _fetches } }
+
+    func fetch(date: String) async throws -> DailyPicks? {
+        try lock.withLock {
+            _fetches.append(date)
+            if let _error { throw _error }
+            return _documents[date]
+        }
+    }
+}

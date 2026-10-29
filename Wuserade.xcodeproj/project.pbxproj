@@ -82,6 +82,7 @@
 		D0A1E500000000000000000C /* Shell */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Shell; sourceTree = "<group>"; };
 		D0A1E500000000000000000D /* Text */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Text; sourceTree = "<group>"; };
 		D0A1E500000000000000000E /* Photos */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Photos; sourceTree = "<group>"; };
+		D0A1E500000000000000000F /* Shared */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Shared; sourceTree = "<group>"; };
 		DC8B981E9B7DE480FB341F65 /* wuseradeTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = wuseradeTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -158,6 +159,7 @@
 				D0A1E5000000000000000009 /* Resources */,
 				D0A1E500000000000000000A /* Search */,
 				D0A1E500000000000000000B /* Settings */,
+				D0A1E500000000000000000F /* Shared */,
 				D0A1E500000000000000000C /* Shell */,
 				D0A1E500000000000000000D /* Text */,
 				C04FC88F2FF58F1C004A18CC /* Managers */,
@@ -226,6 +228,7 @@
 				D0A1E500000000000000000C /* Shell */,
 				D0A1E500000000000000000D /* Text */,
 				D0A1E500000000000000000E /* Photos */,
+				D0A1E500000000000000000F /* Shared */,
 			);
 			name = Wuserade;
 			packageProductDependencies = (

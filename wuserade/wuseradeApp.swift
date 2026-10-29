@@ -41,7 +41,7 @@ struct wuseradeApp: App {
     @AppStorage("firstLaunch") private var firstLaunch = true
     /// The poem catalog, authors and themes every list reads. Starts from the on-disk cache.
     @State private var catalogStore: CatalogStore
-    /// What the screens read: lists from the catalog, whole poems from Firestore, and the day's poem.
+    /// What the screens read: lists from the catalog, whole poems from Firestore, and the day's picks.
     @State private var library: Library
     /// The Firebase account: a silent anonymous one on launch, upgraded by linking Apple or Google.
     @State private var account: AccountManager
@@ -53,6 +53,9 @@ struct wuseradeApp: App {
     init() {
         AppLanguage.applyDefault()
         NavigationBarStyle.apply()
+        // The day's poem used to be picked on the device and kept here; it now comes from `daily/{date}`.
+        UserDefaults.standard.removeObject(forKey: "daysPoem.day")
+        UserDefaults.standard.removeObject(forKey: "daysPoem.poem")
         let store = CatalogStore(repository: FirestoreContentRepository(), cache: .default)
         _catalogStore = State(initialValue: store)
         let library = Library(store: store)
@@ -139,11 +142,11 @@ struct wuseradeApp: App {
                 .onChange(of: account.state, initial: true) {
                     photos.bind(uid: PhotoSubmissions.uid(for: account.state))
                 }
-                // Launch refresh, then the day's poem from the fresh catalog. It runs even if the scene is held
-                // inactive at launch (e.g. by a permission alert).
+                // Launch refresh, then today's picks. It runs even if the scene is held inactive at launch (e.g. by
+                // a permission alert).
                 .task {
                     await catalogStore.refresh()
-                    await library.loadDaysPoem()
+                    await library.loadDaily()
                 }
                 // Every return to the foreground. On a cold start the first activation lands while the launch
                 // refresh is still running, and `refresh()` ignores calls while one is running.
@@ -152,7 +155,7 @@ struct wuseradeApp: App {
                     Task {
                         await catalogStore.refresh()
                         // The day may have turned while the app was in the background.
-                        await library.loadDaysPoem()
+                        await library.loadDaily()
                     }
                     // An account that could not be created earlier (offline) is tried again, so liking starts working
                     // without a relaunch. Skipped while an account operation is running, such as the launch one:

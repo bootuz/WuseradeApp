@@ -1,8 +1,9 @@
 // Minimum iOS 17.
 //  What the screens read: the newest poems, the themes and the poets from the cached Firestore catalog, the
-//  poems of one poet or theme, search, whole poems, and the day's poem. Lists come from `CatalogStore`, so they
+//  poems of one poet or theme, search, whole poems, and the day's picks. Lists come from `CatalogStore`, so they
 //  are there at once from the on-disk cache and never empty on a failed refresh. Whole poems are read one at a
-//  time from `poems/{id}` and remembered, so the reader opens them again without another read.
+//  time from `poems/{id}` and remembered, so the reader opens them again without another read. The day's picks
+//  come from the server's `daily/{date}` document, kept in the App Group so Home shows them offline.
 
 import Foundation
 import Observation
@@ -11,18 +12,23 @@ import Observation
 @Observable
 final class Library {
     let store: CatalogStore
-    /// Today's poem, chosen by `daysSource`; nil until it arrives or when it cannot be chosen offline.
-    private(set) var daysPoem: Poem?
+    /// Today's picks; nil until they arrive, or when today's document can be neither loaded nor found cached.
+    private(set) var daily: DailyPicks?
 
-    @ObservationIgnored var daysSource: any DaysPoemSource
+    /// Today's poem, from `daily`.
+    var daysPoem: Poem? { daily?.poem.poem }
+
+    @ObservationIgnored private let dailyStore: any DailyStore
+    @ObservationIgnored private let dailyCache: DailyCache
     @ObservationIgnored private var poems: [Int: Poem] = [:]
 
     /// The regular-width УсэщӀэхэр column shows this many; Home shows the first five.
     static let latestCount = 9
 
-    init(store: CatalogStore, daysSource: (any DaysPoemSource)? = nil) {
+    init(store: CatalogStore, dailyStore: any DailyStore = FirestoreDailyStore(), dailyCache: DailyCache = .shared) {
         self.store = store
-        self.daysSource = daysSource ?? DailyRotation(repository: store.repository)
+        self.dailyStore = dailyStore
+        self.dailyCache = dailyCache
     }
 
     // MARK: Lists
@@ -88,12 +94,12 @@ final class Library {
 
     func loadHome() async {
         if store.catalog == nil { await store.refresh() }
-        await loadDaysPoem()
+        await loadDaily()
     }
 
     func refreshHome() async {
         await store.refresh()
-        await loadDaysPoem()
+        await loadDaily(now: .now, alwaysFetch: true)
     }
 
     func loadPoets() async {
@@ -104,11 +110,32 @@ final class Library {
         await store.refresh()
     }
 
-    func loadDaysPoem() async {
-        guard let catalog = store.catalog,
-              let pick = await daysSource.poem(for: .now, in: catalog.entries) else { return }
-        remember([pick])
-        daysPoem = pick
+    /// Today's picks: the cached ones when they are today's, or else today's document, which is then cached.
+    /// When it cannot be loaded or does not exist, Home leaves the daily sections out unless today's are cached.
+    func loadDaily(now: Date = .now) async {
+        await loadDaily(now: now, alwaysFetch: false)
+    }
+
+    private func loadDaily(now: Date, alwaysFetch: Bool) async {
+        let today = DailyDate.string(for: now)
+        let kept = [daily, dailyCache.load()].compactMap { $0 }.first { $0.date == today }
+        if !alwaysFetch, let kept {
+            show(kept)
+            return
+        }
+        if let fetched = try? await dailyStore.fetch(date: today) {
+            dailyCache.save(fetched)
+            show(fetched)
+        } else if let kept {
+            show(kept)
+        } else {
+            daily = nil
+        }
+    }
+
+    private func show(_ picks: DailyPicks) {
+        remember([picks.poem.poem, picks.shortPoem.poem])
+        if daily != picks { daily = picks }
     }
 
     // MARK: Whole poems
