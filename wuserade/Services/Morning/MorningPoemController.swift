@@ -92,6 +92,14 @@ final class MorningPoemController {
         await register()
     }
 
+    /// The account was deleted. The morning poem goes off on this phone, so the anonymous account that follows
+    /// registers nothing: deleting an account deletes the morning poem settings too. Writes nothing; the account's
+    /// registrations are already gone.
+    func accountDeleted() {
+        permissionDenied = false
+        store(enabled: false)
+    }
+
     /// The device's time zone may have changed. The app calls it on the system's change and on becoming active.
     func timeZoneChanged() async {
         await register()

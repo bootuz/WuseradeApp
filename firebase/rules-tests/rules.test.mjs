@@ -413,3 +413,19 @@ test('the owner can update, read and delete their own device; others cannot', as
   await assertFails(deleteDoc(doc(bob, 'users/alice/devices/inst1')))
   await assertSucceeds(deleteDoc(ref))
 })
+
+test('the owner can list all their devices to delete them; others cannot list them', async () => {
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice/devices/inst1'), validDevice())
+    await setDoc(doc(ctx.firestore(), 'users/alice/devices/inst2'), validDevice({ enabled: false }))
+  })
+  const bob = testEnv.authenticatedContext('bob').firestore()
+  await assertFails(getDocs(collection(bob, 'users/alice/devices')))
+  await assertFails(getDocs(collection(anon(), 'users/alice/devices')))
+  const snapshot = await assertSucceeds(getDocs(collection(alice(), 'users/alice/devices')))
+  assert.equal(snapshot.size, 2)
+  for (const device of snapshot.docs) {
+    await assertSucceeds(deleteDoc(device.ref))
+  }
+  assert.equal((await getDocs(collection(alice(), 'users/alice/devices'))).size, 0)
+})

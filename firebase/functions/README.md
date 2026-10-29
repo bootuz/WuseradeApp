@@ -62,8 +62,15 @@ Then fill them with the admin tool (`FIRESTORE_EMULATOR_HOST=127.0.0.1:8085`, se
 emulator serves `keepReading`, but does not run the two scheduled functions; call
 `write_missing_days` and `send_due` from a short Python script instead. A debug build of the app
 started with the launch argument `-useEmulators` talks to these emulators instead of production
-(Auth 9099, Firestore 8085, Functions 5001, Storage 9199). It starts signed out, switches Analytics
-off for that install until the next normal launch, and asks for no push token.
+(Auth 9099, Firestore 8085, Functions 5001, Storage 9199). It switches Analytics off for that install
+until the next normal launch, and asks for no push token.
+
+**It signs that install out of its production account.** Each `-useEmulators` launch signs out the
+user in the keychain, so a developer's anonymous production account on that phone or simulator is
+left behind, orphaned, with its likes and reads. (A production account signed in with Apple or Google
+can be signed in again; an anonymous one cannot.) The emulators' own user then sits in the keychain.
+The next normal debug launch signs that user out too, since production doesn't know it, and starts a
+fresh anonymous production account. Use a simulator whose production account you don't need.
 
 ## Deploying (owner)
 
@@ -103,7 +110,7 @@ counted from the code, for D daily active users (DAU):
 | `keepReading` | c × q × D | c calls per reader per day, q reads per call (below). |
 | `sendMorningPoems` | 96 + E + up to 192 | 96 runs a day, each a query that costs at least 1 read; 1 read per device it sends to (E devices with the morning poem on, guessed at 0.3 × D); 1 read of the day's document per date per run that sends. |
 | `writeDailyPicks` | up to about 380 | `meta/content` and the catalog chunks (4), the 9 days it checks, the history of up to 365 earlier days for the one new day, and 2 poem texts. |
-| Sign-in to an existing account, account deletion | rare | Lists the reader's reads and likes once. |
+| Sign-in to an existing account, account deletion | rare | Lists the reader's reads and likes once (deletion also lists their devices). |
 
 **Reads per `keepReading` call (q).** 1 read of `meta/content` (the catalog itself stays in memory),
 then one batched check of the ranked candidates against the reader's history: 10 by the same poet
@@ -157,7 +164,11 @@ with the Firestore usage tab in the Firebase console.
   they show today's poem, and tap through to the reader. Receive one real morning poem at a chosen
   time and tap it.
 - [ ] **App Store privacy labels.** Add Product Interaction (linked to the user, app functionality).
-  Decide on Device ID too: the app now stores the push token and a random install ID under the
-  reader's account. `PrivacyInfo.xcprivacy` declares it as linked, for app functionality.
+  Add Device ID (linked to the user, app functionality): the app now stores the push token and a
+  random install ID under the reader's account, and `PrivacyInfo.xcprivacy` declares it that way.
+- [ ] **Older data missing from the privacy manifest.** `PrivacyInfo.xcprivacy` still doesn't declare
+  data the app collected before this branch: the name and email address from Sign in with Apple or
+  Google, the user ID, and the photos readers send. Add them to the manifest, and check they match
+  the App Store labels.
 - [ ] **Delete one test user.** An earlier test run created one anonymous user in the production
   project. Delete it in the Firebase console under Authentication > Users.

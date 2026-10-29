@@ -63,6 +63,9 @@ final class AccountManager {
     /// Deletes the photos `uid` sent that still wait for review. Only `deleteAccount` calls it.
     @ObservationIgnored private let deleteWaitingPhotos: @MainActor (_ uid: String) async throws -> Void
     @ObservationIgnored private let setAnalyticsUserID: (String) -> Void
+    /// Told once an account has been deleted, before the fresh anonymous account starts. The app turns the morning
+    /// poem off, so nothing is registered again under the new account.
+    @ObservationIgnored var accountDeleted: @MainActor () -> Void = {}
     /// The last queued operation. A new operation waits for it before running.
     @ObservationIgnored private var lastOperation: Task<Result<Void, Error>, Never>?
     /// Operations that are queued or running; `isBusy` is true while there are any.
@@ -122,9 +125,9 @@ final class AccountManager {
         try await serialized { try await self.performSignOut() }
     }
 
-    /// Re-authenticates, revokes the Apple token (Apple accounts), deletes the account's reads, this device's
-    /// morning-poem registration and the data, then its waiting photos, then the Firebase user, and starts a fresh
-    /// anonymous account. The photos go first because the rules only let the signed-in user delete them: if that
+    /// Re-authenticates, revokes the Apple token (Apple accounts), deletes the account's reads, the morning-poem
+    /// registrations of all its devices and the data, then its waiting photos, then the Firebase user, tells
+    /// `accountDeleted`, and starts a fresh anonymous account. The photos go first because the rules only let the signed-in user delete them: if that
     /// fails the user stays, so nothing is left that no one could delete. Every step can run again, so after a
     /// failure the person can simply retry.
     func deleteAccount(reauthWith credential: ProviderCredential) async throws {
@@ -217,12 +220,14 @@ final class AccountManager {
         }
         try await reads.deleteAllReads(uid: uid)
         knownReads.remove(uid: uid)
-        // The server must stop sending to the account before it is gone, or no one could remove the device.
+        // The server must stop sending to the account before it is gone, or no one could remove the devices. Every
+        // device of the account goes, not only this one.
         deviceRemoved(uid)
-        try await devices.remove(installId: installId, uid: uid)
+        try await devices.removeAll(uid: uid)
         try await likes.deleteAllData(uid: uid)
         try await deleteWaitingPhotos(uid)
         try await auth.deleteCurrentUser(expectedUID: uid)
+        accountDeleted()
 
         pending.clear()
         pendingReads.clear()

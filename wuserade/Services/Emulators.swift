@@ -41,6 +41,8 @@ enum Emulators {
         Auth.auth().useEmulator(withHost: host, port: authPort)
         // A user kept from production, or from an emulator run since stopped, is unknown to these emulators.
         try? Auth.auth().signOut()
+        // The emulators' user will be kept in the same keychain item; see `signOutEmulatorUserIfNeeded`.
+        UserDefaults.standard.set(true, forKey: emulatorUserKey)
 
         let settings = Firestore.firestore().settings
         settings.host = "\(host):\(firestorePort)"
@@ -52,6 +54,17 @@ enum Emulators {
         Functions.functions(region: "europe-west3").useEmulator(withHost: host, port: functionsPort)
         Storage.storage().useEmulator(withHost: host, port: storagePort)
     }
+
+    /// Called after `FirebaseApp.configure()` on a launch without the argument. After an emulator run the keychain
+    /// holds the emulators' anonymous user, and the app would otherwise adopt that uid against production, where it
+    /// does not exist. It is signed out, so the launch starts a fresh production account instead.
+    static func signOutEmulatorUserIfNeeded() {
+        guard UserDefaults.standard.bool(forKey: emulatorUserKey) else { return }
+        try? Auth.auth().signOut()
+        UserDefaults.standard.removeObject(forKey: emulatorUserKey)
+    }
+
+    private static let emulatorUserKey = "emulators.userInKeychain"
 
     /// An empty catalog cache for this emulator run, apart from production's. Emptied at every emulator launch,
     /// since the emulators may hold other content than last time.

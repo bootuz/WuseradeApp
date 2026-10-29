@@ -162,6 +162,7 @@ struct PreviewReadsStore: ReadsStore {
 struct PreviewDeviceRegistry: DeviceRegistry {
     func upsert(_ device: DeviceRegistration, installId: String, uid: String) async throws {}
     func remove(installId: String, uid: String) async throws {}
+    func removeAll(uid: String) async throws {}
 }
 
 extension LikesController {

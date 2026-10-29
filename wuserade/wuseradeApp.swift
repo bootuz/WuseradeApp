@@ -30,6 +30,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             FirebaseApp.configure()
             // An emulator run switched Analytics off for this install; this is its default.
             Analytics.setAnalyticsCollectionEnabled(true)
+            Emulators.signOutEmulatorUserIfNeeded()
         }
         #else
         application.registerForRemoteNotifications()
@@ -158,13 +159,16 @@ struct wuseradeApp: App {
         #else
         let registry: any DeviceRegistry = FirestoreDeviceRegistry()
         #endif
-        _morning = State(initialValue: MorningPoemController(
+        let morning = MorningPoemController(
             registry: registry,
             permission: SystemNotificationPermission(),
             installId: installId,
             record: registrations,
             isPaused: { [account] in account.isBusy }
-        ))
+        )
+        _morning = State(initialValue: morning)
+        // A deleted account takes its morning poem settings with it: the new anonymous account starts with it off.
+        account.accountDeleted = { [morning] in morning.accountDeleted() }
     }
 
     var sharedModelContainer: ModelContainer = {

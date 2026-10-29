@@ -107,15 +107,19 @@
       </li>
       <li>
         <strong>Poems you have read.</strong> For each poem you read, we store the poem’s ID and
-        the time you first read it, under your account in Cloud Firestore, in the europe-west3
+        the time it was recorded, under your account in Cloud Firestore, in the europe-west3
         (Frankfurt) region. We use it only to suggest poems you haven’t read. It is deleted with
         your account.
       </li>
       <li>
-        <strong>Morning poem settings.</strong> If you turn on the morning poem, we store your time
-        zone, the time you chose and your push token under your account, to send you the morning
-        poem. If you turn it off, the settings stay, marked as off, so nothing is sent. They are
-        deleted when you sign out or delete your account.
+        <strong>Morning poem settings.</strong> If you turn on the morning poem, we store, under
+        your account and for each phone: your time zone, the time you chose, your push token, a
+        random ID for this copy of the app, the time the next morning poem is due and when the
+        settings last changed. We use them only to send you the morning poem. If you turn it off,
+        the settings stay, marked as off, so nothing is sent. When you sign out, they move with
+        this phone to the new anonymous account the app creates, so the morning poem keeps coming
+        if it is on. When you delete your account, they are deleted for every phone, and the
+        morning poem is turned off on this phone.
       </li>
       <li>
         <strong>Photos you send.</strong> Only readers signed in with Apple or Google can send a
@@ -188,7 +192,7 @@
       <li>
         <strong>Signed in with Apple or Google:</strong> open Settings in the app and tap
         Delete account. This deletes your account, all your likes, the poems you have read, your
-        morning poem settings, your profile and any photos
+        morning poem settings on every phone, your profile and any photos
         you sent that are still waiting for review, and revokes Sign in with Apple. Approved
         photos stay on the poet’s page.
       </li>

@@ -946,6 +946,17 @@ final class FakeDeviceRegistry: DeviceRegistry, @unchecked Sendable {
             _devices[uid]?[installId] = nil
         }
     }
+
+    /// Recorded as "removeAll <uid>" in `calls` and "removeAllDevices" in the log. Fails with the `remove` error.
+    func removeAll(uid: String) async throws {
+        lock.withLock { _calls.append("removeAll \(uid)") }
+        log.record("removeAllDevices")
+        if let ownerUid, ownerUid() != uid { throw PermissionDenied() }
+        try lock.withLock {
+            if let _removeError { throw _removeError }
+            _devices[uid] = nil
+        }
+    }
 }
 
 /// A `NotificationPermission` whose system answer the test sets. While the status is not determined, `request()`

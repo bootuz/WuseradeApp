@@ -22,6 +22,9 @@ protocol DeviceRegistry: Sendable {
     func upsert(_ device: DeviceRegistration, installId: String, uid: String) async throws
     /// Deletes the registration of `installId` under `uid`. Deleting one that is already gone succeeds.
     func remove(installId: String, uid: String) async throws
+    /// Deletes every registration under `uid`, this device's and any other device's. Account deletion calls it, so
+    /// no phone of a deleted account keeps receiving the morning poem. Succeeds when there are none.
+    func removeAll(uid: String) async throws
 }
 
 /// Each document holds exactly the six fields the security rules allow.
@@ -47,4 +50,20 @@ struct FirestoreDeviceRegistry: DeviceRegistry {
     func remove(installId: String, uid: String) async throws {
         try await document(installId: installId, uid: uid).delete()
     }
+
+    /// Lists the account's own devices, which the rules allow, from the server: an offline cache could miss one.
+    /// Offline it throws instead.
+    func removeAll(uid: String) async throws {
+        let snapshot = try await db.collection("users").document(uid).collection("devices").getDocuments(source: .server)
+        let documents = snapshot.documents.map(\.reference)
+        for start in stride(from: 0, to: documents.count, by: Self.batchLimit) {
+            let batch = db.batch()
+            for document in documents[start ..< min(start + Self.batchLimit, documents.count)] {
+                batch.deleteDocument(document)
+            }
+            try await batch.commit()
+        }
+    }
+
+    private static let batchLimit = 500
 }

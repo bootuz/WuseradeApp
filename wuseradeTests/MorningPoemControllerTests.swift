@@ -271,4 +271,24 @@ final class MorningPoemControllerTests {
         await controller.timeZoneChanged()
         #expect(registry.devices(for: "alice")["install-1"]?.enabled == true)
     }
+
+    @Test func `A deleted account turns it off and the next account registers nothing`() async throws {
+        let registry = FakeDeviceRegistry()
+        let controller = try makeController(registry: registry, permission: FakeNotificationPermission(granted: true))
+        await controller.accountChanged(uid: "alice")
+        await controller.tokenChanged("token-1")
+        await controller.setEnabled(true)
+        let record = DeviceRegistrationRecord(directory: directory)
+        // The account forgets the registration before deleting it, as `AccountManager` does.
+        record.forget(uid: "alice")
+
+        controller.accountDeleted()
+        await controller.accountChanged(uid: "anon-1")
+        await controller.setTime("07:30")
+        await controller.timeZoneChanged()
+
+        #expect(!controller.enabled)
+        #expect(registry.calls == ["upsert install-1 alice"], "nothing is written for the new account")
+        #expect(!(try makeController(registry: registry).enabled), "it stays off after a relaunch")
+    }
 }

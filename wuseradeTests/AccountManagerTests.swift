@@ -396,7 +396,7 @@ final class AccountManagerTests {
 
         // The brief's sequence, followed by the user-document check of the fresh anonymous account.
         #expect(env.log.calls == [
-            "reauthenticate", "revokeAppleToken", "deleteAllReads", "removeDevice", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser",
+            "reauthenticate", "revokeAppleToken", "deleteAllReads", "removeAllDevices", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser",
             "signInAnonymously", "ensureUserDocument",
         ])
         #expect(env.auth.revokedCodes == ["fresh-code"])
@@ -415,7 +415,7 @@ final class AccountManagerTests {
         try await env.manager.deleteAccount(reauthWith: googleCredential())
 
         #expect(env.log.calls == [
-            "reauthenticate", "deleteAllReads", "removeDevice", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser", "signInAnonymously",
+            "reauthenticate", "deleteAllReads", "removeAllDevices", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser", "signInAnonymously",
             "ensureUserDocument",
         ])
         #expect(env.auth.revokedCodes == [])
@@ -510,11 +510,11 @@ final class AccountManagerTests {
         #expect(env.pendingReads.load() == [])
         #expect(env.knownReads.load(uid: "apple-user") == [], "the device forgets what the deleted account read")
         #expect(env.devices.devices(for: "apple-user") == [:], "the server stops sending to the deleted account")
-        #expect(env.devices.calls == ["remove install-1 apple-user"])
+        #expect(env.devices.calls == ["removeAll apple-user"])
         // The reads, then this device, go before the user document, while the account still exists.
         let calls = env.log.calls
         let readsIndex = try #require(calls.firstIndex(of: "deleteAllReads"))
-        let deviceIndex = try #require(calls.firstIndex(of: "removeDevice"))
+        let deviceIndex = try #require(calls.firstIndex(of: "removeAllDevices"))
         let dataIndex = try #require(calls.firstIndex(of: "deleteAllData"))
         #expect(readsIndex < deviceIndex)
         #expect(deviceIndex < dataIndex)
@@ -543,7 +543,7 @@ final class AccountManagerTests {
 
     /// A morning poem controller wired to `env` the way `wuseradeApp` wires it.
     private func makeMorning(_ env: Env) throws -> MorningPoemController {
-        MorningPoemController(
+        let morning = MorningPoemController(
             registry: env.devices,
             permission: FakeNotificationPermission(granted: true),
             installId: "install-1",
@@ -551,6 +551,44 @@ final class AccountManagerTests {
             record: env.registrations,
             isPaused: { [manager = env.manager] in manager.isBusy }
         )
+        env.manager.accountDeleted = { [morning] in morning.accountDeleted() }
+        return morning
+    }
+
+    @Test func `Deleting the account removes the morning poem from all its devices`() async throws {
+        let env = try makeEnv(currentUser: appleUser)
+        await env.manager.start()
+        env.devices.seed(device, installId: "install-1", uid: "apple-user")
+        env.devices.seed(device, installId: "other-phone", uid: "apple-user")
+        env.devices.seed(device, installId: "install-9", uid: "someone-else")
+
+        try await env.manager.deleteAccount(reauthWith: appleCredential())
+
+        #expect(env.devices.devices(for: "apple-user") == [:], "the other phone stops receiving it too")
+        #expect(env.devices.devices(for: "someone-else").count == 1)
+        #expect(env.devices.calls == ["removeAll apple-user"])
+    }
+
+    @Test func `After deleting the account the morning poem is off and the new account registers nothing`() async throws {
+        let env = try makeEnv(currentUser: appleUser)
+        let morning = try makeMorning(env)
+        await env.manager.start()
+        await morning.accountChanged(uid: env.manager.state.uid)
+        await morning.tokenChanged("token-1")
+        await morning.setEnabled(true)
+        #expect(env.devices.devices(for: "apple-user")["install-1"]?.enabled == true)
+
+        try await env.manager.deleteAccount(reauthWith: appleCredential())
+        // The operation is over; the app reports the resulting account.
+        await morning.accountChanged(uid: env.manager.state.uid)
+        await morning.tokenChanged("token-2")
+
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
+        #expect(!morning.enabled)
+        #expect(env.devices.devices(for: "anon-1") == [:], "the deleted account's settings do not come back")
+        #expect(env.devices.calls == ["upsert install-1 apple-user", "removeAll apple-user"])
+        // The choice stays off after a relaunch.
+        #expect(!(try makeMorning(env).enabled))
     }
 
     @Test func `A deletion that fails after removing the device registers it again`() async throws {
@@ -572,7 +610,7 @@ final class AccountManagerTests {
         await morning.accountChanged(uid: env.manager.state.uid)
 
         #expect(env.devices.calls == [
-            "upsert install-1 apple-user", "remove install-1 apple-user", "upsert install-1 apple-user",
+            "upsert install-1 apple-user", "removeAll apple-user", "upsert install-1 apple-user",
         ])
         #expect(env.devices.devices(for: "apple-user")["install-1"]?.enabled == true)
     }
