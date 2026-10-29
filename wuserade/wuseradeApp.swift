@@ -26,11 +26,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
 
+    /// Hands the token to the app, which registers it for the morning poem.
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        if let fcm = Messaging.messaging().fcmToken {
-            print("fcm", fcm)
-        }
+        NotificationCenter.default.post(name: .fcmTokenDidChange, object: nil, userInfo: fcmToken.map { ["token": $0] })
     }
+}
+
+extension Notification.Name {
+    /// Posted by `AppDelegate` with the new FCM token under "token", or no user info when there is none.
+    static let fcmTokenDidChange = Notification.Name("fcmTokenDidChange")
 }
 
 @main
@@ -55,6 +59,8 @@ struct wuseradeApp: App {
     @State private var photos: PhotoSubmissions
     /// What the reader offers once a poem ends.
     private let keepReading: any KeepReadingService
+    /// The morning poem setting, and this device's registration under the current account.
+    @State private var morning: MorningPoemController
 
     init() {
         AppLanguage.applyDefault()
@@ -80,6 +86,7 @@ struct wuseradeApp: App {
             poetIDs: { [library] in try await library.poetIDs() }
         )
         _photos = State(initialValue: photos)
+        let installId = InstallID.current()
         let account = AccountManager(
             auth: FirebaseAuthBackend(),
             likes: FirestoreLikesStore(),
@@ -87,6 +94,8 @@ struct wuseradeApp: App {
             reads: FirestoreReadsStore(),
             pendingReads: PendingReadsStore(),
             knownReads: KnownReadsStore(),
+            devices: FirestoreDeviceRegistry(),
+            installId: installId,
             deleteWaitingPhotos: { [photos] uid in try await photos.deleteAll(uid: uid) }
         )
         _account = State(initialValue: account)
@@ -95,6 +104,22 @@ struct wuseradeApp: App {
         let reads = ReadsController(store: FirestoreReadsStore(), isPaused: { [account] in account.isBusy })
         _reads = State(initialValue: reads)
         _readTracker = State(initialValue: ReadTracker { [reads] in reads.markRead($0) })
+        // Like reads, no registration is written while an account operation runs: it could land on an account being
+        // left or deleted, and the server would keep sending to it. The account is reported again once it ends.
+        #if DEBUG
+        // `-previewMorningPoem` keeps the morning poem off Firestore, for screenshots. Pair it with
+        // `-morningPoem.enabled YES` or `NO` to show either state without the permission prompt.
+        let registry: any DeviceRegistry = ProcessInfo.processInfo.arguments.contains("-previewMorningPoem")
+            ? PreviewDeviceRegistry() : FirestoreDeviceRegistry()
+        #else
+        let registry: any DeviceRegistry = FirestoreDeviceRegistry()
+        #endif
+        _morning = State(initialValue: MorningPoemController(
+            registry: registry,
+            permission: SystemNotificationPermission(),
+            installId: installId,
+            isPaused: { [account] in account.isBusy }
+        ))
     }
 
     var sharedModelContainer: ModelContainer = {
@@ -133,6 +158,7 @@ struct wuseradeApp: App {
                 .environment(account)
                 .environment(likes)
                 .environment(photos)
+                .environment(morning)
                 .environment(\.readTracker, readTracker)
                 .environment(\.keepReading, keepReading)
                 .sheet(isPresented: $firstLaunch) {
@@ -153,6 +179,15 @@ struct wuseradeApp: App {
                     await account.start()
                     likes.bind(uid: account.state.uid)
                     reads.bind(uid: account.state.uid)
+                    // A token that arrived before the observer below was in place is picked up here. Fetching it can
+                    // wait for the network, so nothing else waits for it.
+                    Task {
+                        if let token = try? await Messaging.messaging().token() {
+                            await morning.tokenChanged(token)
+                        }
+                    }
+                    await morning.accountChanged(uid: account.state.uid)
+                    await morning.refreshPermission()
                     if let uid = account.state.uid {
                         await migrator.migrateIfNeeded(uid: uid)
                     }
@@ -164,6 +199,20 @@ struct wuseradeApp: App {
                     reads.bind(uid: uid)
                     guard let uid else { return }
                     Task { await migrator.migrateIfNeeded(uid: uid) }
+                }
+                // The morning poem registers nothing while an account operation runs; once it ends, the device is
+                // registered under the resulting account (`AccountManager` removed it from the one it left).
+                .onChange(of: account.isBusy) { _, isBusy in
+                    guard !isBusy else { return }
+                    Task { await morning.accountChanged(uid: account.state.uid) }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .fcmTokenDidChange)) { note in
+                    let token = note.userInfo?["token"] as? String
+                    Task { await morning.tokenChanged(token) }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange)) { _ in
+                    NSTimeZone.resetSystemTimeZone()
+                    Task { await morning.timeZoneChanged() }
                 }
                 // Photos follow the signed-in (Apple or Google) account. The whole state is observed, not its uid:
                 // linking an anonymous account keeps the uid, so a uid observer would miss the sign-in.
@@ -180,6 +229,11 @@ struct wuseradeApp: App {
                 // refresh is still running, and `refresh()` ignores calls while one is running.
                 .onChange(of: scenePhase) { _, phase in
                     guard phase == .active else { return }
+                    Task {
+                        // Notifications may have been allowed or blocked in iOS Settings meanwhile.
+                        await morning.refreshPermission()
+                        await morning.timeZoneChanged()
+                    }
                     Task {
                         await catalogStore.refresh()
                         // The day may have turned while the app was in the background.

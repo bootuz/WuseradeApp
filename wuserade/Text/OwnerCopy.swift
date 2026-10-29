@@ -59,6 +59,11 @@ enum OwnerCopy {
     static let photoSendFailed = "[owner copy: photo could not be sent, try again]"
     static let photoSendBanned = "[owner copy: this account can't send photos]"
 
+    static let morningPoem = "[owner copy: morning poem]"
+    static let morningPoemTime = "[owner copy: time]"
+    static let notificationsOff = "[owner copy: notifications are off for Wuserade in iOS Settings]"
+    static let openSettings = "[owner copy: open Settings]"
+
     /// The day's-page date read in words, such as '28 October'.
     static func dayAndMonth(_ date: Date) -> String {
         "[owner copy: day and month in words]"

@@ -28,11 +28,12 @@ final class AccountManagerTests {
         let pendingReads: PendingReadsStore
         let knownReads: KnownReadsStore
         let photos: FakePhotoDeleter
+        let devices: FakeDeviceRegistry
         let log: CallLog
     }
 
     /// The likes fake enforces the security rules: only the signed-in uid can touch its data.
-    private func makeEnv(currentUser: AuthUserInfo? = nil) throws -> Env {
+    private func makeEnv(currentUser: AuthUserInfo? = nil, deviceRemovalLimit: Duration = .seconds(10)) throws -> Env {
         let log = CallLog()
         let auth = FakeAuthBackend(currentUser: currentUser, log: log)
         let likes = FakeLikesStore(log: log, ownerUid: { [auth] in auth.currentUser?.uid })
@@ -42,6 +43,7 @@ final class AccountManagerTests {
         let pendingReads = PendingReadsStore(defaults: defaults)
         let knownReads = KnownReadsStore(defaults: defaults)
         let photos = FakePhotoDeleter(log: log)
+        let devices = FakeDeviceRegistry(log: log, ownerUid: { [auth] in auth.currentUser?.uid })
         let manager = AccountManager(
             auth: auth,
             likes: likes,
@@ -49,6 +51,9 @@ final class AccountManagerTests {
             reads: reads,
             pendingReads: pendingReads,
             knownReads: knownReads,
+            devices: devices,
+            installId: "install-1",
+            deviceRemovalLimit: deviceRemovalLimit,
             deleteWaitingPhotos: { try await photos.deleteAll(uid: $0) }
         ) { [weak self] uid in
             self?.analyticsUserIDs.append(uid)
@@ -62,6 +67,7 @@ final class AccountManagerTests {
             pendingReads: pendingReads,
             knownReads: knownReads,
             photos: photos,
+            devices: devices,
             log: log
         )
     }
@@ -169,7 +175,7 @@ final class AccountManagerTests {
         // because the rules only let a user touch their own data.
         #expect(env.log.calls == [
             "link",
-            "fetchReadIDs", "fetchLikes", "deleteAllReads", "deleteAllData", "deleteCurrentUser",
+            "fetchReadIDs", "fetchLikes", "deleteAllReads", "removeDevice", "deleteAllData", "deleteCurrentUser",
             "signIn", "ensureUserDocument",
             "fetchLikes", "setLikes",
         ])
@@ -275,7 +281,7 @@ final class AccountManagerTests {
         // The second sign-in runs only after the first finished, so it starts from the existing
         // (non-anonymous) account and deletes nothing.
         #expect(env.log.calls == [
-            "link", "fetchReadIDs", "fetchLikes", "deleteAllReads", "deleteAllData", "deleteCurrentUser",
+            "link", "fetchReadIDs", "fetchLikes", "deleteAllReads", "removeDevice", "deleteAllData", "deleteCurrentUser",
             "signIn", "ensureUserDocument",
             "fetchLikes", "setLikes",
             "link",
@@ -381,7 +387,7 @@ final class AccountManagerTests {
 
         // The brief's sequence, followed by the user-document check of the fresh anonymous account.
         #expect(env.log.calls == [
-            "reauthenticate", "revokeAppleToken", "deleteAllReads", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser",
+            "reauthenticate", "revokeAppleToken", "deleteAllReads", "removeDevice", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser",
             "signInAnonymously", "ensureUserDocument",
         ])
         #expect(env.auth.revokedCodes == ["fresh-code"])
@@ -400,7 +406,7 @@ final class AccountManagerTests {
         try await env.manager.deleteAccount(reauthWith: googleCredential())
 
         #expect(env.log.calls == [
-            "reauthenticate", "deleteAllReads", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser", "signInAnonymously",
+            "reauthenticate", "deleteAllReads", "removeDevice", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser", "signInAnonymously",
             "ensureUserDocument",
         ])
         #expect(env.auth.revokedCodes == [])
@@ -486,6 +492,7 @@ final class AccountManagerTests {
         env.pendingReads.save([9])
         env.knownReads.add(3, uid: "apple-user")
         env.knownReads.add(7, uid: "apple-user")
+        env.devices.seed(device, installId: "install-1", uid: "apple-user")
         env.log.reset()
 
         try await env.manager.deleteAccount(reauthWith: appleCredential())
@@ -493,12 +500,122 @@ final class AccountManagerTests {
         #expect(env.reads.reads(for: "apple-user") == [])
         #expect(env.pendingReads.load() == [])
         #expect(env.knownReads.load(uid: "apple-user") == [], "the device forgets what the deleted account read")
-        // The reads go before the user document, while the account still exists.
+        #expect(env.devices.devices(for: "apple-user") == [:], "the server stops sending to the deleted account")
+        #expect(env.devices.calls == ["remove install-1 apple-user"])
+        // The reads, then this device, go before the user document, while the account still exists.
         let calls = env.log.calls
         let readsIndex = try #require(calls.firstIndex(of: "deleteAllReads"))
+        let deviceIndex = try #require(calls.firstIndex(of: "removeDevice"))
         let dataIndex = try #require(calls.firstIndex(of: "deleteAllData"))
-        #expect(readsIndex < dataIndex)
+        #expect(readsIndex < deviceIndex)
+        #expect(deviceIndex < dataIndex)
         #expect(env.manager.state == .anonymous(uid: "anon-1"))
+    }
+
+    @Test func `Delete account stops when the device cannot be removed`() async throws {
+        let env = try makeEnv(currentUser: appleUser)
+        await env.manager.start()
+        env.devices.setRemoveError(FakeDeviceRegistry.Failure())
+
+        await #expect(throws: FakeDeviceRegistry.Failure.self, "the device must go before the account") {
+            try await env.manager.deleteAccount(reauthWith: appleCredential())
+        }
+        #expect(!env.log.calls.contains("deleteAllData"))
+        #expect(env.auth.deletedUids == [])
+        #expect(env.manager.state == .signedIn(uid: "apple-user", provider: .apple, email: "a@example.com"))
+    }
+
+    // MARK: Devices
+
+    private let device = DeviceRegistration(
+        fcmToken: "token-1", timeZone: "Europe/Moscow", notifyAt: "08:00", enabled: true,
+        nextSendAt: Date(timeIntervalSince1970: 1_793_250_000)
+    )
+
+    @Test func signOutMovesTheDeviceToTheNewAccount() async throws {
+        let env = try makeEnv(currentUser: appleUser)
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        let morning = MorningPoemController(
+            registry: env.devices,
+            permission: FakeNotificationPermission(granted: true),
+            installId: "install-1",
+            defaults: defaults,
+            isPaused: { [manager = env.manager] in manager.isBusy }
+        )
+        await env.manager.start()
+        await morning.accountChanged(uid: env.manager.state.uid)
+        await morning.tokenChanged("token-1")
+        await morning.setEnabled(true)
+        #expect(env.devices.devices(for: "apple-user")["install-1"]?.enabled == true)
+
+        // A token arriving mid sign-out writes nothing: it could land on the account being left.
+        env.auth.setAnonymousSignInDelay(.milliseconds(100))
+        let signOut = Task { try await env.manager.signOut() }
+        try await waitUntil { env.auth.calls.contains("signInAnonymously") }
+        await morning.tokenChanged("token-2")
+        try await signOut.value
+        // The operation is over; the app reports the resulting account.
+        await morning.accountChanged(uid: env.manager.state.uid)
+
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
+        #expect(env.devices.devices(for: "apple-user") == [:], "removed under the old account, while still signed in to it")
+        #expect(env.devices.devices(for: "anon-1")["install-1"]?.fcmToken == "token-2")
+        #expect(env.devices.devices(for: "anon-1")["install-1"]?.enabled == true)
+        #expect(env.devices.calls == [
+            "upsert install-1 apple-user", "remove install-1 apple-user", "upsert install-1 anon-1",
+        ])
+        let calls = env.auth.calls
+        #expect(Array(calls.suffix(2)) == ["signOut", "signInAnonymously"])
+    }
+
+    @Test func `Sign out goes on when the device cannot be removed`() async throws {
+        let env = try makeEnv(currentUser: appleUser)
+        await env.manager.start()
+        env.devices.setRemoveError(FakeDeviceRegistry.Failure())
+
+        try await env.manager.signOut()
+
+        #expect(env.devices.calls == ["remove install-1 apple-user"])
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
+    }
+
+    /// Offline the removal only finishes once the device reconnects; signing out must not wait for that.
+    @Test(.timeLimit(.minutes(1)))
+    func `Sign out waits only a little for the device removal`() async throws {
+        let env = try makeEnv(currentUser: appleUser, deviceRemovalLimit: .milliseconds(50))
+        await env.manager.start()
+        env.devices.setRemoveHangs(true)
+
+        try await env.manager.signOut()
+
+        #expect(env.devices.calls == ["remove install-1 apple-user"])
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
+        #expect(!env.manager.isBusy)
+    }
+
+    @Test func `Switching to an existing account removes the anonymous device`() async throws {
+        let env = try makeEnv()
+        env.auth.addExistingAccount(googleUser, for: .google)
+        await env.manager.start()
+        env.devices.seed(device, installId: "install-1", uid: "anon-1")
+
+        try await env.manager.signIn(with: googleCredential())
+
+        #expect(env.devices.calls == ["remove install-1 anon-1"])
+        #expect(env.devices.devices(for: "anon-1") == [:])
+        #expect(env.manager.state == .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
+    }
+
+    @Test func `Switching goes on when the anonymous device cannot be removed`() async throws {
+        let env = try makeEnv()
+        env.auth.addExistingAccount(googleUser, for: .google)
+        await env.manager.start()
+        env.devices.setRemoveError(FakeDeviceRegistry.Failure())
+
+        try await env.manager.signIn(with: googleCredential())
+
+        #expect(env.auth.deletedUids == ["anon-1"])
+        #expect(env.manager.state == .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
     }
 
     @Test func `Switching to an existing account carries anonymous reads`() async throws {

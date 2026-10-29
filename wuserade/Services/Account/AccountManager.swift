@@ -49,6 +49,13 @@ final class AccountManager {
     @ObservationIgnored private let pendingReads: PendingReadsStore
     /// What each account on this device has read; forgotten when an account's reads are deleted.
     @ObservationIgnored private let knownReads: KnownReadsStore
+    /// This device's morning-poem registrations. A device leaves an account before the account is left or deleted,
+    /// so the server never sends to a device of an account this device no longer uses.
+    @ObservationIgnored private let devices: any DeviceRegistry
+    @ObservationIgnored private let installId: String
+    /// How long a sign-out waits for the device removal. Offline the removal waits for the server; the sign-out
+    /// must not.
+    @ObservationIgnored private let deviceRemovalLimit: Duration
     /// Deletes the photos `uid` sent that still wait for review. Only `deleteAccount` calls it.
     @ObservationIgnored private let deleteWaitingPhotos: @MainActor (_ uid: String) async throws -> Void
     @ObservationIgnored private let setAnalyticsUserID: (String) -> Void
@@ -64,6 +71,9 @@ final class AccountManager {
         reads: any ReadsStore,
         pendingReads: PendingReadsStore,
         knownReads: KnownReadsStore,
+        devices: any DeviceRegistry,
+        installId: String,
+        deviceRemovalLimit: Duration = .seconds(10),
         deleteWaitingPhotos: @escaping @MainActor (_ uid: String) async throws -> Void,
         setAnalyticsUserID: @escaping (String) -> Void = { Analytics.setUserID($0) }
     ) {
@@ -73,6 +83,9 @@ final class AccountManager {
         self.reads = reads
         self.pendingReads = pendingReads
         self.knownReads = knownReads
+        self.devices = devices
+        self.installId = installId
+        self.deviceRemovalLimit = deviceRemovalLimit
         self.deleteWaitingPhotos = deleteWaitingPhotos
         self.setAnalyticsUserID = setAnalyticsUserID
     }
@@ -97,15 +110,16 @@ final class AccountManager {
         try await serialized { try await self.performSignIn(with: credential) }
     }
 
-    /// Signs out, then starts a fresh anonymous account.
+    /// Removes this device's morning-poem registration from the account, signs out, then starts a fresh anonymous
+    /// account. The morning poem controller registers the device under the new account once this has finished.
     func signOut() async throws {
         try await serialized { try await self.performSignOut() }
     }
 
-    /// Re-authenticates, revokes the Apple token (Apple accounts), deletes the account's reads and data,
-    /// then its waiting photos, then the Firebase user, and starts a fresh anonymous account. The photos
-    /// go first because the rules only let the signed-in user delete them: if that fails the user
-    /// stays, so nothing is left that no one could delete. Every step can run again, so after a
+    /// Re-authenticates, revokes the Apple token (Apple accounts), deletes the account's reads, this device's
+    /// morning-poem registration and the data, then its waiting photos, then the Firebase user, and starts a fresh
+    /// anonymous account. The photos go first because the rules only let the signed-in user delete them: if that
+    /// fails the user stays, so nothing is left that no one could delete. Every step can run again, so after a
     /// failure the person can simply retry.
     func deleteAccount(reauthWith credential: ProviderCredential) async throws {
         try await serialized { try await self.performDeleteAccount(reauthWith: credential) }
@@ -172,6 +186,10 @@ final class AccountManager {
     }
 
     private func performSignOut() async throws {
+        // While still signed in as the account being left: the rules only let a user touch their own devices.
+        if let uid = state.uid {
+            await removeDevice(uid: uid, waitingAtMost: deviceRemovalLimit)
+        }
         try auth.signOut()
         state = .signedOut
         await performStart()
@@ -193,6 +211,8 @@ final class AccountManager {
         }
         try await reads.deleteAllReads(uid: uid)
         knownReads.remove(uid: uid)
+        // The server must stop sending to the account before it is gone, or no one could remove the device.
+        try await devices.remove(installId: installId, uid: uid)
         try await likes.deleteAllData(uid: uid)
         try await deleteWaitingPhotos(uid)
         try await auth.deleteCurrentUser(expectedUID: uid)
@@ -240,6 +260,11 @@ final class AccountManager {
             // The anonymous uid is never used again, whether or not its reads could be deleted.
             knownReads.remove(uid: anonymous.uid)
             do {
+                try await devices.remove(installId: installId, uid: anonymous.uid)
+            } catch {
+                Self.logger.error("Could not remove the anonymous device: \(error.localizedDescription, privacy: .public)")
+            }
+            do {
                 try await likes.deleteAllData(uid: anonymous.uid)
             } catch {
                 Self.logger.error("Could not delete anonymous data: \(error.localizedDescription, privacy: .public)")
@@ -265,6 +290,47 @@ final class AccountManager {
 
         // 4–5. Make sure the user document exists, then merge the pending likes and reads and clear them.
         await adopt(user)
+    }
+
+    /// Removes this device from `uid`, waiting at most `limit`. A failure is logged. Offline the removal waits for
+    /// the server, so past the limit it goes on in the background (Firestore sends it once the device reconnects)
+    /// and the caller carries on.
+    private func removeDevice(uid: String, waitingAtMost limit: Duration) async {
+        let devices = devices
+        let installId = installId
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            let resume = ResumeOnce(continuation)
+            Task {
+                do {
+                    try await devices.remove(installId: installId, uid: uid)
+                } catch {
+                    Self.logger.error("Could not remove the device: \(error.localizedDescription, privacy: .public)")
+                }
+                resume()
+            }
+            Task {
+                try? await Task.sleep(for: limit)
+                resume()
+            }
+        }
+    }
+
+    /// Resumes a continuation the first time it is called; later calls do nothing.
+    private final class ResumeOnce: @unchecked Sendable {
+        private let lock = NSLock()
+        private var continuation: CheckedContinuation<Void, Never>?
+
+        init(_ continuation: CheckedContinuation<Void, Never>) {
+            self.continuation = continuation
+        }
+
+        func callAsFunction() {
+            let pending = lock.withLock { () -> CheckedContinuation<Void, Never>? in
+                defer { continuation = nil }
+                return continuation
+            }
+            pending?.resume()
+        }
     }
 
     /// Writes the pending likes into `uid`, keeping the earliest `likedAt` per poem, then clears

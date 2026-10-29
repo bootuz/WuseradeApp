@@ -22,6 +22,11 @@ class AnalyticsManager {
         logEvent(name: "daily_open", params: ["source": source])
     }
 
+    /// The morning poem was turned on or off in Settings. `enabled` is the outcome: a refused permission logs 0.
+    func morningPoem(enabled: Bool) {
+        logEvent(name: "morning_poem", params: ["enabled": enabled ? 1 : 0])
+    }
+
     /// A suggestion at the end of a poem was opened. `section` is `poet` or `similar`.
     func keepReadingOpen(section: String) {
         logEvent(name: "keep_reading_open", params: ["section": section])

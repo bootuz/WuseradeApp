@@ -60,6 +60,8 @@ final class SendPhotoAreaTests {
             reads: FakeReadsStore(log: log, ownerUid: { [auth] in auth.currentUser?.uid }),
             pendingReads: PendingReadsStore(defaults: try #require(UserDefaults(suiteName: suiteName))),
             knownReads: KnownReadsStore(defaults: try #require(UserDefaults(suiteName: suiteName))),
+            devices: FakeDeviceRegistry(log: log),
+            installId: "install-1",
             deleteWaitingPhotos: { _ in },
             setAnalyticsUserID: { _ in }
         )

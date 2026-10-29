@@ -158,6 +158,12 @@ struct PreviewReadsStore: ReadsStore {
     func deleteAllReads(uid: String) async throws {}
 }
 
+/// Morning-poem registrations for previews: remembers nothing and never reaches Firestore.
+struct PreviewDeviceRegistry: DeviceRegistry {
+    func upsert(_ device: DeviceRegistration, installId: String, uid: String) async throws {}
+    func remove(installId: String, uid: String) async throws {}
+}
+
 extension LikesController {
     /// A controller for previews, signed in as a made-up account whose likes are `likes`.
     static func preview(likes: [Like] = []) -> LikesController {
@@ -193,6 +199,8 @@ extension AccountManager {
             reads: PreviewReadsStore(),
             pendingReads: PendingReadsStore(),
             knownReads: KnownReadsStore(),
+            devices: PreviewDeviceRegistry(),
+            installId: "preview",
             deleteWaitingPhotos: { _ in },
             setAnalyticsUserID: { _ in }
         )

@@ -1,6 +1,6 @@
 // Minimum iOS 17.
 //  ГъэпсыпӀэ: one sheet (a form sheet on iPad) on page-elevated. Subviews push inside it.
-//  Аккаунт comes first. The Плъыфэр toggle is gone, since the palette follows the system appearance.
+//  Аккаунт comes first, then the morning poem. The Плъыфэр toggle is gone, since the palette follows the system appearance.
 
 import FirebaseAnalytics
 import SwiftUI
@@ -13,6 +13,8 @@ struct SettingsSheet: View {
         NavigationStack {
             Form {
                 AccountSection()
+
+                MorningPoemSection()
 
                 Section {
                     // The app's page in the iOS Settings app has the per-app language. iOS restarts the app

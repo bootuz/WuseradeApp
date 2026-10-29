@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import UserNotifications
 @testable import Wuserade
 
 /// Polls until `condition` holds (at most about two seconds), failing the test if it never does.
@@ -861,4 +862,113 @@ final class TestClock: Clock, @unchecked Sendable {
 @MainActor
 func settle() async {
     for _ in 0 ..< 50 { await Task.yield() }
+}
+
+// MARK: - Morning poem
+
+/// In-memory `DeviceRegistry`. Every call is recorded in the shared `CallLog` as "upsertDevice" or "removeDevice",
+/// and in `calls` with its install ID and uid. With `ownerUid`, a call for another uid is refused, as the rules do.
+final class FakeDeviceRegistry: DeviceRegistry, @unchecked Sendable {
+    struct PermissionDenied: Error {}
+    struct Failure: Error {}
+
+    let log: CallLog
+    private let ownerUid: (@Sendable () -> String?)?
+    private let lock = NSLock()
+    private var _calls: [String] = []
+    private var _devices: [String: [String: DeviceRegistration]] = [:]
+    private var _upsertError: Error?
+    private var _removeError: Error?
+    private var _removeHangs = false
+
+    init(log: CallLog = CallLog(), ownerUid: (@Sendable () -> String?)? = nil) {
+        self.log = log
+        self.ownerUid = ownerUid
+    }
+
+    /// Every call, in order, as "upsert install-1 alice" or "remove install-1 alice".
+    var calls: [String] { lock.withLock { _calls } }
+
+    /// The device documents of `uid`, by install ID.
+    func devices(for uid: String) -> [String: DeviceRegistration] {
+        lock.withLock { _devices[uid] ?? [:] }
+    }
+
+    /// Stores a device directly, without recording a call or checking the owner.
+    func seed(_ device: DeviceRegistration, installId: String, uid: String) {
+        lock.withLock { _devices[uid, default: [:]][installId] = device }
+    }
+
+    /// `upsert` throws this error until it is set back to nil.
+    func setUpsertError(_ error: Error?) {
+        lock.withLock { _upsertError = error }
+    }
+
+    /// `remove` throws this error until it is set back to nil.
+    func setRemoveError(_ error: Error?) {
+        lock.withLock { _removeError = error }
+    }
+
+    /// While true, `remove` never answers, as a write does offline. Pair it with a test time limit.
+    func setRemoveHangs(_ hangs: Bool) {
+        lock.withLock { _removeHangs = hangs }
+    }
+
+    private func record(_ name: String, installId: String, uid: String) throws {
+        lock.withLock { _calls.append("\(name) \(installId) \(uid)") }
+        log.record(name + "Device")
+        if let ownerUid, ownerUid() != uid { throw PermissionDenied() }
+    }
+
+    func upsert(_ device: DeviceRegistration, installId: String, uid: String) async throws {
+        try record("upsert", installId: installId, uid: uid)
+        try lock.withLock {
+            if let _upsertError { throw _upsertError }
+            _devices[uid, default: [:]][installId] = device
+        }
+    }
+
+    /// Idempotent, like the real registry.
+    func remove(installId: String, uid: String) async throws {
+        try record("remove", installId: installId, uid: uid)
+        if lock.withLock({ _removeHangs }) { try await Task.sleep(for: .seconds(3600)) }
+        try lock.withLock {
+            if let _removeError { throw _removeError }
+            _devices[uid]?[installId] = nil
+        }
+    }
+}
+
+/// A `NotificationPermission` whose system answer the test sets. While the status is not determined, `request()`
+/// answers `granted` and moves the status to authorized or denied, as the system prompt does; after that it answers
+/// from the status without asking again.
+final class FakeNotificationPermission: NotificationPermission, @unchecked Sendable {
+    private let lock = NSLock()
+    private var _status: UNAuthorizationStatus
+    private let granted: Bool
+    private var _requests = 0
+
+    init(status: UNAuthorizationStatus = .notDetermined, granted: Bool = true) {
+        _status = status
+        self.granted = granted
+    }
+
+    /// How often `request()` was called.
+    var requests: Int { lock.withLock { _requests } }
+
+    func setStatus(_ status: UNAuthorizationStatus) {
+        lock.withLock { _status = status }
+    }
+
+    func status() async -> UNAuthorizationStatus {
+        lock.withLock { _status }
+    }
+
+    func request() async -> Bool {
+        lock.withLock {
+            _requests += 1
+            if _status == .notDetermined { _status = granted ? .authorized : .denied }
+            return _status == .authorized
+        }
+    }
 }
