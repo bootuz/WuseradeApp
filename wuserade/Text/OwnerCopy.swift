@@ -6,6 +6,9 @@ import Foundation
 
 enum OwnerCopy {
     static let daysPageLabel = "[owner copy: day’s page label]"
+    static let poetOfTheDay = "[owner copy: poet of the day]"
+    static let shortPoem = "[owner copy: a short poem]"
+    static let allTheirPoems = "[owner copy: all their poems]"
     static let readOn = "[owner copy: read on]"
     static let like = "[owner copy: like]"
     static let unlike = "[owner copy: unlike]"

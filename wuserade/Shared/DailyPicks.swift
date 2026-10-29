@@ -50,4 +50,20 @@ struct DailyPoet: Codable, Hashable {
     let topPoems: [DailyPoemRef]
 
     var author: Author { Author(id: id, name: name) }
+
+    /// The top poems as list entries. The catalog's other fields are unknown here, and the reader loads the
+    /// whole poem by id.
+    var topSummaries: [PoemSummary] {
+        topPoems.map {
+            PoemSummary(id: $0.id, title: $0.title, authorId: id, authorName: name, themeId: nil, createdAt: .distantPast)
+        }
+    }
+
+    /// The photo's URL when it is an absolute http(s) one.
+    var photo: URL? {
+        guard let photoURL, let url = URL(string: photoURL),
+              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+              url.host?.isEmpty == false else { return nil }
+        return url
+    }
 }

@@ -9,6 +9,8 @@ struct PoetPortrait: View {
 
     let initials: String
     let image: CGImage?
+    /// The poet's page uses the default; a list row passes a smaller one, and the initials scale with it.
+    var diameter: CGFloat = Self.diameter
 
     var body: some View {
         Group {
@@ -16,16 +18,16 @@ struct PoetPortrait: View {
                 Image(decorative: image, scale: 1)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: Self.diameter, height: Self.diameter)
+                    .frame(width: diameter, height: diameter)
                     .clipShape(.circle)
                     .overlay { Circle().strokeBorder(Palette.hairline, lineWidth: 1) }
             } else {
                 Circle()
                     .fill(Palette.accentWash)
-                    .frame(width: Self.diameter, height: Self.diameter)
+                    .frame(width: diameter, height: diameter)
                     .overlay {
                         Text(initials)
-                            .font(.custom(SerifFace.Cut.medium.rawValue, fixedSize: 44))
+                            .font(.custom(SerifFace.Cut.medium.rawValue, fixedSize: 44 * diameter / Self.diameter))
                             .foregroundStyle(Palette.accent)
                             .lineLimit(1)
                             .minimumScaleFactor(0.5)

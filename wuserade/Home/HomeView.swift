@@ -1,6 +1,6 @@
 // Minimum iOS 17.
-//  Усэхэр in compact width, read like a book's opening spread: the day's page (left out while there is no
-//  pick), the five newest poems, and the themes, in one scroll.
+//  Усэхэр in compact width, read like a book's opening spread: the day's page, the poet of the day and a short
+//  poem (each left out while there is no pick), the five newest poems, and the themes, in one scroll.
 
 import SwiftUI
 
@@ -39,9 +39,15 @@ struct HomeView: View {
         List {
             if let poem = library.daysPoem {
                 DaysPageView(poem: poem) {
+                    AnalyticsManager.shared.dailyOpen(source: "home_poem")
                     navigate(.reader(ReaderContext(single: PoemSummary(poem))))
                 }
                 .contentRow(separator: .hidden)
+            }
+
+            if let daily = library.daily {
+                PoetOfTheDaySection(poet: daily.poet)
+                ShortPoemSection(poem: daily.shortPoem)
             }
 
             SectionLabel(text: String(localized: "УсэщӀэхэр"))

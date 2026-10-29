@@ -58,7 +58,12 @@ struct wuseradeApp: App {
         UserDefaults.standard.removeObject(forKey: "daysPoem.poem")
         let store = CatalogStore(repository: FirestoreContentRepository(), cache: .default)
         _catalogStore = State(initialValue: store)
+        #if DEBUG
+        // `-previewDaily` runs the app over the in-memory preview content, with today's picks, for screenshots.
+        let library = ProcessInfo.processInfo.arguments.contains("-previewDaily") ? Library.preview() : Library(store: store)
+        #else
         let library = Library(store: store)
+        #endif
         _library = State(initialValue: library)
         let photos = PhotoSubmissions(
             store: FirebasePhotoSubmissionStore(),

@@ -16,4 +16,9 @@ class AnalyticsManager {
     func logEvent(name: String, params: [String : Any]? = nil) {
         Analytics.logEvent(name, parameters: params)
     }
+
+    /// A daily pick was opened. `source` is `home_poem`, `home_poet`, `home_short`, `widget` or `notification`.
+    func dailyOpen(source: String) {
+        logEvent(name: "daily_open", params: ["source": source])
+    }
 }
