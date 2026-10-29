@@ -46,3 +46,32 @@ def test_unknown_poem_is_invalid_argument():
 
 def test_no_catalog_is_unavailable():
     assert code_of(req({"poemId": 1}), Cache(ValueError("rebuild"))) == CODES.UNAVAILABLE
+
+
+INT64 = "type.googleapis.com/google.protobuf.Int64Value"
+
+
+def test_poem_id_wrapped_as_int64_by_the_ios_sdk_is_accepted(monkeypatch):
+    # FirebaseFunctions on iOS sends a Swift Int as {"@type": ...Int64Value, "value": "59"}, and the Python SDK
+    # passes it on undecoded.
+    seen = []
+    monkeypatch.setattr(handler, "keep_reading", lambda db, uid, poem_id, catalog: seen.append(poem_id) or {})
+    handler.handle_keep_reading(req({"poemId": {"@type": INT64, "value": "59"}}), None, Cache())
+    assert seen == [59]
+
+
+@pytest.mark.parametrize(
+    "wrapped",
+    [
+        {"@type": INT64, "value": "5.5"},
+        {"@type": INT64, "value": " 59"},
+        {"@type": INT64, "value": "--59"},
+        {"@type": INT64, "value": "５９"},
+        {"@type": INT64, "value": 59},
+        {"@type": INT64},
+        {"@type": "type.googleapis.com/google.protobuf.StringValue", "value": "59"},
+        {"value": "59"},
+    ],
+)
+def test_other_wrapped_values_are_invalid(wrapped):
+    assert code_of(req({"poemId": wrapped})) == CODES.INVALID_ARGUMENT
