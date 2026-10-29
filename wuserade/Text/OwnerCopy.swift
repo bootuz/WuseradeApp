@@ -45,6 +45,19 @@ enum OwnerCopy {
     static let signOutMessage = "[owner copy: liked poems stay empty until you sign in again]"
     static let signOutFooter = "[owner copy: what signing out does]"
     static let deleteFooter = "[owner copy: what deleting the account removes]"
+    static let deletesWaitingPhotos = "[owner copy: photos you sent that are still waiting are deleted too]"
+
+    static let photoOfPoet = "[owner copy: photo of the poet]"
+    static let reportPhoto = "[owner copy: report this photo]"
+    static let reportSubject = "[owner copy: photo report]"
+    static let sendPhoto = "[owner copy: send a photo]"
+    static let photoWaiting = "[owner copy: photo sent, waiting for review]"
+    static let signInToSendPhoto = "[owner copy: sign in to send a photo]"
+    static let whySendingNeedsAccount = "[owner copy: why sending needs an account]"
+    static let photoRights = "[owner copy: send only photos you have the right to share]"
+    static let send = "[owner copy: send]"
+    static let photoSendFailed = "[owner copy: photo could not be sent, try again]"
+    static let photoSendBanned = "[owner copy: this account can't send photos]"
 
     /// The day's-page date read in words, such as '28 October'.
     static func dayAndMonth(_ date: Date) -> String {

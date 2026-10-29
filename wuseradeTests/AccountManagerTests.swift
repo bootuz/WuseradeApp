@@ -23,6 +23,7 @@ final class AccountManagerTests: XCTestCase {
         let auth: FakeAuthBackend
         let likes: FakeLikesStore
         let pending: PendingLikesStore
+        let photos: FakePhotoDeleter
         let log: CallLog
     }
 
@@ -32,10 +33,16 @@ final class AccountManagerTests: XCTestCase {
         let auth = FakeAuthBackend(currentUser: currentUser, log: log)
         let likes = FakeLikesStore(log: log, ownerUid: { [auth] in auth.currentUser?.uid })
         let pending = PendingLikesStore(defaults: try XCTUnwrap(UserDefaults(suiteName: suiteName)))
-        let manager = AccountManager(auth: auth, likes: likes, pending: pending) { [weak self] uid in
+        let photos = FakePhotoDeleter(log: log)
+        let manager = AccountManager(
+            auth: auth,
+            likes: likes,
+            pending: pending,
+            deleteWaitingPhotos: { try await photos.deleteAll(uid: $0) }
+        ) { [weak self] uid in
             self?.analyticsUserIDs.append(uid)
         }
-        return Env(manager: manager, auth: auth, likes: likes, pending: pending, log: log)
+        return Env(manager: manager, auth: auth, likes: likes, pending: pending, photos: photos, log: log)
     }
 
     private func like(_ id: Int, at date: Date) -> Like {
@@ -359,11 +366,12 @@ final class AccountManagerTests: XCTestCase {
 
         // The brief's sequence, followed by the user-document check of the fresh anonymous account.
         XCTAssertEqual(env.log.calls, [
-            "reauthenticate", "revokeAppleToken", "deleteAllData", "deleteCurrentUser", "signInAnonymously",
-            "ensureUserDocument",
+            "reauthenticate", "revokeAppleToken", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser",
+            "signInAnonymously", "ensureUserDocument",
         ])
         XCTAssertEqual(env.auth.revokedCodes, ["fresh-code"])
         XCTAssertEqual(env.auth.deletedUids, ["apple-user"])
+        XCTAssertEqual(env.photos.deletedUids, ["apple-user"])
         XCTAssertEqual(env.likes.likes(for: "apple-user"), [])
         XCTAssertNil(env.likes.userDocuments["apple-user"])
         XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
@@ -377,9 +385,11 @@ final class AccountManagerTests: XCTestCase {
         try await env.manager.deleteAccount(reauthWith: googleCredential())
 
         XCTAssertEqual(env.log.calls, [
-            "reauthenticate", "deleteAllData", "deleteCurrentUser", "signInAnonymously", "ensureUserDocument",
+            "reauthenticate", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser", "signInAnonymously",
+            "ensureUserDocument",
         ])
         XCTAssertEqual(env.auth.revokedCodes, [])
+        XCTAssertEqual(env.photos.deletedUids, ["google-user"])
         XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
     }
 
@@ -411,6 +421,30 @@ final class AccountManagerTests: XCTestCase {
         } catch {}
 
         XCTAssertEqual(env.log.calls, [])
+        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
+    }
+
+    func testDeleteAccountStopsWhenWaitingPhotosCannotBeDeleted() async throws {
+        let env = try makeEnv(currentUser: appleUser)
+        await env.manager.start()
+        env.photos.error = FakeLikesStore.Failure()
+
+        do {
+            try await env.manager.deleteAccount(reauthWith: appleCredential())
+            XCTFail("the first attempt should fail")
+        } catch {
+            XCTAssertTrue(error is FakeLikesStore.Failure, "unexpected error \(error)")
+        }
+        // The Firebase user must outlive its photos: with the user gone, nobody could delete them any more.
+        XCTAssertEqual(env.auth.deletedUids, [])
+        XCTAssertEqual(env.photos.deletedUids, [])
+        XCTAssertEqual(env.manager.state, .signedIn(uid: "apple-user", provider: .apple, email: "a@example.com"))
+
+        env.photos.error = nil
+        try await env.manager.deleteAccount(reauthWith: appleCredential())
+
+        XCTAssertEqual(env.photos.deletedUids, ["apple-user"])
+        XCTAssertEqual(env.auth.deletedUids, ["apple-user"])
         XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
     }
 

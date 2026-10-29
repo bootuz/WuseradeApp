@@ -515,3 +515,122 @@ final class FakeLikesStore: LikesStore, @unchecked Sendable {
         notify(uid)
     }
 }
+
+/// In-memory `PhotoSubmissionStore`. `waiting` holds the records that exist, as "{authorId}_{uid}".
+/// Records every call as "isWaiting 7_alice", "send 7_alice" or "delete 7_alice".
+final class FakePhotoSubmissionStore: PhotoSubmissionStore, @unchecked Sendable {
+    struct Failure: Error {}
+
+    private let lock = NSLock()
+    private var _calls: [String] = []
+    private var _waiting: Set<String> = []
+    private var _isWaitingError: Error?
+    private var _sendError: Error?
+    private var _deleteError: Error?
+    private var _sendDelay: Duration?
+    private var _isWaitingDelay: Duration?
+
+    /// Every call to this fake, in order.
+    var calls: [String] { lock.withLock { _calls } }
+
+    /// The records that exist. A successful `send` adds one and a successful `delete` removes it.
+    var waiting: Set<String> {
+        get { lock.withLock { _waiting } }
+        set { lock.withLock { _waiting = newValue } }
+    }
+
+    /// `isWaiting` throws this error until it is set back to nil.
+    var isWaitingError: Error? {
+        get { lock.withLock { _isWaitingError } }
+        set { lock.withLock { _isWaitingError = newValue } }
+    }
+
+    /// `send` throws this error (after `sendDelay`) until it is set back to nil.
+    var sendError: Error? {
+        get { lock.withLock { _sendError } }
+        set { lock.withLock { _sendError = newValue } }
+    }
+
+    /// `delete` throws this error until it is set back to nil.
+    var deleteError: Error? {
+        get { lock.withLock { _deleteError } }
+        set { lock.withLock { _deleteError = newValue } }
+    }
+
+    /// `isWaiting` reads its answer, then waits this long before giving it, so tests can act while it is in flight.
+    var isWaitingDelay: Duration? {
+        get { lock.withLock { _isWaitingDelay } }
+        set { lock.withLock { _isWaitingDelay = newValue } }
+    }
+
+    /// `send` waits this long after it is called, so tests can act while it is in flight.
+    var sendDelay: Duration? {
+        get { lock.withLock { _sendDelay } }
+        set { lock.withLock { _sendDelay = newValue } }
+    }
+
+    private func key(_ authorId: Int, _ uid: String) -> String { "\(authorId)_\(uid)" }
+
+    func isWaiting(authorId: Int, uid: String) async throws -> Bool {
+        let key = key(authorId, uid)
+        let (answer, delay): (Bool, Duration?) = try lock.withLock {
+            _calls.append("isWaiting \(key)")
+            if let error = _isWaitingError { throw error }
+            return (_waiting.contains(key), _isWaitingDelay)
+        }
+        if let delay { try await Task.sleep(for: delay) }
+        return answer
+    }
+
+    func send(_ jpeg: Data, authorId: Int, uid: String) async throws {
+        let key = key(authorId, uid)
+        let delay = lock.withLock {
+            _calls.append("send \(key)")
+            return _sendDelay
+        }
+        if let delay { try await Task.sleep(for: delay) }
+        try lock.withLock {
+            if let error = _sendError { throw error }
+            _waiting.insert(key)
+        }
+    }
+
+    func delete(authorId: Int, uid: String) async throws {
+        let key = key(authorId, uid)
+        try lock.withLock {
+            _calls.append("delete \(key)")
+            if let error = _deleteError { throw error }
+            _waiting.remove(key)
+        }
+    }
+}
+
+/// Stands in for `PhotoSubmissions.deleteAll(uid:)` in `AccountManager` tests. Every call is recorded in the shared
+/// `CallLog` as "deleteWaitingPhotos"; a uid is added to `deletedUids` only when the call succeeds.
+final class FakePhotoDeleter: @unchecked Sendable {
+    let log: CallLog
+    private let lock = NSLock()
+    private var _error: Error?
+    private var _deletedUids: [String] = []
+
+    init(log: CallLog = CallLog()) {
+        self.log = log
+    }
+
+    /// `deleteAll` throws this error until it is set back to nil.
+    var error: Error? {
+        get { lock.withLock { _error } }
+        set { lock.withLock { _error = newValue } }
+    }
+
+    /// The accounts whose waiting photos were deleted, in order.
+    var deletedUids: [String] { lock.withLock { _deletedUids } }
+
+    func deleteAll(uid: String) async throws {
+        log.record("deleteWaitingPhotos")
+        try lock.withLock {
+            if let error = _error { throw error }
+            _deletedUids.append(uid)
+        }
+    }
+}

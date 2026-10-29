@@ -124,6 +124,7 @@ extension AccountManager {
             auth: PreviewAuthBackend(currentUser: user),
             likes: PreviewLikesStore(),
             pending: PendingLikesStore(),
+            deleteWaitingPhotos: { _ in },
             setAnalyticsUserID: { _ in }
         )
     }

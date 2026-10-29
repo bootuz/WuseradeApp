@@ -62,6 +62,28 @@ final class Library {
         return CatalogSearch.search(query, in: catalog.entries)
     }
 
+    // MARK: Poet photos
+
+    /// A poet's approved photo, or nil when meta lists none, the poet is not in meta, or the stored string is
+    /// not an absolute http(s) URL.
+    func photoURL(ofPoet id: Int) -> URL? {
+        guard let entry = store.meta?.authors.first(where: { $0.id == id }),
+              let string = entry.photoURL,
+              let url = URL(string: string),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https",
+              url.host?.isEmpty == false else { return nil }
+        return url
+    }
+
+    /// The id of every poet in meta, in meta's order. Loads meta first when nothing has loaded yet, and throws
+    /// why it could not.
+    func poetIDs() async throws -> [Int] {
+        if store.meta == nil { await store.refresh() }
+        guard let meta = store.meta else { throw store.lastError ?? LibraryError.notLoaded }
+        return meta.authors.map(\.id)
+    }
+
     // MARK: Loading
 
     func loadHome() async {

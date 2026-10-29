@@ -4,15 +4,15 @@ import XCTest
 @MainActor
 final class AccountAlertTests: XCTestCase {
     func testCancelledShowsNoAlert() {
-        XCTAssertNil(AccountSection.alertMessage(for: SignInError.cancelled))
+        XCTAssertNil(AccountAlert.message(for: SignInError.cancelled))
     }
 
     func testMissingConfigurationHasItsOwnText() {
         XCTAssertEqual(
-            AccountSection.alertMessage(for: SignInError.missingConfiguration),
-            AccountSection.configurationMessage
+            AccountAlert.message(for: SignInError.missingConfiguration),
+            AccountAlert.configurationMessage
         )
-        XCTAssertNotEqual(AccountSection.configurationMessage, AccountSection.genericMessage)
+        XCTAssertNotEqual(AccountAlert.configurationMessage, AccountAlert.genericMessage)
     }
 
     func testOtherErrorsShowTheGenericText() {
@@ -23,7 +23,7 @@ final class AccountAlertTests: XCTestCase {
             URLError(.notConnectedToInternet),
         ]
         for error in errors {
-            XCTAssertEqual(AccountSection.alertMessage(for: error), AccountSection.genericMessage, "\(error)")
+            XCTAssertEqual(AccountAlert.message(for: error), AccountAlert.genericMessage, "\(error)")
         }
     }
 }

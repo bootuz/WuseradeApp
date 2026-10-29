@@ -12,4 +12,14 @@ enum AppLinks {
     static let email = URL(string: "mailto:astemirboziy@gmail.com")!
     /// The hosted privacy page, on Firebase Hosting.
     static let privacy: URL? = URL(string: "https://wuserade.com/privacy")
+
+    /// A mail to the owner reporting a poet's photo. The subject names the poet; the body is the poet's id.
+    static func photoReport(poetName: String, poetID: Int) -> URL {
+        guard var components = URLComponents(url: email, resolvingAgainstBaseURL: false) else { return email }
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "\(OwnerCopy.reportSubject) \(poetName) (\(poetID))"),
+            URLQueryItem(name: "body", value: "\(poetID)")
+        ]
+        return components.url ?? email
+    }
 }

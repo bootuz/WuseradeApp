@@ -5,6 +5,9 @@ struct AuthorEntry: Codable, Hashable {
     let id: Int
     let name: String
     let poemsCount: Int
+    /// The approved photo's download URL, written by the admin tool; missing or null when the poet has none.
+    /// A `var` with a default, so the synthesized decoder reads it and older cached metas still decode.
+    var photoURL: String? = nil
 
     var author: Author { Author(id: id, name: name) }
 }

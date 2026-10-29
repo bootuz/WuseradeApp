@@ -43,6 +43,8 @@ final class AccountManager {
     @ObservationIgnored private let auth: AuthBackend
     @ObservationIgnored private let likes: LikesStore
     @ObservationIgnored private let pending: PendingLikesStore
+    /// Deletes the photos `uid` sent that still wait for review. Only `deleteAccount` calls it.
+    @ObservationIgnored private let deleteWaitingPhotos: @MainActor (_ uid: String) async throws -> Void
     @ObservationIgnored private let setAnalyticsUserID: (String) -> Void
     /// The last queued operation. A new operation waits for it before running.
     @ObservationIgnored private var lastOperation: Task<Result<Void, Error>, Never>?
@@ -53,11 +55,13 @@ final class AccountManager {
         auth: AuthBackend,
         likes: LikesStore,
         pending: PendingLikesStore,
+        deleteWaitingPhotos: @escaping @MainActor (_ uid: String) async throws -> Void,
         setAnalyticsUserID: @escaping (String) -> Void = { Analytics.setUserID($0) }
     ) {
         self.auth = auth
         self.likes = likes
         self.pending = pending
+        self.deleteWaitingPhotos = deleteWaitingPhotos
         self.setAnalyticsUserID = setAnalyticsUserID
     }
 
@@ -86,9 +90,11 @@ final class AccountManager {
         try await serialized { try await self.performSignOut() }
     }
 
-    /// Re-authenticates, revokes the Apple token (Apple accounts), deletes the account's data
-    /// and the Firebase user, then starts a fresh anonymous account. Every step can run again,
-    /// so after a failure the person can simply retry.
+    /// Re-authenticates, revokes the Apple token (Apple accounts), deletes the account's data and
+    /// its waiting photos, then the Firebase user, and starts a fresh anonymous account. The photos
+    /// go first because the rules only let the signed-in user delete them: if that fails the user
+    /// stays, so nothing is left that no one could delete. Every step can run again, so after a
+    /// failure the person can simply retry.
     func deleteAccount(reauthWith credential: ProviderCredential) async throws {
         try await serialized { try await self.performDeleteAccount(reauthWith: credential) }
     }
@@ -174,6 +180,7 @@ final class AccountManager {
             try await auth.revokeAppleToken(authorizationCode: appleAuthorizationCode)
         }
         try await likes.deleteAllData(uid: uid)
+        try await deleteWaitingPhotos(uid)
         try await auth.deleteCurrentUser(expectedUID: uid)
 
         pending.clear()

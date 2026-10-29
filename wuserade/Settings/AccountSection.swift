@@ -1,15 +1,13 @@
 // Minimum iOS 17.
 //  Аккаунт, the first sections of Settings. While the account is anonymous (or there is none yet): one line on
-//  why to sign in, then Sign in with Apple and Google, both signin-height and full width up to 360. Once signed
-//  in: the method and the email, Sign out with its confirmation, and a separate section for deleting the account.
+//  why to sign in, then `SignInButtons`. Once signed in: the method and the email, Sign out with its
+//  confirmation, and a separate section for deleting the account.
 //  The strings are the owner's placeholders from the Firebase work; the ones in brackets are still open.
 
-import AuthenticationServices
 import SwiftUI
 
 struct AccountSection: View {
     @Environment(AccountManager.self) private var account
-    @Environment(\.colorScheme) private var colorScheme
     /// True from the tap on a button until its flow ends, the Apple or Google sheet included.
     /// `account.isBusy` only starts once the sheet is done, and Google's flow has no guard against a second tap.
     @State private var isWorking = false
@@ -18,7 +16,7 @@ struct AccountSection: View {
     @State private var alertMessage: String?
 
     /// A flow can last until the device reconnects (writes wait for the server), so only these sections
-    /// are locked while it runs, never the rest of Settings.
+    /// are locked while it runs, never the rest of Settings. The sign-in buttons run their flow through `isWorking` too.
     private var isDisabled: Bool { isWorking || account.isBusy }
 
     var body: some View {
@@ -29,7 +27,7 @@ struct AccountSection: View {
                     Text(Self.signInExplanation)
                         .font(.footnote)
                         .foregroundStyle(Palette.inkSecondary)
-                    signInButtons
+                    SignInButtons(isWorking: $isWorking)
                 }
                 .padding(.vertical, Space.two)
             case let .signedIn(_, provider, email):
@@ -55,8 +53,8 @@ struct AccountSection: View {
                 Text(OwnerCopy.signOutFooter)
             }
         }
-        .alert(Self.alertTitle, isPresented: isShowingAlert, presenting: alertMessage) { _ in
-            Button(Self.okTitle, role: .cancel) {}
+        .alert(AccountAlert.title, isPresented: isShowingAlert, presenting: alertMessage) { _ in
+            Button(AccountAlert.ok, role: .cancel) {}
         } message: { message in
             Text(message)
         }
@@ -73,7 +71,7 @@ struct AccountSection: View {
                         deleteAccount(provider: provider)
                     }
                 } message: {
-                    Text(Self.deleteWarning)
+                    Text(verbatim: "\(Self.deleteWarning) \(OwnerCopy.deletesWaitingPhotos)")
                 }
             } footer: {
                 Text(OwnerCopy.deleteFooter)
@@ -106,56 +104,13 @@ struct AccountSection: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var signInButtons: some View {
-        VStack(spacing: Space.three) {
-            AppleIDButton(style: colorScheme == .dark ? .white : .black) {
-                signIn(with: .apple)
-            }
-            .id(colorScheme)
-            .frame(height: Space.signinHeight)
-
-            Button {
-                signIn(with: .google)
-            } label: {
-                // The official G from Google's branding kit goes before the label once the owner adds it.
-                Text(Self.googleTitle)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(Color("google-text"))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: Space.signinHeight)
-                    .background(Color("google-fill"), in: .capsule)
-                    .overlay(Capsule().stroke(Color("google-stroke")))
-                    .contentShape(.capsule)
-            }
-            .buttonStyle(.plain)
-        }
-        .frame(maxWidth: 360)
-        .frame(maxWidth: .infinity)
-        .disabled(isDisabled)
-        .opacity(isDisabled ? 0.4 : 1)
-    }
-
     // MARK: Flows
-
-    private func signIn(with provider: SignInProvider) {
-        run {
-            let credential = try await requestCredential(from: provider)
-            try await account.signIn(with: credential)
-        }
-    }
 
     private func deleteAccount(provider: SignInProvider) {
         // Deleting needs a fresh sign-in, with the same provider the account uses.
         run {
-            let credential = try await requestCredential(from: provider)
+            let credential = try await SignInButtons.requestCredential(from: provider)
             try await account.deleteAccount(reauthWith: credential)
-        }
-    }
-
-    private func requestCredential(from provider: SignInProvider) async throws -> ProviderCredential {
-        switch provider {
-        case .apple: return try await AppleSignInCoordinator().signIn()
-        case .google: return try await GoogleSignInCoordinator().signIn()
         }
     }
 
@@ -175,7 +130,7 @@ struct AccountSection: View {
 
     private func show(_ error: Error) async {
         // A closed Apple or Google sheet changes nothing: no alert and no account work.
-        guard let message = Self.alertMessage(for: error) else { return }
+        guard let message = AccountAlert.message(for: error) else { return }
         alertMessage = message
         // A switch to an existing account that fails part-way can leave no current user at all.
         // `start()` signs in anonymously again when that happened, and finds the user when it did not.
@@ -186,30 +141,12 @@ struct AccountSection: View {
         Binding(get: { alertMessage != nil }, set: { if !$0 { alertMessage = nil } })
     }
 
-    // MARK: Alert text
-
-    /// The text of the alert for a failed flow, or nil when nothing should be shown (the person closed the sheet).
-    static func alertMessage(for error: Error) -> String? {
-        switch error as? SignInError {
-        case .cancelled?: return nil
-        case .missingConfiguration?: return configurationMessage
-        default: return genericMessage
-        }
-    }
-
-    // TODO(owner): copy. Meaning: "Signing in isn't available yet."
-    static let configurationMessage = String(localized: "Хыхьэныр иджыри хузэфэк\u{04C0}ыркъым.")
-    // TODO(owner): copy. Meaning: "Something went wrong. Check your internet connection and try again."
-    static let genericMessage = String(localized: "Щыуагъэ къыщыхъуащ. Интернетыр къэпщытэжи аргуэру е\u{04C0}э.")
-
     // MARK: Copy
 
     // TODO(owner): copy. Meaning: "Account".
     private static let header = String(localized: "Аккаунт")
     // TODO(owner): copy. Meaning: "Sign in to see your liked poems on your other devices too."
     private static let signInExplanation = String(localized: "Уи усэ ныбжьэхэр нэгъуэщ\u{04C0} телефоным къыщыплъагъун папщ\u{04C0}э хыхьэ.")
-    // TODO(owner): copy. Meaning: "Sign in with Google".
-    private static let googleTitle = String(localized: "Google-к\u{04C0}э хыхьэн")
     // TODO(owner): copy. Meaning: "Sign out".
     private static let signOutTitle = String(localized: "Дэк\u{04C0}ын")
     // TODO(owner): copy. Meaning: "Delete account".
@@ -218,50 +155,4 @@ struct AccountSection: View {
     private static let deleteDialogTitle = String(localized: "Аккаунтыр хэбгъэк\u{04C0}ыжьыну п\u{04C0}эрэ?")
     // TODO(owner): copy. Meaning: "Your account and your liked poems will be deleted for good."
     private static let deleteWarning = String(localized: "Аккаунтымрэ уи усэ ныбжьэхэмрэ зэи къагъэзэжынкъым.")
-    // TODO(owner): copy. Meaning: "Error".
-    private static let alertTitle = String(localized: "Щыуагъэ")
-    // TODO(owner): copy. Meaning: "OK".
-    private static let okTitle = String(localized: "Хъунщ")
-}
-
-// MARK: - Sign in with Apple button
-
-/// The system "Sign in with Apple" button, so it looks the way Apple requires. Its tap goes to `action`
-/// instead of starting a request of its own: `AppleSignInCoordinator` runs the request, which SwiftUI's
-/// `SignInWithAppleButton` cannot hand over.
-private struct AppleIDButton: UIViewRepresentable {
-    static let cornerRadius: CGFloat = 25
-
-    let style: ASAuthorizationAppleIDButton.Style
-    let action: () -> Void
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(action: action)
-    }
-
-    func makeUIView(context: Context) -> ASAuthorizationAppleIDButton {
-        let button = ASAuthorizationAppleIDButton(type: .signIn, style: style)
-        button.cornerRadius = Self.cornerRadius
-        let coordinator = context.coordinator
-        button.addAction(UIAction { _ in coordinator.action() }, for: .touchUpInside)
-        return button
-    }
-
-    func updateUIView(_ button: ASAuthorizationAppleIDButton, context: Context) {
-        context.coordinator.action = action
-        button.isEnabled = context.environment.isEnabled
-    }
-
-    /// Fills the width it is offered, which the UIKit button would not do by itself.
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: ASAuthorizationAppleIDButton, context: Context) -> CGSize? {
-        proposal.replacingUnspecifiedDimensions(by: CGSize(width: 280, height: Space.signinHeight))
-    }
-
-    final class Coordinator {
-        var action: () -> Void
-
-        init(action: @escaping () -> Void) {
-            self.action = action
-        }
-    }
 }

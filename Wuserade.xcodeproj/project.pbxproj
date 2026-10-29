@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5C2E8A1F7B3D4096A8E1C5F2 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 7B4D1F9A2E6C8035D1A9B3E7 /* FirebaseStorage */; };
 		84641BACF94A8F3A59443175 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 19A2F3A3102AF46589D93098 /* FirebaseAuth */; };
 		94A0D10ADBD373B5CE944803 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 1A6D81C849FFFB27F912EE66 /* FirebaseFirestore */; };
 		C030F8FB2B8A0D90009E5907 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C030F8FA2B8A0D90009E5907 /* GoogleService-Info.plist */; };
@@ -80,6 +81,7 @@
 		D0A1E500000000000000000B /* Settings */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Settings; sourceTree = "<group>"; };
 		D0A1E500000000000000000C /* Shell */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Shell; sourceTree = "<group>"; };
 		D0A1E500000000000000000D /* Text */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Text; sourceTree = "<group>"; };
+		D0A1E500000000000000000E /* Photos */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Photos; sourceTree = "<group>"; };
 		DC8B981E9B7DE480FB341F65 /* wuseradeTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = wuseradeTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -94,6 +96,7 @@
 				C04874A42BA4D37B0080051A /* FirebaseAnalyticsCore in Frameworks */,
 				84641BACF94A8F3A59443175 /* FirebaseAuth in Frameworks */,
 				94A0D10ADBD373B5CE944803 /* FirebaseFirestore in Frameworks */,
+				5C2E8A1F7B3D4096A8E1C5F2 /* FirebaseStorage in Frameworks */,
 				C0D86F61CCBB820002D760A8 /* GoogleSignIn in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -150,6 +153,7 @@
 				D0A1E5000000000000000005 /* Lists */,
 				D0A1E5000000000000000006 /* Navigation */,
 				D0A1E5000000000000000007 /* Onboarding */,
+				D0A1E500000000000000000E /* Photos */,
 				D0A1E5000000000000000008 /* Reader */,
 				D0A1E5000000000000000009 /* Resources */,
 				D0A1E500000000000000000A /* Search */,
@@ -221,6 +225,7 @@
 				D0A1E500000000000000000B /* Settings */,
 				D0A1E500000000000000000C /* Shell */,
 				D0A1E500000000000000000D /* Text */,
+				D0A1E500000000000000000E /* Photos */,
 			);
 			name = Wuserade;
 			packageProductDependencies = (
@@ -230,6 +235,7 @@
 				C04874A52BA4D37B0080051A /* FirebaseMessaging */,
 				19A2F3A3102AF46589D93098 /* FirebaseAuth */,
 				1A6D81C849FFFB27F912EE66 /* FirebaseFirestore */,
+				7B4D1F9A2E6C8035D1A9B3E7 /* FirebaseStorage */,
 				1E9381E1255756003CE8454B /* GoogleSignIn */,
 			);
 			productName = wuserade;
@@ -771,6 +777,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0EC88A706931FF107F24EB8B /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignIn;
+		};
+		7B4D1F9A2E6C8035D1A9B3E7 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C04874A22BA4D37B0080051A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
 		};
 		C04874A32BA4D37B0080051A /* FirebaseAnalyticsCore */ = {
 			isa = XCSwiftPackageProductDependency;

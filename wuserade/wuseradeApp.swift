@@ -44,20 +44,30 @@ struct wuseradeApp: App {
     /// What the screens read: lists from the catalog, whole poems from Firestore, and the day's poem.
     @State private var library: Library
     /// The Firebase account: a silent anonymous one on launch, upgraded by linking Apple or Google.
-    @State private var account = AccountManager(
-        auth: FirebaseAuthBackend(),
-        likes: FirestoreLikesStore(),
-        pending: PendingLikesStore()
-    )
+    @State private var account: AccountManager
     /// The likes of the current account.
     @State private var likes = LikesController(store: FirestoreLikesStore())
+    /// The poet photos the signed-in reader has sent and that wait for the owner.
+    @State private var photos: PhotoSubmissions
 
     init() {
         AppLanguage.applyDefault()
         NavigationBarStyle.apply()
         let store = CatalogStore(repository: FirestoreContentRepository(), cache: .default)
         _catalogStore = State(initialValue: store)
-        _library = State(initialValue: Library(store: store))
+        let library = Library(store: store)
+        _library = State(initialValue: library)
+        let photos = PhotoSubmissions(
+            store: FirebasePhotoSubmissionStore(),
+            poetIDs: { [library] in try await library.poetIDs() }
+        )
+        _photos = State(initialValue: photos)
+        _account = State(initialValue: AccountManager(
+            auth: FirebaseAuthBackend(),
+            likes: FirestoreLikesStore(),
+            pending: PendingLikesStore(),
+            deleteWaitingPhotos: { [photos] uid in try await photos.deleteAll(uid: uid) }
+        ))
     }
 
     var sharedModelContainer: ModelContainer = {
@@ -95,6 +105,7 @@ struct wuseradeApp: App {
                 .environment(library)
                 .environment(account)
                 .environment(likes)
+                .environment(photos)
                 .sheet(isPresented: $firstLaunch) {
                     OnboardingView()
                 }
@@ -122,6 +133,11 @@ struct wuseradeApp: App {
                     likes.bind(uid: uid)
                     guard let uid else { return }
                     Task { await migrator.migrateIfNeeded(uid: uid) }
+                }
+                // Photos follow the signed-in (Apple or Google) account. The whole state is observed, not its uid:
+                // linking an anonymous account keeps the uid, so a uid observer would miss the sign-in.
+                .onChange(of: account.state, initial: true) {
+                    photos.bind(uid: PhotoSubmissions.uid(for: account.state))
                 }
                 // Launch refresh, then the day's poem from the fresh catalog. It runs even if the scene is held
                 // inactive at launch (e.g. by a permission alert).

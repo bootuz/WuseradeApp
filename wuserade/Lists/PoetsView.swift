@@ -12,8 +12,6 @@ struct PoetsView: View {
     @State private var sections: [LetterSection] = []
     @State private var unknown: [Author] = []
 
-    private static let unknownName = KabardianText.searchKey("Зытхар тщӀэкъым")
-
     var body: some View {
         Group {
             if library.poets != nil {
@@ -73,8 +71,8 @@ struct PoetsView: View {
     }
 
     private func group(_ poets: [Author]) {
-        let known = poets.filter { KabardianText.searchKey($0.name) != Self.unknownName }
-        unknown = poets.filter { KabardianText.searchKey($0.name) == Self.unknownName }
+        let known = poets.filter { !$0.isUnknownAuthor }
+        unknown = poets.filter(\.isUnknownAuthor)
         let grouped = Dictionary(grouping: known) { KabardianAlphabet.sectionLetter(of: $0.name) }
         sections = grouped
             .map { LetterSection(letter: $0.key, poets: $0.value.sorted { KabardianAlphabet.precedes($0.name, $1.name) }) }

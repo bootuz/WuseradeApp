@@ -14,23 +14,27 @@ extension View {
 
     /// A content row: page ground, hairline separator, inset to the reading margin. Rows in a
     /// `List(selection:)` pass `selectable` so the system can draw the selection; a row background hides it.
-    func contentRow(separator: Visibility = .automatic, selectable: Bool = false) -> some View {
-        modifier(ContentRowModifier(separator: separator, selectable: selectable))
+    /// A `centred` row gets the leading inset on both sides, so what it centres sits in the middle of the list;
+    /// the usual trailing inset is narrower, which suits left-aligned text but puts a centred element off-centre.
+    func contentRow(separator: Visibility = .automatic, selectable: Bool = false, centred: Bool = false) -> some View {
+        modifier(ContentRowModifier(separator: separator, selectable: selectable, centred: centred))
     }
 }
 
 private struct ContentRowModifier: ViewModifier {
     var separator: Visibility
     var selectable: Bool
+    var centred: Bool
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     func body(content: Content) -> some View {
+        let leading = dynamicTypeSize.isAccessibilitySize ? Space.readingMarginAX : Space.readingMargin
         content
             .listRowInsets(EdgeInsets(
                 top: Space.three,
-                leading: dynamicTypeSize.isAccessibilitySize ? Space.readingMarginAX : Space.readingMargin,
+                leading: leading,
                 bottom: Space.three,
-                trailing: Space.four
+                trailing: centred ? leading : Space.four
             ))
             .listRowBackground(selectable ? nil : Palette.page)
             .listRowSeparatorTint(Palette.hairline)
