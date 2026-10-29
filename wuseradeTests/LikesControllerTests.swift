@@ -1,8 +1,9 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Wuserade
 
 @MainActor
-final class LikesControllerTests: XCTestCase {
+struct LikesControllerTests {
     private let t1 = Date(timeIntervalSince1970: 1_700_000_000)
     private let t2 = Date(timeIntervalSince1970: 1_700_001_000)
 
@@ -35,37 +36,37 @@ final class LikesControllerTests: XCTestCase {
 
     // MARK: toggle
 
-    func testToggleAddsThenRemoves() async throws {
+    @Test func `Toggle adds then removes`() async throws {
         let store = FakeLikesStore()
         let controller = try await makeBoundController(store: store)
-        XCTAssertFalse(controller.isLiked(1))
+        #expect(!controller.isLiked(1))
 
         await controller.toggle(poem(1))
         try await settle()
-        XCTAssertTrue(controller.isLiked(1))
-        XCTAssertEqual(store.likes(for: "a").map(\.poemId), [1])
-        XCTAssertEqual(store.likes(for: "a").first?.poem, poem(1), "the like carries a snapshot of the poem")
+        #expect(controller.isLiked(1))
+        #expect(store.likes(for: "a").map(\.poemId) == [1])
+        #expect(store.likes(for: "a").first?.poem == poem(1), "the like carries a snapshot of the poem")
 
         await controller.toggle(poem(1))
         try await settle()
-        XCTAssertFalse(controller.isLiked(1))
-        XCTAssertEqual(store.likes(for: "a"), [])
-        XCTAssertEqual(store.calls.filter { $0 == "setLike" || $0 == "removeLike" }, ["setLike", "removeLike"])
+        #expect(!controller.isLiked(1))
+        #expect(store.likes(for: "a") == [])
+        #expect(store.calls.filter { $0 == "setLike" || $0 == "removeLike" } == ["setLike", "removeLike"])
     }
 
-    func testToggleFailureReverts() async throws {
+    @Test func `Toggle failure reverts`() async throws {
         let store = FakeLikesStore()
         let controller = try await makeBoundController(store: store)
         store.setSetLikeOutcomes([.failure()])
 
         await controller.toggle(poem(1))
 
-        XCTAssertFalse(controller.isLiked(1))
-        XCTAssertEqual(controller.likes, [])
-        XCTAssertEqual(store.likes(for: "a"), [])
+        #expect(!controller.isLiked(1))
+        #expect(controller.likes == [])
+        #expect(store.likes(for: "a") == [])
     }
 
-    func testUnlikeFailureRestoresTheOriginalLike() async throws {
+    @Test func `Unlike failure restores the original like`() async throws {
         let store = FakeLikesStore()
         store.seed([like(1, at: t1), like(2, at: t2)], uid: "a")
         let controller = try await makeBoundController(store: store)
@@ -74,11 +75,11 @@ final class LikesControllerTests: XCTestCase {
 
         await controller.toggle(poem(1))
 
-        XCTAssertTrue(controller.isLiked(1))
-        XCTAssertEqual(controller.likes, [like(2, at: t2), like(1, at: t1)], "back in place, with its original date")
+        #expect(controller.isLiked(1))
+        #expect(controller.likes == [like(2, at: t2), like(1, at: t1)], "back in place, with its original date")
     }
 
-    func testToggleIsOptimisticWhileTheWriteIsPending() async throws {
+    @Test func `Toggle is optimistic while the write is pending`() async throws {
         let store = FakeLikesStore()
         let controller = try await makeBoundController(store: store)
         // Offline, a Firestore write answers only after the device reconnects.
@@ -87,14 +88,14 @@ final class LikesControllerTests: XCTestCase {
         let toggle = Task { await controller.toggle(poem(1)) }
         try await waitUntil { store.calls.contains("setLike") }
 
-        XCTAssertTrue(controller.isLiked(1), "shown as liked before the write is confirmed")
-        XCTAssertEqual(store.likes(for: "a"), [], "the write has not landed yet")
+        #expect(controller.isLiked(1), "shown as liked before the write is confirmed")
+        #expect(store.likes(for: "a") == [], "the write has not landed yet")
         await toggle.value
-        XCTAssertTrue(controller.isLiked(1))
-        XCTAssertEqual(store.likes(for: "a").map(\.poemId), [1])
+        #expect(controller.isLiked(1))
+        #expect(store.likes(for: "a").map(\.poemId) == [1])
     }
 
-    func testStaleFailureDoesNotRevertNewerToggle() async throws {
+    @Test func `Stale failure does not revert newer toggle`() async throws {
         let store = FakeLikesStore()
         let controller = try await makeBoundController(store: store)
         // The first like fails only after the person has already tapped twice more.
@@ -105,45 +106,45 @@ final class LikesControllerTests: XCTestCase {
         await controller.toggle(poem(1))   // unlike
         await controller.toggle(poem(1))   // like again
         try await settle()
-        XCTAssertTrue(controller.isLiked(1))
+        #expect(controller.isLiked(1))
 
         await first.value   // the first write fails now
         try await settle()
 
-        XCTAssertTrue(controller.isLiked(1), "a stale failure must not undo the later tap")
-        XCTAssertEqual(store.likes(for: "a").map(\.poemId), [1])
+        #expect(controller.isLiked(1), "a stale failure must not undo the later tap")
+        #expect(store.likes(for: "a").map(\.poemId) == [1])
     }
 
-    func testToggleWithoutUidDoesNothing() async throws {
+    @Test func `Toggle without uid does nothing`() async throws {
         let store = FakeLikesStore()
         let controller = LikesController(store: store)   // never bound: no account yet
 
         await controller.toggle(poem(1))
 
-        XCTAssertFalse(controller.isLiked(1))
-        XCTAssertEqual(controller.likes, [])
-        XCTAssertNil(controller.uid)
-        XCTAssertEqual(store.calls, [], "no write, and nothing observed")
+        #expect(!controller.isLiked(1))
+        #expect(controller.likes == [])
+        #expect(controller.uid == nil)
+        #expect(store.calls == [], "no write, and nothing observed")
     }
 
     // MARK: bind
 
-    func testBindShowsAndFollowsTheStore() async throws {
+    @Test func `Bind shows and follows the store`() async throws {
         let store = FakeLikesStore()
         store.seed([like(1, at: t1)], uid: "a")
         let controller = LikesController(store: store)
 
         controller.bind(uid: "a")
-        XCTAssertEqual(controller.uid, "a")
+        #expect(controller.uid == "a")
         try await waitUntil { controller.likes == [self.like(1, at: self.t1)] }
 
         // A like added elsewhere (another device) shows up.
         store.seed([like(2, at: t2)], uid: "a")
         try await waitUntil { controller.likes.count == 2 }
-        XCTAssertEqual(controller.likes, [like(2, at: t2), like(1, at: t1)])
+        #expect(controller.likes == [like(2, at: t2), like(1, at: t1)])
     }
 
-    func testRebindClearsOldLikes() async throws {
+    @Test func `Rebind clears old likes`() async throws {
         let store = FakeLikesStore()
         store.seed([like(1, at: t1)], uid: "a")
         let controller = LikesController(store: store)
@@ -152,19 +153,19 @@ final class LikesControllerTests: XCTestCase {
 
         controller.bind(uid: "b")   // "b" has no likes
 
-        XCTAssertEqual(controller.uid, "b")
-        XCTAssertEqual(controller.likes, [], "the previous account's likes are gone at once")
+        #expect(controller.uid == "b")
+        #expect(controller.likes == [], "the previous account's likes are gone at once")
         try await waitUntil { store.cancelledObservations == ["a"] }
 
         // The old account's listener is gone: nothing it emits can reach the list.
         store.seed([like(3, at: t2)], uid: "a")
         store.seed([like(4, at: t2)], uid: "b")
         try await waitUntil { controller.likes.map(\.poemId) == [4] }
-        XCTAssertFalse(controller.isLiked(1))
-        XCTAssertFalse(controller.isLiked(3))
+        #expect(!controller.isLiked(1))
+        #expect(!controller.isLiked(3))
     }
 
-    func testBindNilClearsLikesAndStopsObserving() async throws {
+    @Test func `Bind nil clears likes and stops observing`() async throws {
         let store = FakeLikesStore()
         store.seed([like(1, at: t1)], uid: "a")
         let controller = LikesController(store: store)
@@ -173,15 +174,15 @@ final class LikesControllerTests: XCTestCase {
 
         controller.bind(uid: nil)   // signed out
 
-        XCTAssertNil(controller.uid)
-        XCTAssertEqual(controller.likes, [])
+        #expect(controller.uid == nil)
+        #expect(controller.likes == [])
         try await waitUntil { store.cancelledObservations == ["a"] }
         await controller.toggle(poem(2))
-        XCTAssertFalse(controller.isLiked(2), "liking is off while signed out")
-        XCTAssertFalse(store.calls.contains("setLike"))
+        #expect(!controller.isLiked(2), "liking is off while signed out")
+        #expect(!store.calls.contains("setLike"))
     }
 
-    func testBindingTheSameUidAgainKeepsTheListener() async throws {
+    @Test func `Binding the same uid again keeps the listener`() async throws {
         let store = FakeLikesStore()
         store.seed([like(1, at: t1)], uid: "a")
         let controller = LikesController(store: store)
@@ -190,12 +191,12 @@ final class LikesControllerTests: XCTestCase {
 
         controller.bind(uid: "a")
 
-        XCTAssertEqual(controller.likes, [like(1, at: t1)], "no flash of an empty list")
-        XCTAssertEqual(store.calls.filter { $0 == "observeLikes" }.count, 1)
-        XCTAssertEqual(store.cancelledObservations, [])
+        #expect(controller.likes == [like(1, at: t1)], "no flash of an empty list")
+        #expect(store.calls.filter { $0 == "observeLikes" }.count == 1)
+        #expect(store.cancelledObservations == [])
     }
 
-    func testFailureOfTheOldAccountDoesNotChangeTheNewAccountsLikes() async throws {
+    @Test func `Failure of the old account does not change the new account's likes`() async throws {
         let store = FakeLikesStore()
         store.seed([like(1, at: t1)], uid: "b")
         let controller = try await makeBoundController(store: store, uid: "a")
@@ -207,7 +208,7 @@ final class LikesControllerTests: XCTestCase {
         try await waitUntil { controller.isLiked(1) }
         await toggle.value
 
-        XCTAssertTrue(controller.isLiked(1), "undoing a's failed like must not remove b's like")
-        XCTAssertEqual(controller.likes, [like(1, at: t1)])
+        #expect(controller.isLiked(1), "undoing a's failed like must not remove b's like")
+        #expect(controller.likes == [like(1, at: t1)])
     }
 }

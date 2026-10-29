@@ -1,10 +1,11 @@
-import XCTest
+import Foundation
+import Testing
 import FirebaseAuth
 @testable import Wuserade
 
 @MainActor
-final class AccountManagerTests: XCTestCase {
-    /// XCTest creates one instance per test method, so every test gets its own defaults suite.
+final class AccountManagerTests {
+    /// Swift Testing creates a fresh suite instance per test, so every test gets its own defaults suite.
     private let suiteName = "AccountManagerTests-\(UUID().uuidString)"
     private var analyticsUserIDs: [String] = []
 
@@ -12,7 +13,7 @@ final class AccountManagerTests: XCTestCase {
     private let t2 = Date(timeIntervalSince1970: 1_700_001_000)
     private let t3 = Date(timeIntervalSince1970: 1_700_002_000)
 
-    override func tearDownWithError() throws {
+    deinit {
         UserDefaults().removePersistentDomain(forName: suiteName)
     }
 
@@ -32,7 +33,7 @@ final class AccountManagerTests: XCTestCase {
         let log = CallLog()
         let auth = FakeAuthBackend(currentUser: currentUser, log: log)
         let likes = FakeLikesStore(log: log, ownerUid: { [auth] in auth.currentUser?.uid })
-        let pending = PendingLikesStore(defaults: try XCTUnwrap(UserDefaults(suiteName: suiteName)))
+        let pending = PendingLikesStore(defaults: try #require(UserDefaults(suiteName: suiteName)))
         let photos = FakePhotoDeleter(log: log)
         let manager = AccountManager(
             auth: auth,
@@ -73,7 +74,7 @@ final class AccountManagerTests: XCTestCase {
 
     // MARK: start
 
-    func testStartSignsInAnonymouslyOnce() async throws {
+    @Test func `Start signs in anonymously once`() async throws {
         let env = try makeEnv()
         // Overlapping calls (e.g. launch plus a sign-out) must not create two anonymous accounts.
         env.auth.setAnonymousSignInDelay(.milliseconds(50))
@@ -82,52 +83,52 @@ final class AccountManagerTests: XCTestCase {
         _ = await (first, second)
         await env.manager.start()
 
-        XCTAssertEqual(env.auth.calls.filter { $0 == "signInAnonymously" }.count, 1)
-        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
-        XCTAssertEqual(env.manager.state.uid, "anon-1")
-        XCTAssertNotNil(env.likes.userDocuments["anon-1"])
-        XCTAssertEqual(analyticsUserIDs.last, "anon-1")
+        #expect(env.auth.calls.filter { $0 == "signInAnonymously" }.count == 1)
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
+        #expect(env.manager.state.uid == "anon-1")
+        #expect(env.likes.userDocuments["anon-1"] != nil)
+        #expect(analyticsUserIDs.last == "anon-1")
     }
 
-    func testStartKeepsExistingUser() async throws {
+    @Test func `Start keeps existing user`() async throws {
         let env = try makeEnv(currentUser: appleUser)
         await env.manager.start()
 
-        XCTAssertFalse(env.auth.calls.contains("signInAnonymously"))
-        XCTAssertEqual(env.manager.state, .signedIn(uid: "apple-user", provider: .apple, email: "a@example.com"))
-        XCTAssertEqual(env.likes.calls, ["ensureUserDocument"])
-        XCTAssertEqual(analyticsUserIDs, ["apple-user"])
+        #expect(!env.auth.calls.contains("signInAnonymously"))
+        #expect(env.manager.state == .signedIn(uid: "apple-user", provider: .apple, email: "a@example.com"))
+        #expect(env.likes.calls == ["ensureUserDocument"])
+        #expect(analyticsUserIDs == ["apple-user"])
     }
 
-    func testStartFailureStaysSignedOutAndALaterStartRetries() async throws {
+    @Test func `Start failure stays signed out and a later start retries`() async throws {
         let env = try makeEnv()
         env.auth.setAnonymousSignInError(FakeAuthBackend.Failure())
         await env.manager.start()
 
-        XCTAssertEqual(env.manager.state, .signedOut)
-        XCTAssertNil(env.manager.state.uid)
-        XCTAssertEqual(env.likes.calls, [])
-        XCTAssertEqual(analyticsUserIDs, [])
+        #expect(env.manager.state == .signedOut)
+        #expect(env.manager.state.uid == nil)
+        #expect(env.likes.calls == [])
+        #expect(analyticsUserIDs == [])
 
         env.auth.setAnonymousSignInError(nil)
         await env.manager.start()
-        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
     }
 
     // MARK: signIn
 
-    func testLinkSuccessKeepsUid() async throws {
+    @Test func `Link success keeps uid`() async throws {
         let env = try makeEnv()
         await env.manager.start()
         env.likes.resetCalls()
 
         try await env.manager.signIn(with: appleCredential())
 
-        XCTAssertEqual(env.manager.state, .signedIn(uid: "anon-1", provider: .apple, email: "anon-1@example.com"))
-        XCTAssertEqual(env.likes.calls, [])
+        #expect(env.manager.state == .signedIn(uid: "anon-1", provider: .apple, email: "anon-1@example.com"))
+        #expect(env.likes.calls == [])
     }
 
-    func testCredentialInUseMergesAnonymousLikes() async throws {
+    @Test func `Credential in use merges anonymous likes`() async throws {
         let env = try makeEnv()
         env.auth.addExistingAccount(googleUser, for: .google)
         env.likes.seed([like(1, at: t2)], uid: "google-user")
@@ -137,50 +138,47 @@ final class AccountManagerTests: XCTestCase {
 
         try await env.manager.signIn(with: googleCredential())
 
-        XCTAssertEqual(env.manager.state, .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
-        XCTAssertEqual(env.likes.likes(for: "google-user"), [like(2, at: t3), like(1, at: t1)])
+        #expect(env.manager.state == .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
+        #expect(env.likes.likes(for: "google-user") == [like(2, at: t3), like(1, at: t1)])
         // The anonymous account's data and user are gone.
-        XCTAssertEqual(env.likes.likes(for: "anon-1"), [])
-        XCTAssertNil(env.likes.userDocuments["anon-1"])
-        XCTAssertEqual(env.auth.deletedUids, ["anon-1"])
-        XCTAssertEqual(env.pending.load(), [])
+        #expect(env.likes.likes(for: "anon-1") == [])
+        #expect(env.likes.userDocuments["anon-1"] == nil)
+        #expect(env.auth.deletedUids == ["anon-1"])
+        #expect(env.pending.load() == [])
         // The anonymous data is read and deleted while still signed in as the anonymous user,
         // because the rules only let a user touch their own data.
-        XCTAssertEqual(env.log.calls, [
+        #expect(env.log.calls == [
             "link",
             "fetchLikes", "deleteAllData", "deleteCurrentUser",
             "signIn", "ensureUserDocument",
             "fetchLikes", "setLikes",
         ])
-        XCTAssertEqual(analyticsUserIDs.last, "google-user")
+        #expect(analyticsUserIDs.last == "google-user")
     }
 
-    func testCredentialInUseSignInFailureKeepsPendingAndNextStartMergesIt() async throws {
+    @Test func `Credential in use sign in failure keeps pending and next start merges it`() async throws {
         let env = try makeEnv()
         env.auth.addExistingAccount(googleUser, for: .google)
         env.auth.setSignInError(FakeAuthBackend.Failure())
         await env.manager.start()
         env.likes.seed([like(1, at: t1), like(2, at: t3)], uid: "anon-1")
 
-        do {
+        await #expect(throws: FakeAuthBackend.Failure.self, "signIn should rethrow the sign-in failure") {
             try await env.manager.signIn(with: googleCredential())
-            XCTFail("signIn should rethrow the sign-in failure")
-        } catch {
-            XCTAssertTrue(error is FakeAuthBackend.Failure, "unexpected error \(error)")
         }
 
         // The anonymous user is gone, but its likes are kept on the device.
-        XCTAssertEqual(env.manager.state, .signedOut)
-        XCTAssertEqual(env.pending.load(), [like(2, at: t3), like(1, at: t1)])
+        #expect(env.manager.state == .signedOut)
+        #expect(env.pending.load() == [like(2, at: t3), like(1, at: t1)])
 
         await env.manager.start()
 
-        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-2"))
-        XCTAssertEqual(env.likes.likes(for: "anon-2"), [like(2, at: t3), like(1, at: t1)])
-        XCTAssertEqual(env.pending.load(), [])
+        #expect(env.manager.state == .anonymous(uid: "anon-2"))
+        #expect(env.likes.likes(for: "anon-2") == [like(2, at: t3), like(1, at: t1)])
+        #expect(env.pending.load() == [])
     }
 
-    func testCredentialInUseMergeWriteFailureKeepsPendingForNextStart() async throws {
+    @Test func `Credential in use merge write failure keeps pending for next start`() async throws {
         let env = try makeEnv()
         env.auth.addExistingAccount(googleUser, for: .google)
         await env.manager.start()
@@ -189,35 +187,34 @@ final class AccountManagerTests: XCTestCase {
 
         try await env.manager.signIn(with: googleCredential())
 
-        XCTAssertEqual(env.manager.state, .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
-        XCTAssertEqual(env.pending.load(), [like(2, at: t3)])
+        #expect(env.manager.state == .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
+        #expect(env.pending.load() == [like(2, at: t3)])
 
         env.likes.setSetLikesError(nil)
         await env.manager.start()
 
-        XCTAssertEqual(env.likes.likes(for: "google-user"), [like(2, at: t3)])
-        XCTAssertEqual(env.pending.load(), [])
+        #expect(env.likes.likes(for: "google-user") == [like(2, at: t3)])
+        #expect(env.pending.load() == [])
     }
 
-    func testCredentialInUseReadFailureLeavesAnonymousAccountUntouched() async throws {
+    @Test func `Credential in use read failure leaves anonymous account untouched`() async throws {
         let env = try makeEnv()
         env.auth.addExistingAccount(googleUser, for: .google)
         await env.manager.start()
         env.likes.seed([like(2, at: t3)], uid: "anon-1")
         env.likes.setFetchError(FakeLikesStore.Failure())
 
-        do {
+        await #expect(throws: (any Error).self, "signIn should rethrow the read failure") {
             try await env.manager.signIn(with: googleCredential())
-            XCTFail("signIn should rethrow the read failure")
-        } catch {}
+        }
 
-        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
-        XCTAssertEqual(env.likes.likes(for: "anon-1"), [like(2, at: t3)])
-        XCTAssertEqual(env.auth.deletedUids, [])
-        XCTAssertEqual(env.pending.load(), [])
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
+        #expect(env.likes.likes(for: "anon-1") == [like(2, at: t3)])
+        #expect(env.auth.deletedUids == [])
+        #expect(env.pending.load() == [])
     }
 
-    func testSignInWithoutAccountSignsInAndMergesPending() async throws {
+    @Test func `Sign in without account signs in and merges pending`() async throws {
         let env = try makeEnv()
         env.auth.setAnonymousSignInError(FakeAuthBackend.Failure())
         await env.manager.start()
@@ -225,16 +222,16 @@ final class AccountManagerTests: XCTestCase {
 
         try await env.manager.signIn(with: appleCredential())
 
-        XCTAssertEqual(env.manager.state, .signedIn(uid: "new-apple.com", provider: .apple, email: nil))
-        XCTAssertFalse(env.auth.calls.contains("link"))
-        XCTAssertNotNil(env.likes.userDocuments["new-apple.com"])
-        XCTAssertEqual(env.likes.likes(for: "new-apple.com"), [like(2, at: t3)])
-        XCTAssertEqual(env.pending.load(), [])
+        #expect(env.manager.state == .signedIn(uid: "new-apple.com", provider: .apple, email: nil))
+        #expect(!env.auth.calls.contains("link"))
+        #expect(env.likes.userDocuments["new-apple.com"] != nil)
+        #expect(env.likes.likes(for: "new-apple.com") == [like(2, at: t3)])
+        #expect(env.pending.load() == [])
     }
 
     // MARK: Overlapping operations
 
-    func testOverlappingSignInsKeepTheExistingAccount() async throws {
+    @Test func `Overlapping sign ins keep the existing account`() async throws {
         let env = try makeEnv()
         // The existing account has both providers, so both credentials are "already in use".
         env.auth.addExistingAccount(googleUser, for: .google)
@@ -254,22 +251,22 @@ final class AccountManagerTests: XCTestCase {
         let firstResult = await first.result
         _ = await second.result
 
-        XCTAssertNoThrow(try firstResult.get())
+        #expect(throws: Never.self) { try firstResult.get() }
         // The second sign-in runs only after the first finished, so it starts from the existing
         // (non-anonymous) account and deletes nothing.
-        XCTAssertEqual(env.log.calls, [
+        #expect(env.log.calls == [
             "link", "fetchLikes", "deleteAllData", "deleteCurrentUser", "signIn", "ensureUserDocument",
             "fetchLikes", "setLikes",
             "link",
         ])
-        XCTAssertEqual(env.auth.deletedUids, ["anon-1"])
-        XCTAssertEqual(env.auth.currentUser?.uid, "google-user")
-        XCTAssertEqual(env.manager.state, .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
-        XCTAssertEqual(env.likes.likes(for: "google-user"), [like(2, at: t3), like(1, at: t1)])
-        XCTAssertEqual(env.pending.load(), [])
+        #expect(env.auth.deletedUids == ["anon-1"])
+        #expect(env.auth.currentUser?.uid == "google-user")
+        #expect(env.manager.state == .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
+        #expect(env.likes.likes(for: "google-user") == [like(2, at: t3), like(1, at: t1)])
+        #expect(env.pending.load() == [])
     }
 
-    func testStartDuringMergeWaitsAndPendingLandsInExistingAccount() async throws {
+    @Test func `Start during merge waits and pending lands in existing account`() async throws {
         let env = try makeEnv()
         env.auth.addExistingAccount(googleUser, for: .google)
         await env.manager.start()
@@ -283,13 +280,13 @@ final class AccountManagerTests: XCTestCase {
         await env.manager.start()
         try await signIn.value
 
-        XCTAssertEqual(env.auth.calls.filter { $0 == "signInAnonymously" }.count, 1, "no throwaway anonymous account")
-        XCTAssertEqual(env.manager.state, .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
-        XCTAssertEqual(env.likes.likes(for: "google-user"), [like(2, at: t3), like(1, at: t1)])
-        XCTAssertEqual(env.pending.load(), [])
+        #expect(env.auth.calls.filter { $0 == "signInAnonymously" }.count == 1, "no throwaway anonymous account")
+        #expect(env.manager.state == .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
+        #expect(env.likes.likes(for: "google-user") == [like(2, at: t3), like(1, at: t1)])
+        #expect(env.pending.load() == [])
     }
 
-    func testMergeDeletesNothingWhenAnotherUserIsSignedInByCleanupTime() async throws {
+    @Test func `Merge deletes nothing when another user is signed in by cleanup time`() async throws {
         let env = try makeEnv()
         env.auth.addExistingAccount(googleUser, for: .google)
         await env.manager.start()
@@ -301,62 +298,59 @@ final class AccountManagerTests: XCTestCase {
 
         try await env.manager.signIn(with: googleCredential())
 
-        XCTAssertEqual(env.auth.deletedUids, [], "only the anonymous user it read may be deleted")
-        XCTAssertEqual(env.likes.likes(for: "other-user"), [like(5, at: t1)])
-        XCTAssertEqual(env.manager.state, .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
-        XCTAssertEqual(env.likes.likes(for: "google-user"), [like(2, at: t3)])
-        XCTAssertEqual(env.pending.load(), [])
+        #expect(env.auth.deletedUids == [], "only the anonymous user it read may be deleted")
+        #expect(env.likes.likes(for: "other-user") == [like(5, at: t1)])
+        #expect(env.manager.state == .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
+        #expect(env.likes.likes(for: "google-user") == [like(2, at: t3)])
+        #expect(env.pending.load() == [])
     }
 
-    func testIsBusyWhileOperationsAreQueued() async throws {
+    @Test func `Is busy while operations are queued`() async throws {
         let env = try makeEnv()
         env.auth.setAnonymousSignInDelay(.milliseconds(150))
-        XCTAssertFalse(env.manager.isBusy)
+        #expect(!env.manager.isBusy)
 
         let first = Task { await env.manager.start() }
         try await waitUntil { env.auth.calls.contains("signInAnonymously") }
-        XCTAssertTrue(env.manager.isBusy, "busy while the first operation runs")
+        #expect(env.manager.isBusy, "busy while the first operation runs")
 
         // Queued behind the first; it signs in again after signing out, which takes another 150 ms.
         let second = Task { try await env.manager.signOut() }
         try await Task.sleep(for: .milliseconds(20))
         await first.value
-        XCTAssertTrue(env.manager.isBusy, "still busy while the second operation waits and runs")
+        #expect(env.manager.isBusy, "still busy while the second operation waits and runs")
 
         try await second.value
-        XCTAssertFalse(env.manager.isBusy)
-        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-2"))
+        #expect(!env.manager.isBusy)
+        #expect(env.manager.state == .anonymous(uid: "anon-2"))
     }
 
-    func testIsNotBusyAfterAFailedOperation() async throws {
+    @Test func `Is not busy after a failed operation`() async throws {
         let env = try makeEnv()
         await env.manager.start()
 
-        do {
+        await #expect(throws: AccountError.notSignedIn, "deleting an anonymous account should throw") {
             try await env.manager.deleteAccount(reauthWith: appleCredential())
-            XCTFail("deleting an anonymous account should throw")
-        } catch {
-            XCTAssertEqual(error as? AccountError, .notSignedIn)
         }
-        XCTAssertFalse(env.manager.isBusy)
+        #expect(!env.manager.isBusy)
     }
 
     // MARK: signOut
 
-    func testSignOutStartsNewAnonymousAccount() async throws {
+    @Test func `Sign out starts new anonymous account`() async throws {
         let env = try makeEnv(currentUser: appleUser)
         await env.manager.start()
 
         try await env.manager.signOut()
 
-        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
-        XCTAssertEqual(Array(env.auth.calls.suffix(2)), ["signOut", "signInAnonymously"])
-        XCTAssertEqual(analyticsUserIDs.last, "anon-1")
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
+        #expect(Array(env.auth.calls.suffix(2)) == ["signOut", "signInAnonymously"])
+        #expect(analyticsUserIDs.last == "anon-1")
     }
 
     // MARK: deleteAccount
 
-    func testDeleteAppleAccountCallOrder() async throws {
+    @Test func `Delete Apple account call order`() async throws {
         let env = try makeEnv(currentUser: appleUser)
         env.likes.seed([like(1, at: t1)], uid: "apple-user")
         await env.manager.start()
@@ -365,110 +359,100 @@ final class AccountManagerTests: XCTestCase {
         try await env.manager.deleteAccount(reauthWith: appleCredential(code: "fresh-code"))
 
         // The brief's sequence, followed by the user-document check of the fresh anonymous account.
-        XCTAssertEqual(env.log.calls, [
+        #expect(env.log.calls == [
             "reauthenticate", "revokeAppleToken", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser",
             "signInAnonymously", "ensureUserDocument",
         ])
-        XCTAssertEqual(env.auth.revokedCodes, ["fresh-code"])
-        XCTAssertEqual(env.auth.deletedUids, ["apple-user"])
-        XCTAssertEqual(env.photos.deletedUids, ["apple-user"])
-        XCTAssertEqual(env.likes.likes(for: "apple-user"), [])
-        XCTAssertNil(env.likes.userDocuments["apple-user"])
-        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
+        #expect(env.auth.revokedCodes == ["fresh-code"])
+        #expect(env.auth.deletedUids == ["apple-user"])
+        #expect(env.photos.deletedUids == ["apple-user"])
+        #expect(env.likes.likes(for: "apple-user") == [])
+        #expect(env.likes.userDocuments["apple-user"] == nil)
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
     }
 
-    func testDeleteGoogleAccountSkipsRevoke() async throws {
+    @Test func `Delete Google account skips revoke`() async throws {
         let env = try makeEnv(currentUser: googleUser)
         await env.manager.start()
         env.log.reset()
 
         try await env.manager.deleteAccount(reauthWith: googleCredential())
 
-        XCTAssertEqual(env.log.calls, [
+        #expect(env.log.calls == [
             "reauthenticate", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser", "signInAnonymously",
             "ensureUserDocument",
         ])
-        XCTAssertEqual(env.auth.revokedCodes, [])
-        XCTAssertEqual(env.photos.deletedUids, ["google-user"])
-        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
+        #expect(env.auth.revokedCodes == [])
+        #expect(env.photos.deletedUids == ["google-user"])
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
     }
 
-    func testDeleteAppleAccountWithoutCodeThrowsMissingToken() async throws {
+    @Test func `Delete Apple account without code throws missing token`() async throws {
         let env = try makeEnv(currentUser: appleUser)
         await env.manager.start()
         env.log.reset()
 
-        do {
+        await #expect(throws: SignInError.missingToken, "deleteAccount should throw") {
             try await env.manager.deleteAccount(reauthWith: appleCredential(code: nil))
-            XCTFail("deleteAccount should throw")
-        } catch {
-            XCTAssertEqual(error as? SignInError, .missingToken)
         }
 
-        XCTAssertFalse(env.log.calls.contains("deleteAllData"))
-        XCTAssertFalse(env.log.calls.contains("deleteCurrentUser"))
-        XCTAssertEqual(env.manager.state, .signedIn(uid: "apple-user", provider: .apple, email: "a@example.com"))
+        #expect(!env.log.calls.contains("deleteAllData"))
+        #expect(!env.log.calls.contains("deleteCurrentUser"))
+        #expect(env.manager.state == .signedIn(uid: "apple-user", provider: .apple, email: "a@example.com"))
     }
 
-    func testDeleteAccountRequiresSignedInAccount() async throws {
+    @Test func `Delete account requires signed in account`() async throws {
         let env = try makeEnv()
         await env.manager.start()
         env.log.reset()
 
-        do {
+        await #expect(throws: (any Error).self, "deleteAccount should throw for an anonymous account") {
             try await env.manager.deleteAccount(reauthWith: googleCredential())
-            XCTFail("deleteAccount should throw for an anonymous account")
-        } catch {}
+        }
 
-        XCTAssertEqual(env.log.calls, [])
-        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
+        #expect(env.log.calls == [])
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
     }
 
-    func testDeleteAccountStopsWhenWaitingPhotosCannotBeDeleted() async throws {
+    @Test func `Delete account stops when waiting photos cannot be deleted`() async throws {
         let env = try makeEnv(currentUser: appleUser)
         await env.manager.start()
         env.photos.error = FakeLikesStore.Failure()
 
-        do {
+        await #expect(throws: FakeLikesStore.Failure.self, "the first attempt should fail") {
             try await env.manager.deleteAccount(reauthWith: appleCredential())
-            XCTFail("the first attempt should fail")
-        } catch {
-            XCTAssertTrue(error is FakeLikesStore.Failure, "unexpected error \(error)")
         }
         // The Firebase user must outlive its photos: with the user gone, nobody could delete them any more.
-        XCTAssertEqual(env.auth.deletedUids, [])
-        XCTAssertEqual(env.photos.deletedUids, [])
-        XCTAssertEqual(env.manager.state, .signedIn(uid: "apple-user", provider: .apple, email: "a@example.com"))
+        #expect(env.auth.deletedUids == [])
+        #expect(env.photos.deletedUids == [])
+        #expect(env.manager.state == .signedIn(uid: "apple-user", provider: .apple, email: "a@example.com"))
 
         env.photos.error = nil
         try await env.manager.deleteAccount(reauthWith: appleCredential())
 
-        XCTAssertEqual(env.photos.deletedUids, ["apple-user"])
-        XCTAssertEqual(env.auth.deletedUids, ["apple-user"])
-        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
+        #expect(env.photos.deletedUids == ["apple-user"])
+        #expect(env.auth.deletedUids == ["apple-user"])
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
     }
 
-    func testDeleteAccountRetryAfterFailureSucceeds() async throws {
+    @Test func `Delete account retry after failure succeeds`() async throws {
         let env = try makeEnv(currentUser: appleUser)
         env.likes.seed([like(1, at: t1)], uid: "apple-user")
         await env.manager.start()
         env.auth.failNextDeletes(1)
 
-        do {
+        await #expect(throws: FakeAuthBackend.Failure.self, "the first attempt should fail") {
             try await env.manager.deleteAccount(reauthWith: appleCredential())
-            XCTFail("the first attempt should fail")
-        } catch {
-            XCTAssertTrue(error is FakeAuthBackend.Failure, "unexpected error \(error)")
         }
         // The data is already gone, but the account stays signed in so the person can retry.
-        XCTAssertEqual(env.likes.likes(for: "apple-user"), [])
-        XCTAssertEqual(env.manager.state, .signedIn(uid: "apple-user", provider: .apple, email: "a@example.com"))
+        #expect(env.likes.likes(for: "apple-user") == [])
+        #expect(env.manager.state == .signedIn(uid: "apple-user", provider: .apple, email: "a@example.com"))
 
         try await env.manager.deleteAccount(reauthWith: appleCredential())
 
-        XCTAssertEqual(env.likes.calls.filter { $0 == "deleteAllData" }.count, 2)
-        XCTAssertEqual(env.auth.calls.filter { $0 == "deleteCurrentUser" }.count, 2)
-        XCTAssertEqual(env.auth.deletedUids, ["apple-user"])
-        XCTAssertEqual(env.manager.state, .anonymous(uid: "anon-1"))
+        #expect(env.likes.calls.filter { $0 == "deleteAllData" }.count == 2)
+        #expect(env.auth.calls.filter { $0 == "deleteCurrentUser" }.count == 2)
+        #expect(env.auth.deletedUids == ["apple-user"])
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
     }
 }

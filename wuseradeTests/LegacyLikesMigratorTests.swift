@@ -1,24 +1,25 @@
+import Foundation
 import SwiftData
-import XCTest
+import Testing
 @testable import Wuserade
 
 @MainActor
-final class LegacyLikesMigratorTests: XCTestCase {
-    /// XCTest creates one instance per test method, so every test gets its own defaults suite.
+final class LegacyLikesMigratorTests {
+    /// Swift Testing creates a fresh suite instance per test, so every test gets its own defaults suite.
     private let suiteName = "LegacyLikesMigratorTests-\(UUID().uuidString)"
 
     private let t1 = Date(timeIntervalSince1970: 1_700_000_000)
     private let t2 = Date(timeIntervalSince1970: 1_700_001_000)
     private let t3 = Date(timeIntervalSince1970: 1_700_002_000)
 
-    override func tearDownWithError() throws {
+    deinit {
         UserDefaults().removePersistentDomain(forName: suiteName)
     }
 
     // MARK: Fixtures
 
     private func makeDefaults() throws -> UserDefaults {
-        try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        try #require(UserDefaults(suiteName: suiteName))
     }
 
     private func didMigrate() throws -> Bool {
@@ -62,7 +63,7 @@ final class LegacyLikesMigratorTests: XCTestCase {
 
     // MARK: Tests
 
-    func testUploadsPersistedPoemsWithPersistedDate() async throws {
+    @Test func `Uploads persisted poems with persisted date`() async throws {
         let container = try makeContainer()
         try persist(1, at: t1, in: container)
         try persist(2, at: t3, in: container)
@@ -71,31 +72,31 @@ final class LegacyLikesMigratorTests: XCTestCase {
 
         await migrator.migrateIfNeeded(uid: "a")
 
-        XCTAssertEqual(store.likes(for: "a"), [legacyLike(2, at: t3), legacyLike(1, at: t1)])
-        XCTAssertEqual(store.calls, ["setLikes"], "one batched write")
-        XCTAssertTrue(try didMigrate())
+        #expect(store.likes(for: "a") == [legacyLike(2, at: t3), legacyLike(1, at: t1)])
+        #expect(store.calls == ["setLikes"], "one batched write")
+        #expect(try didMigrate())
     }
 
-    func testSetsFlagAndDoesNotRunTwice() async throws {
+    @Test func `Sets flag and does not run twice`() async throws {
         let container = try makeContainer()
         try persist(1, at: t1, in: container)
         let store = FakeLikesStore()
         let migrator = try makeMigrator(container, store)
 
         await migrator.migrateIfNeeded(uid: "a")
-        XCTAssertTrue(try didMigrate())
+        #expect(try didMigrate())
 
         // A poem that appears later, or another account on the same device, is not uploaded.
         try persist(2, at: t2, in: container)
         await migrator.migrateIfNeeded(uid: "a")
         await migrator.migrateIfNeeded(uid: "b")
 
-        XCTAssertEqual(store.calls, ["setLikes"])
-        XCTAssertEqual(store.likes(for: "a"), [legacyLike(1, at: t1)])
-        XCTAssertEqual(store.likes(for: "b"), [])
+        #expect(store.calls == ["setLikes"])
+        #expect(store.likes(for: "a") == [legacyLike(1, at: t1)])
+        #expect(store.likes(for: "b") == [])
     }
 
-    func testFailureLeavesFlagUnset() async throws {
+    @Test func `Failure leaves flag unset`() async throws {
         let container = try makeContainer()
         try persist(1, at: t1, in: container)
         let store = FakeLikesStore()
@@ -104,28 +105,28 @@ final class LegacyLikesMigratorTests: XCTestCase {
 
         await migrator.migrateIfNeeded(uid: "a")
 
-        XCTAssertFalse(try didMigrate())
-        XCTAssertEqual(store.likes(for: "a"), [])
+        #expect(try !didMigrate())
+        #expect(store.likes(for: "a") == [])
 
         // The next try, once the write works, uploads and sets the flag.
         store.setSetLikesError(nil)
         await migrator.migrateIfNeeded(uid: "a")
 
-        XCTAssertTrue(try didMigrate())
-        XCTAssertEqual(store.likes(for: "a"), [legacyLike(1, at: t1)])
+        #expect(try didMigrate())
+        #expect(store.likes(for: "a") == [legacyLike(1, at: t1)])
     }
 
-    func testNothingToUploadStillSetsTheFlag() async throws {
+    @Test func `Nothing to upload still sets the flag`() async throws {
         let store = FakeLikesStore()
         let migrator = try makeMigrator(makeContainer(), store)
 
         await migrator.migrateIfNeeded(uid: "a")
 
-        XCTAssertEqual(store.calls, [], "nothing to write")
-        XCTAssertTrue(try didMigrate())
+        #expect(store.calls == [], "nothing to write")
+        #expect(try didMigrate())
     }
 
-    func testDuplicatePoemsKeepTheEarliestDate() async throws {
+    @Test func `Duplicate poems keep the earliest date`() async throws {
         let container = try makeContainer()
         try persist(1, at: t2, in: container)
         try persist(1, at: t1, in: container)
@@ -134,6 +135,6 @@ final class LegacyLikesMigratorTests: XCTestCase {
 
         await migrator.migrateIfNeeded(uid: "a")
 
-        XCTAssertEqual(store.likes(for: "a"), [legacyLike(1, at: t1)])
+        #expect(store.likes(for: "a") == [legacyLike(1, at: t1)])
     }
 }

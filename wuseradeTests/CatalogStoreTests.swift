@@ -1,13 +1,14 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Wuserade
 
 @MainActor
-final class CatalogStoreTests: XCTestCase {
-    /// XCTest creates one instance per test method, so every test gets its own empty cache directory.
+final class CatalogStoreTests {
+    /// Swift Testing creates a fresh suite instance per test, so every test gets its own empty cache directory.
     private let directory = FileManager.default.temporaryDirectory
         .appendingPathComponent("CatalogStoreTests-\(UUID().uuidString)", isDirectory: true)
 
-    override func tearDownWithError() throws {
+    deinit {
         try? FileManager.default.removeItem(at: directory)
     }
 
@@ -56,64 +57,64 @@ final class CatalogStoreTests: XCTestCase {
 
     // MARK: Tests
 
-    func testFreshStoreLoadsAndCachesCatalog() async {
+    @Test func `Fresh store loads and caches catalog`() async {
         let fake = makeFake()
         // The first chunk answers last; entries must still come out in chunk order.
         fake.setSlowChunks([0])
         let store = makeStore(fake)
-        XCTAssertNil(store.catalog)
+        #expect(store.catalog == nil)
 
         await store.refresh()
 
-        XCTAssertEqual(store.catalog?.version, 3)
-        XCTAssertEqual(store.catalog?.entries.count, 5)
-        XCTAssertEqual(store.catalog?.entries.map(\.id), [1, 2, 3, 4, 5])
-        XCTAssertEqual(store.meta?.catalogVersion, 3)
-        XCTAssertNil(store.lastError)
-        XCTAssertFalse(store.isLoading)
-        XCTAssertTrue(FileManager.default.fileExists(
+        #expect(store.catalog?.version == 3)
+        #expect(store.catalog?.entries.count == 5)
+        #expect(store.catalog?.entries.map(\.id) == [1, 2, 3, 4, 5])
+        #expect(store.meta?.catalogVersion == 3)
+        #expect(store.lastError == nil)
+        #expect(!store.isLoading)
+        #expect(FileManager.default.fileExists(
             atPath: directory.appendingPathComponent("catalog-cache.json").path
         ))
     }
 
-    func testSecondStoreReadsCacheWithoutNetwork() async {
+    @Test func `Second store reads cache without network`() async {
         let first = makeStore(makeFake())
         await first.refresh()
-        XCTAssertEqual(first.catalog?.version, 3)
+        #expect(first.catalog?.version == 3)
 
         let offline = makeFake()
         offline.setOffline(true)
         let second = makeStore(offline)
         // Loaded synchronously in init, before any refresh.
-        XCTAssertEqual(second.catalog?.version, 3)
-        XCTAssertEqual(second.catalog?.entries.count, 5)
-        XCTAssertEqual(second.meta?.catalogVersion, 3)
-        XCTAssertEqual(second.catalog, first.catalog)
+        #expect(second.catalog?.version == 3)
+        #expect(second.catalog?.entries.count == 5)
+        #expect(second.meta?.catalogVersion == 3)
+        #expect(second.catalog == first.catalog)
 
         await second.refresh()
 
-        XCTAssertEqual(second.catalog?.version, 3)
-        XCTAssertEqual(second.catalog?.entries.count, 5)
-        XCTAssertNotNil(second.lastError)
-        XCTAssertFalse(second.isLoading)
+        #expect(second.catalog?.version == 3)
+        #expect(second.catalog?.entries.count == 5)
+        #expect(second.lastError != nil)
+        #expect(!second.isLoading)
     }
 
-    func testSameVersionDoesNotRefetchChunks() async {
+    @Test func `Same version does not refetch chunks`() async {
         let fake = makeFake()
         let store = makeStore(fake)
         await store.refresh()
-        XCTAssertEqual(fake.chunkCalls, 2)
+        #expect(fake.chunkCalls == 2)
 
         fake.resetCounts()
         await store.refresh()
 
-        XCTAssertEqual(fake.metaCalls, 1)
-        XCTAssertEqual(fake.chunkCalls, 0)
-        XCTAssertEqual(store.catalog?.version, 3)
-        XCTAssertNil(store.lastError)
+        #expect(fake.metaCalls == 1)
+        #expect(fake.chunkCalls == 0)
+        #expect(store.catalog?.version == 3)
+        #expect(store.lastError == nil)
     }
 
-    func testNewVersionRefetches() async {
+    @Test func `New version refetches`() async {
         let fake = makeFake()
         let store = makeStore(fake)
         await store.refresh()
@@ -128,24 +129,24 @@ final class CatalogStoreTests: XCTestCase {
         fake.resetCounts()
         await store.refresh()
 
-        XCTAssertEqual(fake.chunkCalls, 2)
-        XCTAssertEqual(store.catalog?.version, 4)
-        XCTAssertEqual(store.catalog?.entries.map(\.id), [1, 2, 3, 4, 5, 6])
-        XCTAssertEqual(store.meta?.catalogVersion, 4)
-        XCTAssertNil(store.lastError)
+        #expect(fake.chunkCalls == 2)
+        #expect(store.catalog?.version == 4)
+        #expect(store.catalog?.entries.map(\.id) == [1, 2, 3, 4, 5, 6])
+        #expect(store.meta?.catalogVersion == 4)
+        #expect(store.lastError == nil)
 
         // The new catalog was persisted, not just kept in memory.
         let reopened = makeStore(makeFake())
-        XCTAssertEqual(reopened.catalog?.version, 4)
-        XCTAssertEqual(reopened.catalog?.entries.count, 6)
+        #expect(reopened.catalog?.version == 4)
+        #expect(reopened.catalog?.entries.count == 6)
     }
 
-    func testChunkVersionMismatchKeepsOldCatalog() async {
+    @Test func `Chunk version mismatch keeps old catalog`() async {
         let fake = makeFake()
         let store = makeStore(fake)
         await store.refresh()
         let before = store.catalog
-        XCTAssertEqual(before?.version, 3)
+        #expect(before?.version == 3)
 
         // Mid-publish: meta already says v4 and chunk 0 is v4, but chunk 1 is still v3.
         fake.set(
@@ -157,15 +158,15 @@ final class CatalogStoreTests: XCTestCase {
         )
         await store.refresh()
 
-        XCTAssertEqual(store.catalog?.version, 3)
-        XCTAssertEqual(store.catalog, before)
-        XCTAssertEqual(store.meta?.catalogVersion, 3)
-        XCTAssertNotNil(store.lastError)
-        XCTAssertFalse(store.isLoading)
+        #expect(store.catalog?.version == 3)
+        #expect(store.catalog == before)
+        #expect(store.meta?.catalogVersion == 3)
+        #expect(store.lastError != nil)
+        #expect(!store.isLoading)
 
         // The rejected catalog was not written to the cache either.
         let reopened = makeStore(makeFake())
-        XCTAssertEqual(reopened.catalog, before)
+        #expect(reopened.catalog == before)
 
         // Once the publish finishes, the next refresh picks the new catalog up and clears the error.
         fake.set(
@@ -176,26 +177,26 @@ final class CatalogStoreTests: XCTestCase {
             ]
         )
         await store.refresh()
-        XCTAssertEqual(store.catalog?.version, 4)
-        XCTAssertNil(store.lastError)
+        #expect(store.catalog?.version == 4)
+        #expect(store.lastError == nil)
     }
 
-    func testOfflineFirstLaunchEndsLoadingWithError() async {
+    @Test func `Offline first launch ends loading with error`() async {
         let fake = makeFake()
         fake.setOffline(true)
         let store = makeStore(fake)
 
         await store.refresh()
 
-        XCTAssertFalse(store.isLoading)
-        XCTAssertNil(store.catalog)
-        XCTAssertNil(store.meta)
-        XCTAssertNotNil(store.lastError)
-        XCTAssertTrue(store.authors.isEmpty)
-        XCTAssertTrue(store.themes.isEmpty)
+        #expect(!store.isLoading)
+        #expect(store.catalog == nil)
+        #expect(store.meta == nil)
+        #expect(store.lastError != nil)
+        #expect(store.authors.isEmpty)
+        #expect(store.themes.isEmpty)
     }
 
-    func testAuthorsAndThemesComeFromMeta() async {
+    @Test func `Authors and themes come from meta`() async {
         let fake = FakeContentRepository(
             meta: meta(
                 version: 1,
@@ -209,76 +210,69 @@ final class CatalogStoreTests: XCTestCase {
             chunks: [CatalogChunk(version: 1, entries: [summary(1, authorId: 4, themeId: 9)])]
         )
         let store = makeStore(fake)
-        XCTAssertTrue(store.authors.isEmpty)
-        XCTAssertTrue(store.themes.isEmpty)
+        #expect(store.authors.isEmpty)
+        #expect(store.themes.isEmpty)
 
         await store.refresh()
 
-        XCTAssertEqual(store.authors, [Author(id: 4, name: "Лашэ"), Author(id: 7, name: "Бемырзэ")])
-        XCTAssertEqual(store.themes, [Category(id: 9, title: "Хы"), Category(id: 2, title: "Гущlэ")])
+        #expect(store.authors == [Author(id: 4, name: "Лашэ"), Author(id: 7, name: "Бемырзэ")])
+        #expect(store.themes == [Category(id: 9, title: "Хы"), Category(id: 2, title: "Гущlэ")])
     }
 
     // MARK: Malformed catalogChunks
 
-    func testZeroCatalogChunksKeepsLoadedCatalog() async {
-        await assertRejectsChunkCount(0)
-    }
-
-    func testNegativeCatalogChunksKeepsLoadedCatalog() async {
-        await assertRejectsChunkCount(-1)
-    }
-
     /// A hand-edited `catalogChunks` below 1 is refused like any other failed refresh:
     /// the loaded and cached catalog stay, and the minimum app version still gets through.
-    private func assertRejectsChunkCount(_ count: Int, file: StaticString = #filePath, line: UInt = #line) async {
+    @Test(arguments: [0, -1])
+    func `Malformed catalog chunks keep loaded catalog`(count: Int) async {
         let fake = makeFake()
         let store = makeStore(fake)
         await store.refresh()
         let before = store.catalog
-        XCTAssertEqual(before?.version, 3, file: file, line: line)
+        #expect(before?.version == 3)
 
         fake.set(meta: meta(version: 4, chunks: count), chunks: [])
         fake.set(minimumAppVersion: "9.0")
         fake.resetCounts()
         await store.refresh()
 
-        XCTAssertEqual(store.lastError as? CatalogStoreError, .invalidChunkCount(count), file: file, line: line)
-        XCTAssertEqual(fake.chunkCalls, 0, file: file, line: line)
-        XCTAssertEqual(store.catalog, before, file: file, line: line)
-        XCTAssertEqual(store.meta?.catalogVersion, 3, file: file, line: line)
-        XCTAssertFalse(store.isLoading, file: file, line: line)
-        XCTAssertEqual(store.minimumAppVersion, "9.0", file: file, line: line)
+        #expect(store.lastError as? CatalogStoreError == .invalidChunkCount(count))
+        #expect(fake.chunkCalls == 0)
+        #expect(store.catalog == before)
+        #expect(store.meta?.catalogVersion == 3)
+        #expect(!store.isLoading)
+        #expect(store.minimumAppVersion == "9.0")
         // Neither the bad meta nor an empty catalog reached the cache.
         let reopened = makeStore(makeFake())
-        XCTAssertEqual(reopened.catalog, before, file: file, line: line)
-        XCTAssertEqual(reopened.meta?.catalogVersion, 3, file: file, line: line)
+        #expect(reopened.catalog == before)
+        #expect(reopened.meta?.catalogVersion == 3)
     }
 
     // MARK: Minimum app version
 
     /// One `rebuild --min-version` that also changes the chunk shape: this build cannot read the new chunks,
     /// but must still learn that it has to be updated.
-    func testMinimumAppVersionAppliedWhenChunksFail() async {
+    @Test func `Minimum app version applied when chunks fail`() async {
         let fake = makeFake()
         let store = makeStore(fake)
         await store.refresh()
         let before = store.catalog
-        XCTAssertNil(store.minimumAppVersion)
+        #expect(store.minimumAppVersion == nil)
 
         // No chunk at version 4 can be read.
         fake.set(meta: meta(version: 4, chunks: 2), chunks: [])
         fake.set(minimumAppVersion: "9.0")
         await store.refresh()
 
-        XCTAssertEqual(store.minimumAppVersion, "9.0")
-        XCTAssertFalse(AppVersion.isSupported(current: "1.0", minimum: store.minimumAppVersion))
-        XCTAssertNotNil(store.lastError)
-        XCTAssertEqual(store.catalog, before)
-        XCTAssertEqual(store.meta?.catalogVersion, 3)
+        #expect(store.minimumAppVersion == "9.0")
+        #expect(!AppVersion.isSupported(current: "1.0", minimum: store.minimumAppVersion))
+        #expect(store.lastError != nil)
+        #expect(store.catalog == before)
+        #expect(store.meta?.catalogVersion == 3)
     }
 
     /// A new shape for `meta/content` itself must not hide the minimum either.
-    func testMinimumAppVersionAppliedWhenRestOfMetaDoesNotDecode() async {
+    @Test func `Minimum app version applied when rest of meta does not decode`() async {
         let fake = makeFake()
         let store = makeStore(fake)
         await store.refresh()
@@ -289,51 +283,51 @@ final class CatalogStoreTests: XCTestCase {
         fake.resetCounts()
         await store.refresh()
 
-        XCTAssertEqual(store.minimumAppVersion, "9.0")
-        XCTAssertNotNil(store.lastError)
-        XCTAssertEqual(fake.chunkCalls, 0)
-        XCTAssertEqual(store.catalog, before)
-        XCTAssertEqual(store.meta?.catalogVersion, 3)
+        #expect(store.minimumAppVersion == "9.0")
+        #expect(store.lastError != nil)
+        #expect(fake.chunkCalls == 0)
+        #expect(store.catalog == before)
+        #expect(store.meta?.catalogVersion == 3)
     }
 
-    func testClearedMinimumAppVersionLiftsGate() async {
+    @Test func `Cleared minimum app version lifts gate`() async {
         let fake = makeFake()
         fake.set(minimumAppVersion: "9.0")
         let store = makeStore(fake)
         await store.refresh()
-        XCTAssertEqual(store.minimumAppVersion, "9.0")
+        #expect(store.minimumAppVersion == "9.0")
 
         fake.set(minimumAppVersion: nil)
         await store.refresh()
 
-        XCTAssertNil(store.minimumAppVersion)
-        XCTAssertTrue(AppVersion.isSupported(current: "1.0", minimum: store.minimumAppVersion))
+        #expect(store.minimumAppVersion == nil)
+        #expect(AppVersion.isSupported(current: "1.0", minimum: store.minimumAppVersion))
         // Cleared on disk too, so the next launch does not bring the gate back.
         let offline = makeFake()
         offline.setOffline(true)
-        XCTAssertNil(makeStore(offline).minimumAppVersion)
+        #expect(makeStore(offline).minimumAppVersion == nil)
     }
 
-    func testMinimumAppVersionSurvivesRelaunchWithoutNetwork() async {
+    @Test func `Minimum app version survives relaunch without network`() async {
         let fake = makeFake()
         let store = makeStore(fake)
         await store.refresh()
         fake.set(meta: meta(version: 4, chunks: 2), chunks: [])
         fake.set(minimumAppVersion: "9.0")
         await store.refresh()
-        XCTAssertEqual(store.minimumAppVersion, "9.0")
+        #expect(store.minimumAppVersion == "9.0")
 
         let offline = makeFake()
         offline.setOffline(true)
         let relaunched = makeStore(offline)
         // Loaded synchronously in init, before any refresh.
-        XCTAssertEqual(relaunched.minimumAppVersion, "9.0")
-        XCTAssertFalse(AppVersion.isSupported(current: "1.0", minimum: relaunched.minimumAppVersion))
+        #expect(relaunched.minimumAppVersion == "9.0")
+        #expect(!AppVersion.isSupported(current: "1.0", minimum: relaunched.minimumAppVersion))
 
         await relaunched.refresh()
 
-        XCTAssertNotNil(relaunched.lastError)
-        XCTAssertEqual(relaunched.minimumAppVersion, "9.0")
-        XCTAssertEqual(relaunched.catalog?.version, 3)
+        #expect(relaunched.lastError != nil)
+        #expect(relaunched.minimumAppVersion == "9.0")
+        #expect(relaunched.catalog?.version == 3)
     }
 }

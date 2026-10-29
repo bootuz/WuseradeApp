@@ -1,15 +1,24 @@
 import Foundation
-import XCTest
+import Testing
 @testable import Wuserade
 
 /// Polls until `condition` holds (at most about two seconds), failing the test if it never does.
 @MainActor
-func waitUntil(_ condition: () -> Bool) async throws {
+func waitUntil(
+    fileID: String = #fileID,
+    filePath: String = #filePath,
+    line: Int = #line,
+    column: Int = #column,
+    _ condition: () -> Bool
+) async throws {
     for _ in 0 ..< 400 {
         if condition() { return }
         try await Task.sleep(for: .milliseconds(5))
     }
-    XCTFail("condition never became true")
+    Issue.record(
+        "condition never became true",
+        sourceLocation: SourceLocation(fileID: fileID, filePath: filePath, line: line, column: column)
+    )
 }
 
 /// In-memory `ContentRepository` for tests. Never touches Firestore or the network.

@@ -1,59 +1,59 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Wuserade
 
-final class AppVersionTests: XCTestCase {
-    func testNilMinimumIsSupported() {
-        XCTAssertTrue(AppVersion.isSupported(current: "1.4", minimum: nil))
+struct AppVersionTests {
+    @Test func `Nil minimum is supported`() {
+        #expect(AppVersion.isSupported(current: "1.4", minimum: nil))
     }
 
-    func testEqualIsSupported() {
-        XCTAssertTrue(AppVersion.isSupported(current: "1.5", minimum: "1.5"))
+    @Test func `Equal is supported`() {
+        #expect(AppVersion.isSupported(current: "1.5", minimum: "1.5"))
     }
 
-    func testOlderIsNotSupported() {
-        XCTAssertFalse(AppVersion.isSupported(current: "1.4", minimum: "1.5"))
+    @Test func `Older is not supported`() {
+        #expect(!AppVersion.isSupported(current: "1.4", minimum: "1.5"))
     }
 
-    func testNumericCompare() {
+    @Test func `Numeric compare`() {
         // "1.5" is below "1.10": the parts are numbers, not text.
-        XCTAssertFalse(AppVersion.isSupported(current: "1.5", minimum: "1.10"))
-        XCTAssertTrue(AppVersion.isSupported(current: "1.10", minimum: "1.5"))
+        #expect(!AppVersion.isSupported(current: "1.5", minimum: "1.10"))
+        #expect(AppVersion.isSupported(current: "1.10", minimum: "1.5"))
     }
 
-    func testNewerMajor() {
-        XCTAssertTrue(AppVersion.isSupported(current: "2.0", minimum: "1.10"))
+    @Test func `Newer major`() {
+        #expect(AppVersion.isSupported(current: "2.0", minimum: "1.10"))
     }
 
-    func testPatchAboveMinimum() {
-        XCTAssertTrue(AppVersion.isSupported(current: "1.5.1", minimum: "1.5"))
+    @Test func `Patch above minimum`() {
+        #expect(AppVersion.isSupported(current: "1.5.1", minimum: "1.5"))
     }
 
-    func testPatchBelowMinimum() {
-        XCTAssertFalse(AppVersion.isSupported(current: "1.5", minimum: "1.5.1"))
+    @Test func `Patch below minimum`() {
+        #expect(!AppVersion.isSupported(current: "1.5", minimum: "1.5.1"))
     }
 
-    func testMissingPartsCountAsZero() {
-        XCTAssertTrue(AppVersion.isSupported(current: "1.5", minimum: "1.5.0"))
-        XCTAssertTrue(AppVersion.isSupported(current: "1.5.0", minimum: "1.5"))
-        XCTAssertFalse(AppVersion.isSupported(current: "1", minimum: "1.0.1"))
+    @Test func `Missing parts count as zero`() {
+        #expect(AppVersion.isSupported(current: "1.5", minimum: "1.5.0"))
+        #expect(AppVersion.isSupported(current: "1.5.0", minimum: "1.5"))
+        #expect(!AppVersion.isSupported(current: "1", minimum: "1.0.1"))
     }
 
-    func testBlankOrMalformedMinimumIsSupported() {
+    @Test(arguments: ["", "  ", "abc", "1.x", "1..5", "-1.0", "1.5-beta"])
+    func `Blank or malformed minimum is supported`(minimum: String) {
         // A typo in the Firestore value must never lock everyone out.
-        for minimum in ["", "  ", "abc", "1.x", "1..5", "-1.0", "1.5-beta"] {
-            XCTAssertTrue(AppVersion.isSupported(current: "1.4", minimum: minimum), "minimum: \(minimum)")
-        }
+        #expect(AppVersion.isSupported(current: "1.4", minimum: minimum), "minimum: \(minimum)")
     }
 
-    func testSpacesAroundMinimumAreIgnored() {
-        XCTAssertFalse(AppVersion.isSupported(current: "1.4", minimum: " 1.5 "))
-        XCTAssertTrue(AppVersion.isSupported(current: "1.5", minimum: " 1.5\n"))
+    @Test func `Spaces around minimum are ignored`() {
+        #expect(!AppVersion.isSupported(current: "1.4", minimum: " 1.5 "))
+        #expect(AppVersion.isSupported(current: "1.5", minimum: " 1.5\n"))
     }
 
-    func testCurrentIsThisBuildsVersion() {
+    @Test func `Current is this build's version`() {
         // The hosted tests run inside the app, so this reads the app's own Info.plist.
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        XCTAssertEqual(AppVersion.current, version)
-        XCTAssertTrue(AppVersion.isSupported(current: AppVersion.current, minimum: AppVersion.current))
+        #expect(AppVersion.current == version)
+        #expect(AppVersion.isSupported(current: AppVersion.current, minimum: AppVersion.current))
     }
 }

@@ -1,13 +1,14 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Wuserade
 
 @MainActor
-final class LibraryPhotoTests: XCTestCase {
-    /// XCTest creates one instance per test method, so every test gets its own empty cache directory.
+final class LibraryPhotoTests {
+    /// Swift Testing creates a fresh suite instance per test, so every test gets its own empty cache directory.
     private let directory = FileManager.default.temporaryDirectory
         .appendingPathComponent("LibraryPhotoTests-\(UUID().uuidString)", isDirectory: true)
 
-    override func tearDownWithError() throws {
+    deinit {
         try? FileManager.default.removeItem(at: directory)
     }
 
@@ -44,7 +45,7 @@ final class LibraryPhotoTests: XCTestCase {
 
     // MARK: Tests
 
-    func testPhotoURLOfPoet() async {
+    @Test func `Photo URL of poet`() async {
         let fake = makeFake(authors: [
             AuthorEntry(id: 7, name: "Author 7", poemsCount: 3, photoURL: "https://x/7.jpg"),
             AuthorEntry(id: 8, name: "Author 8", poemsCount: 1),
@@ -54,13 +55,13 @@ final class LibraryPhotoTests: XCTestCase {
         let library = Library(store: store)
         await store.refresh()
 
-        XCTAssertEqual(library.photoURL(ofPoet: 7), URL(string: "https://x/7.jpg"))
-        XCTAssertNil(library.photoURL(ofPoet: 8))
-        XCTAssertNil(library.photoURL(ofPoet: 9))
-        XCTAssertNil(library.photoURL(ofPoet: 42))
+        #expect(library.photoURL(ofPoet: 7) == URL(string: "https://x/7.jpg"))
+        #expect(library.photoURL(ofPoet: 8) == nil)
+        #expect(library.photoURL(ofPoet: 9) == nil)
+        #expect(library.photoURL(ofPoet: 42) == nil)
     }
 
-    func testPoetIDsLoadsMetaWhenMissing() async throws {
+    @Test func `Poet IDs loads meta when missing`() async throws {
         let fake = makeFake(authors: [
             AuthorEntry(id: 7, name: "Author 7", poemsCount: 3),
             AuthorEntry(id: 8, name: "Author 8", poemsCount: 1),
@@ -69,20 +70,17 @@ final class LibraryPhotoTests: XCTestCase {
 
         let ids = try await library.poetIDs()
 
-        XCTAssertEqual(ids, [7, 8])
-        XCTAssertEqual(fake.metaCalls, 1)
+        #expect(ids == [7, 8])
+        #expect(fake.metaCalls == 1)
     }
 
-    func testPoetIDsThrowsWhenMetaCannotLoad() async {
+    @Test func `Poet IDs throws when meta cannot load`() async {
         let fake = makeFake(authors: [AuthorEntry(id: 7, name: "Author 7", poemsCount: 3)])
         fake.setOffline(true)
         let library = Library(store: makeStore(fake))
 
-        do {
+        await #expect(throws: FakeContentRepository.Offline.self, "poetIDs() should throw when meta cannot load") {
             _ = try await library.poetIDs()
-            XCTFail("poetIDs() should throw when meta cannot load")
-        } catch {
-            XCTAssertTrue(error is FakeContentRepository.Offline)
         }
     }
 }

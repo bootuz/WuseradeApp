@@ -1,85 +1,80 @@
 import FirebaseFirestore
 import FirebaseStorage
-import XCTest
+import Foundation
+import Testing
 @testable import Wuserade
 
-final class FirebasePhotoSubmissionStoreTests: XCTestCase {
-    private func storageError(_ code: StorageErrorCode) -> NSError {
+struct FirebasePhotoSubmissionStoreTests {
+    private static func storageError(_ code: StorageErrorCode) -> NSError {
         NSError(domain: StorageErrorDomain, code: code.rawValue)
     }
 
-    func testUnauthorizedUploadMeansBanned() {
-        let mapped = FirebasePhotoSubmissionStore.mapped(storageError(.unauthorized))
+    @Test func `Unauthorized upload means banned`() {
+        let mapped = FirebasePhotoSubmissionStore.mapped(Self.storageError(.unauthorized))
 
-        XCTAssertEqual(mapped as? PhotoSubmissionError, .banned)
+        #expect(mapped as? PhotoSubmissionError == .banned)
     }
 
-    func testTheSDKsUnauthorizedErrorMeansBanned() {
+    @Test func `The SDK's unauthorized error means banned`() {
         let error = StorageError.unauthorized(bucket: "b", object: "o", serverError: [:])
 
-        XCTAssertEqual(FirebasePhotoSubmissionStore.mapped(error) as? PhotoSubmissionError, .banned)
+        #expect(FirebasePhotoSubmissionStore.mapped(error) as? PhotoSubmissionError == .banned)
     }
 
-    func testPermissionDeniedRecordMeansBanned() {
+    @Test func `Permission denied record means banned`() {
         let mapped = FirebasePhotoSubmissionStore.mapped(FirestoreErrorCode(.permissionDenied))
 
-        XCTAssertEqual(mapped as? PhotoSubmissionError, .banned)
+        #expect(mapped as? PhotoSubmissionError == .banned)
     }
 
-    func testOtherErrorsPassThrough() {
-        let errors: [NSError] = [
-            NSError(domain: "elsewhere", code: 1),
-            storageError(.objectNotFound),
-            storageError(.unauthenticated),
-            NSError(domain: FirestoreErrorDomain, code: FirestoreErrorCode.unavailable.rawValue),
-            // The code alone decides nothing: it has to come with its own domain.
-            NSError(domain: FirestoreErrorDomain, code: StorageErrorCode.unauthorized.rawValue),
-            NSError(domain: StorageErrorDomain, code: FirestoreErrorCode.permissionDenied.rawValue),
-        ]
-
-        for error in errors {
-            let mapped = FirebasePhotoSubmissionStore.mapped(error) as NSError
-            XCTAssertEqual(mapped.domain, error.domain)
-            XCTAssertEqual(mapped.code, error.code)
-        }
+    @Test(arguments: [
+        NSError(domain: "elsewhere", code: 1),
+        storageError(.objectNotFound),
+        storageError(.unauthenticated),
+        NSError(domain: FirestoreErrorDomain, code: FirestoreErrorCode.unavailable.rawValue),
+        // The code alone decides nothing: it has to come with its own domain.
+        NSError(domain: FirestoreErrorDomain, code: StorageErrorCode.unauthorized.rawValue),
+        NSError(domain: StorageErrorDomain, code: FirestoreErrorCode.permissionDenied.rawValue),
+    ])
+    func `Other errors pass through`(error: NSError) {
+        let mapped = FirebasePhotoSubmissionStore.mapped(error) as NSError
+        #expect(mapped.domain == error.domain)
+        #expect(mapped.code == error.code)
     }
 
-    func testTheSDKsOtherStorageErrorsPassThrough() {
-        let errors: [StorageError] = [
-            .objectNotFound(object: "o", serverError: [:]),
-            .unauthenticated(serverError: [:]),
-            .quotaExceeded(bucket: "b", serverError: [:]),
-            .cancelled,
-        ]
-
-        for error in errors {
-            let mapped = FirebasePhotoSubmissionStore.mapped(error)
-            XCTAssertNil(mapped as? PhotoSubmissionError, "\(error)")
-            XCTAssertEqual((mapped as NSError).code, (error as NSError).code)
-        }
+    @Test(arguments: [
+        StorageError.objectNotFound(object: "o", serverError: [:]),
+        .unauthenticated(serverError: [:]),
+        .quotaExceeded(bucket: "b", serverError: [:]),
+        .cancelled,
+    ])
+    func `The SDK's other storage errors pass through`(error: StorageError) {
+        let mapped = FirebasePhotoSubmissionStore.mapped(error)
+        #expect(mapped as? PhotoSubmissionError == nil, "\(error)")
+        #expect((mapped as NSError).code == (error as NSError).code)
     }
 
-    func testTheSDKsObjectNotFoundErrorIsNotFound() {
-        XCTAssertTrue(FirebasePhotoSubmissionStore.isNotFound(StorageError.objectNotFound(object: "o", serverError: [:])))
-        XCTAssertFalse(
-            FirebasePhotoSubmissionStore.isNotFound(StorageError.unauthorized(bucket: "b", object: "o", serverError: [:]))
+    @Test func `The SDK's object not found error is not found`() {
+        #expect(FirebasePhotoSubmissionStore.isNotFound(StorageError.objectNotFound(object: "o", serverError: [:])))
+        #expect(
+            !FirebasePhotoSubmissionStore.isNotFound(StorageError.unauthorized(bucket: "b", object: "o", serverError: [:]))
         )
     }
 
     // A send on a dead network must fail in about a minute, not the SDK's ten, so the sheet shows "try again".
     // The app has configured Firebase by the time its unit tests run.
-    func testStorageGivesUpAfterAMinute() {
+    @Test func `Storage gives up after a minute`() {
         let storage = FirebasePhotoSubmissionStore().storage
 
-        XCTAssertEqual(storage.maxUploadRetryTime, 60)
-        XCTAssertEqual(storage.maxOperationRetryTime, 60)
+        #expect(storage.maxUploadRetryTime == 60)
+        #expect(storage.maxOperationRetryTime == 60)
     }
 
-    func testObjectNotFoundIsNotFound() {
-        XCTAssertTrue(FirebasePhotoSubmissionStore.isNotFound(storageError(.objectNotFound)))
-        XCTAssertFalse(FirebasePhotoSubmissionStore.isNotFound(storageError(.unauthorized)))
-        XCTAssertFalse(
-            FirebasePhotoSubmissionStore.isNotFound(NSError(domain: "elsewhere", code: StorageErrorCode.objectNotFound.rawValue))
+    @Test func `Object not found is not found`() {
+        #expect(FirebasePhotoSubmissionStore.isNotFound(Self.storageError(.objectNotFound)))
+        #expect(!FirebasePhotoSubmissionStore.isNotFound(Self.storageError(.unauthorized)))
+        #expect(
+            !FirebasePhotoSubmissionStore.isNotFound(NSError(domain: "elsewhere", code: StorageErrorCode.objectNotFound.rawValue))
         )
     }
 }

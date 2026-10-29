@@ -1,8 +1,9 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Wuserade
 
 @MainActor
-final class PhotoSubmissionsTests: XCTestCase {
+struct PhotoSubmissionsTests {
     private let jpeg = Data([0xFF, 0xD8, 0xFF])
 
     // MARK: Fixtures
@@ -22,49 +23,49 @@ final class PhotoSubmissionsTests: XCTestCase {
 
     // MARK: uid(for:)
 
-    func testUidForState() {
-        XCTAssertNil(PhotoSubmissions.uid(for: .signedOut))
-        XCTAssertNil(PhotoSubmissions.uid(for: .anonymous(uid: "a")), "an anonymous account cannot send")
-        XCTAssertEqual(PhotoSubmissions.uid(for: .signedIn(uid: "a", provider: .apple, email: nil)), "a")
+    @Test func `Uid for state`() {
+        #expect(PhotoSubmissions.uid(for: .signedOut) == nil)
+        #expect(PhotoSubmissions.uid(for: .anonymous(uid: "a")) == nil, "an anonymous account cannot send")
+        #expect(PhotoSubmissions.uid(for: .signedIn(uid: "a", provider: .apple, email: nil)) == "a")
     }
 
     // MARK: check
 
-    func testCheckReadsTheRecord() async {
+    @Test func `Check reads the record`() async {
         let store = FakePhotoSubmissionStore()
         store.waiting = ["7_alice"]
         let submissions = makeSubmissions(store: store)
-        XCTAssertEqual(submissions.status(poetID: 7), .unchecked)
+        #expect(submissions.status(poetID: 7) == .unchecked)
 
         await submissions.check(poetID: 7)
         await submissions.check(poetID: 8)
 
-        XCTAssertEqual(submissions.status(poetID: 7), .waiting)
-        XCTAssertEqual(submissions.status(poetID: 8), .notWaiting)
-        XCTAssertEqual(store.calls, ["isWaiting 7_alice", "isWaiting 8_alice"])
+        #expect(submissions.status(poetID: 7) == .waiting)
+        #expect(submissions.status(poetID: 8) == .notWaiting)
+        #expect(store.calls == ["isWaiting 7_alice", "isWaiting 8_alice"])
     }
 
-    func testCheckFailureIsFailed() async {
+    @Test func `Check failure is failed`() async {
         let store = FakePhotoSubmissionStore()
         store.isWaitingError = FakePhotoSubmissionStore.Failure()
         let submissions = makeSubmissions(store: store)
 
         await submissions.check(poetID: 7)
 
-        XCTAssertEqual(submissions.status(poetID: 7), .failed)
+        #expect(submissions.status(poetID: 7) == .failed)
     }
 
-    func testCheckWithoutUidDoesNothing() async {
+    @Test func `Check without uid does nothing`() async {
         let store = FakePhotoSubmissionStore()
         let submissions = makeSubmissions(store: store, uid: nil)
 
         await submissions.check(poetID: 7)
 
-        XCTAssertEqual(store.calls, [])
-        XCTAssertEqual(submissions.status(poetID: 7), .unchecked)
+        #expect(store.calls == [])
+        #expect(submissions.status(poetID: 7) == .unchecked)
     }
 
-    func testCheckThatFinishesAfterAnotherUidIsBoundIsDropped() async throws {
+    @Test func `Check that finishes after another uid is bound is dropped`() async throws {
         let store = FakePhotoSubmissionStore()
         store.waiting = ["7_alice"]
         store.isWaitingDelay = .milliseconds(200)
@@ -75,10 +76,10 @@ final class PhotoSubmissionsTests: XCTestCase {
         submissions.bind(uid: "bob")
         await aliceCheck.value
 
-        XCTAssertEqual(submissions.status(poetID: 7), .unchecked, "alice's answer says nothing about bob")
+        #expect(submissions.status(poetID: 7) == .unchecked, "alice's answer says nothing about bob")
     }
 
-    func testCheckThatFinishesAfterASuccessfulSendDoesNotOverwriteIt() async throws {
+    @Test func `Check that finishes after a successful send does not overwrite it`() async throws {
         let store = FakePhotoSubmissionStore()
         store.isWaitingDelay = .milliseconds(200)
         let submissions = makeSubmissions(store: store)
@@ -87,14 +88,14 @@ final class PhotoSubmissionsTests: XCTestCase {
         let check = Task { await submissions.check(poetID: 7) }
         try await waitUntil { store.calls == ["isWaiting 7_alice"] }
         try await submissions.send(jpeg, for: 7)
-        XCTAssertEqual(submissions.status(poetID: 7), .waiting)
+        #expect(submissions.status(poetID: 7) == .waiting)
         await check.value
 
-        XCTAssertEqual(submissions.status(poetID: 7), .waiting, "the late answer predates the send")
-        XCTAssertEqual(store.calls, ["isWaiting 7_alice", "send 7_alice"])
+        #expect(submissions.status(poetID: 7) == .waiting, "the late answer predates the send")
+        #expect(store.calls == ["isWaiting 7_alice", "send 7_alice"])
     }
 
-    func testCheckThatFinishesAfterAFailedSendStillApplies() async throws {
+    @Test func `Check that finishes after a failed send still applies`() async throws {
         let store = FakePhotoSubmissionStore()
         store.isWaitingDelay = .milliseconds(200)
         store.sendError = FakePhotoSubmissionStore.Failure()
@@ -105,55 +106,49 @@ final class PhotoSubmissionsTests: XCTestCase {
         try? await submissions.send(jpeg, for: 7)
         await check.value
 
-        XCTAssertEqual(submissions.status(poetID: 7), .notWaiting, "a send that failed changed nothing")
+        #expect(submissions.status(poetID: 7) == .notWaiting, "a send that failed changed nothing")
     }
 
     // MARK: send
 
-    func testSendMarksTheRecordWaiting() async throws {
+    @Test func `Send marks the record waiting`() async throws {
         let store = FakePhotoSubmissionStore()
         let submissions = makeSubmissions(store: store)
 
         try await submissions.send(jpeg, for: 7)
 
-        XCTAssertEqual(submissions.status(poetID: 7), .waiting)
-        XCTAssertFalse(submissions.isSending(poetID: 7))
-        XCTAssertEqual(store.calls, ["send 7_alice"])
+        #expect(submissions.status(poetID: 7) == .waiting)
+        #expect(!submissions.isSending(poetID: 7))
+        #expect(store.calls == ["send 7_alice"])
     }
 
-    func testFailedSendKeepsStatusAndRethrows() async {
+    @Test func `Failed send keeps status and rethrows`() async {
         let store = FakePhotoSubmissionStore()
         store.sendError = PhotoSubmissionError.banned
         let submissions = makeSubmissions(store: store)
         await submissions.check(poetID: 7)
-        XCTAssertEqual(submissions.status(poetID: 7), .notWaiting)
+        #expect(submissions.status(poetID: 7) == .notWaiting)
 
-        do {
+        await #expect(throws: PhotoSubmissionError.banned, "expected the send to throw") {
             try await submissions.send(jpeg, for: 7)
-            XCTFail("expected the send to throw")
-        } catch {
-            XCTAssertEqual(error as? PhotoSubmissionError, .banned)
         }
 
-        XCTAssertEqual(submissions.status(poetID: 7), .notWaiting)
-        XCTAssertFalse(submissions.isSending(poetID: 7))
+        #expect(submissions.status(poetID: 7) == .notWaiting)
+        #expect(!submissions.isSending(poetID: 7))
     }
 
-    func testSendWithoutUidThrowsNotSignedIn() async {
+    @Test func `Send without uid throws not signed in`() async {
         let store = FakePhotoSubmissionStore()
         let submissions = makeSubmissions(store: store, uid: nil)
 
-        do {
+        await #expect(throws: PhotoSubmissionError.notSignedIn, "expected the send to throw") {
             try await submissions.send(jpeg, for: 7)
-            XCTFail("expected the send to throw")
-        } catch {
-            XCTAssertEqual(error as? PhotoSubmissionError, .notSignedIn)
         }
 
-        XCTAssertEqual(store.calls, [])
+        #expect(store.calls == [])
     }
 
-    func testSecondSendWhileSendingIsIgnored() async throws {
+    @Test func `Second send while sending is ignored`() async throws {
         let store = FakePhotoSubmissionStore()
         store.sendDelay = .milliseconds(200)
         let submissions = makeSubmissions(store: store)
@@ -164,12 +159,12 @@ final class PhotoSubmissionsTests: XCTestCase {
         try await submissions.send(jpeg, for: 7)
         try await first.value
 
-        XCTAssertEqual(store.calls, ["send 7_alice"])
-        XCTAssertEqual(submissions.status(poetID: 7), .waiting)
-        XCTAssertFalse(submissions.isSending(poetID: 7))
+        #expect(store.calls == ["send 7_alice"])
+        #expect(submissions.status(poetID: 7) == .waiting)
+        #expect(!submissions.isSending(poetID: 7))
     }
 
-    func testSendForAnotherPoetIsNotBlockedBySendingOne() async throws {
+    @Test func `Send for another poet is not blocked by sending one`() async throws {
         let store = FakePhotoSubmissionStore()
         store.sendDelay = .milliseconds(200)
         let submissions = makeSubmissions(store: store)
@@ -178,16 +173,16 @@ final class PhotoSubmissionsTests: XCTestCase {
         try await waitUntil { submissions.isSending(poetID: 7) }
         let poet8 = Task { try await submissions.send(jpeg, for: 8) }
         try await waitUntil { submissions.isSending(poetID: 8) }
-        XCTAssertTrue(submissions.isSending(poetID: 7), "poet 7's send is still in flight")
+        #expect(submissions.isSending(poetID: 7), "poet 7's send is still in flight")
         try await poet7.value
         try await poet8.value
 
-        XCTAssertEqual(store.calls, ["send 7_alice", "send 8_alice"], "both reached the store")
-        XCTAssertEqual(submissions.status(poetID: 7), .waiting)
-        XCTAssertEqual(submissions.status(poetID: 8), .waiting)
+        #expect(store.calls == ["send 7_alice", "send 8_alice"], "both reached the store")
+        #expect(submissions.status(poetID: 7) == .waiting)
+        #expect(submissions.status(poetID: 8) == .waiting)
     }
 
-    func testSendThatFinishesAfterAnotherUidIsBoundDoesNotMarkTheNewUid() async throws {
+    @Test func `Send that finishes after another uid is bound does not mark the new uid`() async throws {
         let store = FakePhotoSubmissionStore()
         store.sendDelay = .milliseconds(200)
         let submissions = makeSubmissions(store: store)
@@ -195,33 +190,33 @@ final class PhotoSubmissionsTests: XCTestCase {
         let aliceSend = Task { try await submissions.send(jpeg, for: 7) }
         try await waitUntil { submissions.isSending(poetID: 7) }
         submissions.bind(uid: "bob")
-        XCTAssertFalse(submissions.isSending(poetID: 7), "bob has no send in flight")
+        #expect(!submissions.isSending(poetID: 7), "bob has no send in flight")
         try await aliceSend.value
 
-        XCTAssertEqual(store.waiting, ["7_alice"])
-        XCTAssertEqual(submissions.status(poetID: 7), .unchecked, "alice's send says nothing about bob")
-        XCTAssertFalse(submissions.isSending(poetID: 7))
+        #expect(store.waiting == ["7_alice"])
+        #expect(submissions.status(poetID: 7) == .unchecked, "alice's send says nothing about bob")
+        #expect(!submissions.isSending(poetID: 7))
     }
 
     // MARK: bind
 
-    func testBindToAnotherUidForgetsStatuses() async {
+    @Test func `Bind to another uid forgets statuses`() async {
         let store = FakePhotoSubmissionStore()
         store.waiting = ["7_alice"]
         let submissions = makeSubmissions(store: store)
         await submissions.check(poetID: 7)
-        XCTAssertEqual(submissions.status(poetID: 7), .waiting)
+        #expect(submissions.status(poetID: 7) == .waiting)
 
         submissions.bind(uid: "bob")
 
-        XCTAssertEqual(submissions.uid, "bob")
-        XCTAssertEqual(submissions.status(poetID: 7), .unchecked)
+        #expect(submissions.uid == "bob")
+        #expect(submissions.status(poetID: 7) == .unchecked)
         await submissions.check(poetID: 7)
-        XCTAssertEqual(store.calls.last, "isWaiting 7_bob")
-        XCTAssertEqual(submissions.status(poetID: 7), .notWaiting)
+        #expect(store.calls.last == "isWaiting 7_bob")
+        #expect(submissions.status(poetID: 7) == .notWaiting)
     }
 
-    func testBindToTheSameUidKeepsStatuses() async {
+    @Test func `Bind to the same uid keeps statuses`() async {
         let store = FakePhotoSubmissionStore()
         store.waiting = ["7_alice"]
         let submissions = makeSubmissions(store: store)
@@ -229,10 +224,10 @@ final class PhotoSubmissionsTests: XCTestCase {
 
         submissions.bind(uid: "alice")
 
-        XCTAssertEqual(submissions.status(poetID: 7), .waiting)
+        #expect(submissions.status(poetID: 7) == .waiting)
     }
 
-    func testBindToNilForgetsStatuses() async {
+    @Test func `Bind to nil forgets statuses`() async {
         let store = FakePhotoSubmissionStore()
         store.waiting = ["7_alice"]
         let submissions = makeSubmissions(store: store)
@@ -240,57 +235,51 @@ final class PhotoSubmissionsTests: XCTestCase {
 
         submissions.bind(uid: nil)
 
-        XCTAssertNil(submissions.uid)
-        XCTAssertEqual(submissions.status(poetID: 7), .unchecked)
+        #expect(submissions.uid == nil)
+        #expect(submissions.status(poetID: 7) == .unchecked)
     }
 
     // MARK: deleteAll
 
-    func testDeleteAllDeletesEveryPoetsRecord() async throws {
+    @Test func `Delete all deletes every poet's record`() async throws {
         let store = FakePhotoSubmissionStore()
         store.waiting = ["7_alice", "9_alice", "7_bob"]
         let submissions = makeSubmissions(store: store)
         await submissions.check(poetID: 7)
-        XCTAssertEqual(submissions.status(poetID: 7), .waiting)
+        #expect(submissions.status(poetID: 7) == .waiting)
         let readCalls = store.calls
 
         try await submissions.deleteAll(uid: "alice")
 
         let deleteCalls = store.calls.dropFirst(readCalls.count)
-        XCTAssertEqual(Set(deleteCalls), ["delete 7_alice", "delete 8_alice", "delete 9_alice"])
-        XCTAssertEqual(deleteCalls.count, 3)
-        XCTAssertEqual(store.waiting, ["7_bob"], "only alice's records go")
-        XCTAssertEqual(submissions.status(poetID: 7), .unchecked, "the statuses are forgotten")
+        #expect(Set(deleteCalls) == ["delete 7_alice", "delete 8_alice", "delete 9_alice"])
+        #expect(deleteCalls.count == 3)
+        #expect(store.waiting == ["7_bob"], "only alice's records go")
+        #expect(submissions.status(poetID: 7) == .unchecked, "the statuses are forgotten")
     }
 
-    func testDeleteAllRethrowsWhenPoetIDsFail() async {
+    @Test func `Delete all rethrows when poet IDs fail`() async {
         let store = FakePhotoSubmissionStore()
         let submissions = makeSubmissions(store: store, poetIDs: { throw PoetIDsFailure() })
 
-        do {
+        await #expect(throws: PoetIDsFailure.self, "expected deleteAll to throw") {
             try await submissions.deleteAll(uid: "alice")
-            XCTFail("expected deleteAll to throw")
-        } catch {
-            XCTAssertTrue(error is PoetIDsFailure)
         }
 
-        XCTAssertEqual(store.calls, [])
+        #expect(store.calls == [])
     }
 
-    func testDeleteAllRethrowsWhenADeleteFails() async {
+    @Test func `Delete all rethrows when a delete fails`() async {
         let store = FakePhotoSubmissionStore()
         store.deleteError = FakePhotoSubmissionStore.Failure()
         store.waiting = ["7_alice"]
         let submissions = makeSubmissions(store: store)
         await submissions.check(poetID: 7)
 
-        do {
+        await #expect(throws: FakePhotoSubmissionStore.Failure.self, "expected deleteAll to throw") {
             try await submissions.deleteAll(uid: "alice")
-            XCTFail("expected deleteAll to throw")
-        } catch {
-            XCTAssertTrue(error is FakePhotoSubmissionStore.Failure)
         }
 
-        XCTAssertEqual(submissions.status(poetID: 7), .waiting, "a failed delete forgets nothing")
+        #expect(submissions.status(poetID: 7) == .waiting, "a failed delete forgets nothing")
     }
 }
