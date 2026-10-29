@@ -66,7 +66,7 @@ def test_upsert_then_rebuild_writes_catalog_meta_and_counts(db):
     result = store.rebuild(db)
 
     assert result == RebuildResult(
-        catalog_version=1, chunks=2, poems=2500, authors_with_poems=3, themes=3
+        catalog_version=1, chunks=2, poems=2500, authors_with_poems=3, themes=3, daily_resynced=0
     )
     m = meta(db)
     assert m["catalogVersion"] == 1
@@ -332,6 +332,24 @@ def test_minimum_app_version_must_look_like_a_version(db):
         store.rebuild(db, minimum_app_version="v1.5")
 
     assert not doc(db, "meta/content").exists
+
+
+def test_rebuild_resyncs_daily_documents(db):
+    from wuserade_daily.daily import write_missing_days
+
+    themes, authors, poems = make_content(12)
+    store.upsert_content(db, themes, authors, poems)
+    store.rebuild(db)
+    today = datetime.now(timezone.utc).date()
+    write_missing_days(db, today)
+    ref = db.document(f"daily/{today.isoformat()}")
+    picked = ref.get().to_dict()["poem"]["id"]
+    db.document(f"poems/{picked}").update({"text": "corrected\nline two"})
+
+    result = store.rebuild(db)
+
+    assert ref.get().to_dict()["poem"]["text"] == "corrected\nline two"
+    assert result.daily_resynced >= 1
 
 
 def test_rebuild_refreshes_author_name_on_the_authors_poems_only(db):

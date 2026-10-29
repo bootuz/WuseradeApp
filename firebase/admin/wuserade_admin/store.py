@@ -19,6 +19,8 @@ import firebase_admin
 from firebase_admin import firestore
 from google.auth.credentials import AnonymousCredentials
 from google.auth.exceptions import DefaultCredentialsError
+from wuserade_daily.catalog import load_catalog
+from wuserade_daily.daily import resync_days
 
 from .catalog import (
     author_document,
@@ -55,6 +57,7 @@ class RebuildResult:
     poems: int
     authors_with_poems: int
     themes: int
+    daily_resynced: int
 
 
 def connect() -> firestore.Client:
@@ -241,7 +244,8 @@ def rebuild(db, minimum_app_version: str | None = None) -> RebuildResult:
     Everything is checked before the first write. Writes then go in this order, so the app
     never sees a catalogVersion whose chunks are not written yet: author and theme counts and
     changed poem author names (batches of at most 500, only documents that differ), catalog
-    chunks, stale chunks removed, `meta/content` last.
+    chunks, stale chunks removed, `meta/content`, and last the daily documents from yesterday
+    (UTC) onward, re-synced with the new content (see `wuserade_daily.daily.resync_days`).
     """
     if minimum_app_version and not _VERSION_PATTERN.fullmatch(minimum_app_version):
         raise ValueError(
@@ -296,12 +300,16 @@ def rebuild(db, minimum_app_version: str | None = None) -> RebuildResult:
 
     db.document(META_PATH).set(meta)
 
+    # The daily documents copy poems and poets: bring them up to date with what was just rebuilt.
+    resynced = resync_days(db, datetime.now(timezone.utc).date(), load_catalog(db))
+
     return RebuildResult(
         catalog_version=version,
         chunks=len(chunks),
         poems=len(poems),
         authors_with_poems=len(meta["authors"]),
         themes=len(themes),
+        daily_resynced=len(resynced),
     )
 
 

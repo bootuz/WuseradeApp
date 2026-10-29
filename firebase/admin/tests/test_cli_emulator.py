@@ -130,7 +130,8 @@ def test_views_command_copies_from_postgres_then_rebuilds(db, postgres, capsys):
     assert lines[0].startswith("Using the Firestore emulator")
     assert lines[1] == "views copied: 6"
     assert lines[2].startswith("Catalog version 1:") and "6 poems" in lines[2]
-    assert len(lines) == 3
+    assert lines[3] == "daily re-synced: 0"
+    assert len(lines) == 4
     assert catalog_views(db) == {n: n * 10 for n in range(1, 7)}
     assert db.document("poems/4").get().to_dict()["views"] == 40
     assert "example/db" not in "\n".join(lines)

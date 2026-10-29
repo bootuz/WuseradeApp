@@ -46,6 +46,7 @@ def _print_rebuild(result: store.RebuildResult) -> None:
         f"Catalog version {result.catalog_version}: {result.chunks} chunk(s), {result.poems} poems, "
         f"{result.authors_with_poems} authors with poems, {result.themes} themes."
     )
+    print(f"daily re-synced: {result.daily_resynced}")
 
 
 def _format_counts(counts: dict[str, int]) -> str:

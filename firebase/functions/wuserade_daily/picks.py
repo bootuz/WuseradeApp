@@ -41,9 +41,9 @@ def pick_day(day: date, catalog: Catalog, history: list[DayPicks]) -> DayPicks:
 
     Raises ValueError when the catalog has no poem, no short poem or no poet to pick from.
     """
-    poem = _pick_poem(_rng(day, "poem"), catalog, history)
-    short_poem = _pick_short_poem(_rng(day, "short"), catalog, history, poem)
-    poet = _pick_poet(_rng(day, "poet"), catalog, history, poem, short_poem)
+    poem = pick_poem(day, catalog, history)
+    short_poem = pick_short_poem(day, catalog, history, poem)
+    poet = pick_poet(day, catalog, history, poem, short_poem)
     return DayPicks(poem_id=poem.id, short_poem_id=short_poem.id, poet_id=poet.id)
 
 
@@ -66,8 +66,12 @@ def _recency(ids_newest_first: list[int]) -> dict[int, int]:
     return recency
 
 
-def _pick_poem(rng: random.Random, catalog: Catalog, history: list[DayPicks]) -> Entry:
-    pool = sorted((e for e in catalog.entries if e.lines >= MIN_POEM_LINES), key=lambda e: e.id)
+def pick_poem(day: date, catalog: Catalog, history: list[DayPicks], avoid_id: int | None = None) -> Entry:
+    """The poem of `day`: see `pick_day`, rule 1. `avoid_id` (a re-pick only) is a poem it must not be."""
+    rng = _rng(day, "poem")
+    pool = sorted(
+        (e for e in catalog.entries if e.lines >= MIN_POEM_LINES and e.id != avoid_id), key=lambda e: e.id
+    )
     if not pool:
         raise ValueError(f"the catalog has no poem with at least {MIN_POEM_LINES} lines")
     used = _recency([h.poem_id for h in history])
@@ -77,7 +81,9 @@ def _pick_poem(rng: random.Random, catalog: Catalog, history: list[DayPicks]) ->
     return max(pool, key=lambda e: used[e.id])
 
 
-def _pick_short_poem(rng: random.Random, catalog: Catalog, history: list[DayPicks], poem: Entry) -> Entry:
+def pick_short_poem(day: date, catalog: Catalog, history: list[DayPicks], poem: Entry) -> Entry:
+    """The short poem of `day`, given its poem: see `pick_day`, rule 2."""
+    rng = _rng(day, "short")
     pool = sorted(
         (e for e in catalog.entries if MIN_SHORT_LINES <= e.lines <= MAX_SHORT_LINES and e.id != poem.id),
         key=lambda e: e.id,
@@ -121,14 +127,15 @@ def _poets_in_current_cycle(history: list[DayPicks], eligible_ids: set[int]) -> 
     return seen
 
 
-def _pick_poet(
-    rng: random.Random,
+def pick_poet(
+    day: date,
     catalog: Catalog,
     history: list[DayPicks],
     poem: Entry,
     short_poem: Entry,
 ) -> Poet:
-    """The poet of the day: see `pick_day`, rule 3."""
+    """The poet of `day`, given its poem and short poem: see `pick_day`, rule 3."""
+    rng = _rng(day, "poet")
     eligible = _eligible_poets(catalog)
     if not eligible:
         raise ValueError(f"the catalog has no poet with at least {MIN_POET_POEMS} poems")
