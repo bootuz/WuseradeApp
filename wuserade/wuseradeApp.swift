@@ -12,6 +12,9 @@ import FirebaseMessaging
 import GoogleSignIn
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
+    /// The last FCM token received. The app reads it at launch, in case it arrived before the app was observing
+    /// `fcmTokenDidChange`.
+    private(set) var fcmToken: String?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         application.registerForRemoteNotifications()
@@ -28,6 +31,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     /// Hands the token to the app, which registers it for the morning poem.
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        self.fcmToken = fcmToken
         NotificationCenter.default.post(name: .fcmTokenDidChange, object: nil, userInfo: fcmToken.map { ["token": $0] })
     }
 }
@@ -87,6 +91,8 @@ struct wuseradeApp: App {
         )
         _photos = State(initialValue: photos)
         let installId = InstallID.current()
+        // Shared: the account forgets the morning-poem registration under an account it removes the device from.
+        let registrations = DeviceRegistrationRecord()
         let account = AccountManager(
             auth: FirebaseAuthBackend(),
             likes: FirestoreLikesStore(),
@@ -96,6 +102,7 @@ struct wuseradeApp: App {
             knownReads: KnownReadsStore(),
             devices: FirestoreDeviceRegistry(),
             installId: installId,
+            deviceRemoved: { [registrations] uid in registrations.forget(uid: uid) },
             deleteWaitingPhotos: { [photos] uid in try await photos.deleteAll(uid: uid) }
         )
         _account = State(initialValue: account)
@@ -118,6 +125,7 @@ struct wuseradeApp: App {
             registry: registry,
             permission: SystemNotificationPermission(),
             installId: installId,
+            record: registrations,
             isPaused: { [account] in account.isBusy }
         ))
     }
@@ -179,12 +187,9 @@ struct wuseradeApp: App {
                     await account.start()
                     likes.bind(uid: account.state.uid)
                     reads.bind(uid: account.state.uid)
-                    // A token that arrived before the observer below was in place is picked up here. Fetching it can
-                    // wait for the network, so nothing else waits for it.
-                    Task {
-                        if let token = try? await Messaging.messaging().token() {
-                            await morning.tokenChanged(token)
-                        }
+                    // A token that arrived before the observer below was in place is picked up here.
+                    if let token = delegate.fcmToken {
+                        await morning.tokenChanged(token)
                     }
                     await morning.accountChanged(uid: account.state.uid)
                     await morning.refreshPermission()

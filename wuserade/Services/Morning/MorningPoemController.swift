@@ -22,7 +22,10 @@ final class MorningPoemController {
     @ObservationIgnored private let registry: any DeviceRegistry
     @ObservationIgnored private let permission: any NotificationPermission
     @ObservationIgnored private let installId: String
+    /// Holds `enabled` and `notifyAt`. They come back with a backup, so a restored phone keeps the reader's choice.
     @ObservationIgnored private let defaults: UserDefaults
+    /// The registration last written. It never comes back with a backup, so a restored phone registers as new.
+    @ObservationIgnored private let record: DeviceRegistrationRecord
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let timeZone: () -> TimeZone
     /// True while an account operation runs: a registration written then could land on an account being left or
@@ -36,6 +39,7 @@ final class MorningPoemController {
         permission: any NotificationPermission,
         installId: String,
         defaults: UserDefaults = .standard,
+        record: DeviceRegistrationRecord = DeviceRegistrationRecord(),
         now: @escaping () -> Date = Date.init,
         timeZone: @escaping () -> TimeZone = { .current },
         isPaused: @escaping @MainActor () -> Bool = { false }
@@ -44,6 +48,7 @@ final class MorningPoemController {
         self.permission = permission
         self.installId = installId
         self.defaults = defaults
+        self.record = record
         self.now = now
         self.timeZone = timeZone
         self.isPaused = isPaused
@@ -109,8 +114,8 @@ final class MorningPoemController {
     private func register() async {
         guard !isPaused(), let uid, let token else { return }
         let zone = timeZone()
-        let state = Registered(uid: uid, fcmToken: token, timeZone: zone.identifier, notifyAt: notifyAt, enabled: enabled)
-        let last = lastRegistered
+        let state = DeviceRegistrationRecord.Entry(uid: uid, fcmToken: token, timeZone: zone.identifier, notifyAt: notifyAt, enabled: enabled)
+        let last = record.last
         guard state != last else { return }
         if !enabled, last?.uid != uid || last?.enabled != true { return }
 
@@ -122,35 +127,19 @@ final class MorningPoemController {
             nextSendAt: MorningSchedule.nextSendAt(timeZone: zone, notifyAt: notifyAt, after: now())
         )
         // Recorded before the write, so a change arriving meanwhile is compared with what is being written.
-        lastRegistered = state
+        record.last = state
         do {
             try await registry.upsert(device, installId: installId, uid: uid)
         } catch {
             Self.logger.error("Could not register for the morning poem: \(error.localizedDescription, privacy: .public)")
             // The next change tries again, unless a newer registration was written meanwhile.
-            if lastRegistered == state { lastRegistered = last }
+            if record.last == state { record.last = last }
         }
-    }
-
-    /// The registration last written, kept across launches.
-    private var lastRegistered: Registered? {
-        get { defaults.data(forKey: Keys.registered).flatMap { try? JSONDecoder().decode(Registered.self, from: $0) } }
-        set { defaults.set(newValue.flatMap { try? JSONEncoder().encode($0) }, forKey: Keys.registered) }
-    }
-
-    /// What a registration depends on, besides the time it is written.
-    private struct Registered: Codable, Equatable {
-        let uid: String
-        let fcmToken: String
-        let timeZone: String
-        let notifyAt: String
-        let enabled: Bool
     }
 
     private enum Keys {
         static let enabled = "morningPoem.enabled"
         static let notifyAt = "morningPoem.notifyAt"
-        static let registered = "morningPoem.registered"
     }
 
     private static let logger = Logger(

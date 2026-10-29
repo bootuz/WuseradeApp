@@ -13,8 +13,13 @@ final class AccountManagerTests {
     private let t2 = Date(timeIntervalSince1970: 1_700_001_000)
     private let t3 = Date(timeIntervalSince1970: 1_700_002_000)
 
+    /// This test's device-only folder, for the morning-poem registration record.
+    private let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("AccountManagerTests-\(UUID().uuidString)", isDirectory: true)
+
     deinit {
         UserDefaults().removePersistentDomain(forName: suiteName)
+        try? FileManager.default.removeItem(at: directory)
     }
 
     // MARK: Fixtures
@@ -29,6 +34,7 @@ final class AccountManagerTests {
         let knownReads: KnownReadsStore
         let photos: FakePhotoDeleter
         let devices: FakeDeviceRegistry
+        let registrations: DeviceRegistrationRecord
         let log: CallLog
     }
 
@@ -44,6 +50,7 @@ final class AccountManagerTests {
         let knownReads = KnownReadsStore(defaults: defaults)
         let photos = FakePhotoDeleter(log: log)
         let devices = FakeDeviceRegistry(log: log, ownerUid: { [auth] in auth.currentUser?.uid })
+        let registrations = DeviceRegistrationRecord(directory: directory)
         let manager = AccountManager(
             auth: auth,
             likes: likes,
@@ -54,6 +61,7 @@ final class AccountManagerTests {
             devices: devices,
             installId: "install-1",
             deviceRemovalLimit: deviceRemovalLimit,
+            deviceRemoved: { [registrations] uid in registrations.forget(uid: uid) },
             deleteWaitingPhotos: { try await photos.deleteAll(uid: $0) }
         ) { [weak self] uid in
             self?.analyticsUserIDs.append(uid)
@@ -68,6 +76,7 @@ final class AccountManagerTests {
             knownReads: knownReads,
             photos: photos,
             devices: devices,
+            registrations: registrations,
             log: log
         )
     }
@@ -532,16 +541,63 @@ final class AccountManagerTests {
         nextSendAt: Date(timeIntervalSince1970: 1_793_250_000)
     )
 
-    @Test func signOutMovesTheDeviceToTheNewAccount() async throws {
-        let env = try makeEnv(currentUser: appleUser)
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        let morning = MorningPoemController(
+    /// A morning poem controller wired to `env` the way `wuseradeApp` wires it.
+    private func makeMorning(_ env: Env) throws -> MorningPoemController {
+        MorningPoemController(
             registry: env.devices,
             permission: FakeNotificationPermission(granted: true),
             installId: "install-1",
-            defaults: defaults,
+            defaults: try #require(UserDefaults(suiteName: suiteName)),
+            record: env.registrations,
             isPaused: { [manager = env.manager] in manager.isBusy }
         )
+    }
+
+    @Test func `A deletion that fails after removing the device registers it again`() async throws {
+        let env = try makeEnv(currentUser: appleUser)
+        let morning = try makeMorning(env)
+        await env.manager.start()
+        await morning.accountChanged(uid: env.manager.state.uid)
+        await morning.tokenChanged("token-1")
+        await morning.setEnabled(true)
+        env.auth.failNextDeletes(1)
+
+        await #expect(throws: FakeAuthBackend.Failure.self, "the user cannot be deleted") {
+            try await env.manager.deleteAccount(reauthWith: appleCredential())
+        }
+        #expect(env.manager.state == .signedIn(uid: "apple-user", provider: .apple, email: "a@example.com"))
+        #expect(env.devices.devices(for: "apple-user") == [:], "the device was removed before the failure")
+
+        // The operation is over and the account is the same: the app reports it, and the device is registered again.
+        await morning.accountChanged(uid: env.manager.state.uid)
+
+        #expect(env.devices.calls == [
+            "upsert install-1 apple-user", "remove install-1 apple-user", "upsert install-1 apple-user",
+        ])
+        #expect(env.devices.devices(for: "apple-user")["install-1"]?.enabled == true)
+    }
+
+    @Test func `A sign out that fails after removing the device registers it again`() async throws {
+        let env = try makeEnv(currentUser: appleUser)
+        let morning = try makeMorning(env)
+        await env.manager.start()
+        await morning.accountChanged(uid: env.manager.state.uid)
+        await morning.tokenChanged("token-1")
+        await morning.setEnabled(true)
+        env.auth.setSignOutError(FakeAuthBackend.Failure())
+
+        await #expect(throws: FakeAuthBackend.Failure.self, "signing out fails") {
+            try await env.manager.signOut()
+        }
+        await morning.accountChanged(uid: env.manager.state.uid)
+
+        #expect(env.manager.state.uid == "apple-user")
+        #expect(env.devices.devices(for: "apple-user")["install-1"]?.enabled == true)
+    }
+
+    @Test func signOutMovesTheDeviceToTheNewAccount() async throws {
+        let env = try makeEnv(currentUser: appleUser)
+        let morning = try makeMorning(env)
         await env.manager.start()
         await morning.accountChanged(uid: env.manager.state.uid)
         await morning.tokenChanged("token-1")

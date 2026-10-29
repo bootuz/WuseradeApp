@@ -56,6 +56,10 @@ final class AccountManager {
     /// How long a sign-out waits for the device removal. Offline the removal waits for the server; the sign-out
     /// must not.
     @ObservationIgnored private let deviceRemovalLimit: Duration
+    /// Told the uid each time this device is removed from an account, before the removal is sent. The app makes
+    /// the morning poem forget what it registered there: if the operation then fails and the account stays, the
+    /// next report of that account registers the device again instead of believing it is still there.
+    @ObservationIgnored private let deviceRemoved: @MainActor (_ uid: String) -> Void
     /// Deletes the photos `uid` sent that still wait for review. Only `deleteAccount` calls it.
     @ObservationIgnored private let deleteWaitingPhotos: @MainActor (_ uid: String) async throws -> Void
     @ObservationIgnored private let setAnalyticsUserID: (String) -> Void
@@ -74,6 +78,7 @@ final class AccountManager {
         devices: any DeviceRegistry,
         installId: String,
         deviceRemovalLimit: Duration = .seconds(10),
+        deviceRemoved: @escaping @MainActor (_ uid: String) -> Void = { _ in },
         deleteWaitingPhotos: @escaping @MainActor (_ uid: String) async throws -> Void,
         setAnalyticsUserID: @escaping (String) -> Void = { Analytics.setUserID($0) }
     ) {
@@ -86,6 +91,7 @@ final class AccountManager {
         self.devices = devices
         self.installId = installId
         self.deviceRemovalLimit = deviceRemovalLimit
+        self.deviceRemoved = deviceRemoved
         self.deleteWaitingPhotos = deleteWaitingPhotos
         self.setAnalyticsUserID = setAnalyticsUserID
     }
@@ -212,6 +218,7 @@ final class AccountManager {
         try await reads.deleteAllReads(uid: uid)
         knownReads.remove(uid: uid)
         // The server must stop sending to the account before it is gone, or no one could remove the device.
+        deviceRemoved(uid)
         try await devices.remove(installId: installId, uid: uid)
         try await likes.deleteAllData(uid: uid)
         try await deleteWaitingPhotos(uid)
@@ -259,6 +266,7 @@ final class AccountManager {
             }
             // The anonymous uid is never used again, whether or not its reads could be deleted.
             knownReads.remove(uid: anonymous.uid)
+            deviceRemoved(anonymous.uid)
             do {
                 try await devices.remove(installId: installId, uid: anonymous.uid)
             } catch {
@@ -296,6 +304,7 @@ final class AccountManager {
     /// the server, so past the limit it goes on in the background (Firestore sends it once the device reconnects)
     /// and the caller carries on.
     private func removeDevice(uid: String, waitingAtMost limit: Duration) async {
+        deviceRemoved(uid)
         let devices = devices
         let installId = installId
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in

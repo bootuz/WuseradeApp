@@ -170,6 +170,7 @@ final class FakeAuthBackend: AuthBackend, @unchecked Sendable {
     private var _anonymousSignInDelay: Duration?
     private var _signInError: Error?
     private var _signInDelay: Duration?
+    private var _signOutError: Error?
     private var _deleteFailuresLeft = 0
     private var _deletedUids: [String] = []
     private var _revokedCodes: [String] = []
@@ -317,7 +318,15 @@ final class FakeAuthBackend: AuthBackend, @unchecked Sendable {
 
     func signOut() throws {
         record("signOut")
-        lock.withLock { _currentUser = nil }
+        try lock.withLock {
+            if let _signOutError { throw _signOutError }
+            _currentUser = nil
+        }
+    }
+
+    /// `signOut` throws this error, keeping the user signed in, until it is set back to nil.
+    func setSignOutError(_ error: Error?) {
+        lock.withLock { _signOutError = error }
     }
 }
 

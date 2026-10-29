@@ -11,9 +11,13 @@ final class MorningPoemControllerTests {
     private let now = Date(timeIntervalSince1970: 1_793_246_400) // 2026-10-29 04:00 UTC
     private var zone = TimeZone(identifier: "Europe/Moscow")!
     private var paused = false
+    /// This test's device-only folder, for the registration record.
+    private let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("MorningPoemControllerTests-\(UUID().uuidString)", isDirectory: true)
 
     deinit {
         UserDefaults().removePersistentDomain(forName: suiteName)
+        try? FileManager.default.removeItem(at: directory)
     }
 
     private func defaults() throws -> UserDefaults {
@@ -29,6 +33,7 @@ final class MorningPoemControllerTests {
             permission: permission,
             installId: "install-1",
             defaults: try defaults(),
+            record: DeviceRegistrationRecord(directory: directory),
             now: { [now] in now },
             timeZone: { [unowned self] in zone },
             isPaused: { [unowned self] in paused }
@@ -229,6 +234,26 @@ final class MorningPoemControllerTests {
         #expect(registry.devices(for: "bob")["install-1"] == DeviceRegistration(
             fcmToken: "token-2", timeZone: "Europe/Moscow", notifyAt: "09:00", enabled: true, nextSendAt: at(6)
         ))
+    }
+
+    @Test func `A forgotten registration is written again for the same account`() async throws {
+        let registry = FakeDeviceRegistry()
+        let record = DeviceRegistrationRecord(directory: directory)
+        let controller = MorningPoemController(
+            registry: registry, permission: FakeNotificationPermission(), installId: "install-1",
+            defaults: try defaults(), record: record, now: { [now] in now }, timeZone: { [unowned self] in zone }
+        )
+        await controller.accountChanged(uid: "alice")
+        await controller.tokenChanged("token-1")
+        await controller.setEnabled(true)
+
+        record.forget(uid: "bob")
+        await controller.accountChanged(uid: "alice")
+        #expect(registry.calls.count == 1, "forgetting another account changes nothing")
+
+        record.forget(uid: "alice")
+        await controller.accountChanged(uid: "alice")
+        #expect(registry.calls == ["upsert install-1 alice", "upsert install-1 alice"])
     }
 
     @Test func `A failed write is tried again on the next change`() async throws {
