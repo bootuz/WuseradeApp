@@ -1,6 +1,6 @@
 // Minimum iOS 17.
-//  One moment of the widgets' timeline: the day's picks to show, or none for the empty state and for the
-//  midnight entry that makes the widget read the new day.
+//  One moment of the widgets' timeline: the day's picks to show, or none (neither read nor cached) for the
+//  empty state.
 
 import Foundation
 import WidgetKit

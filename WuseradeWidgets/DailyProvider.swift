@@ -1,6 +1,7 @@
 // Minimum iOS 17.
 //  Reads today's `daily/{date}` over Firestore's REST API, keeps it in the App Group cache, and falls back to
-//  that cache (from any earlier day) when the read fails. Each timeline runs to the next local midnight. It serves
+//  that cache (from any earlier day) when the read fails. With today's document it reads again at the next local
+//  midnight; after a failed read, or with an older day, within the hour. It serves
 //  the configurable small widget as an App Intent provider and the other two as a plain one.
 
 import Foundation
@@ -21,11 +22,14 @@ struct DailyProvider {
 
     private func timeline(smallPoem: DailyEntry.SmallPoem) async -> Timeline<DailyEntry> {
         let now = Date.now
-        let picks = await fetch(date: DailyDate.string(for: now)) ?? cache.load()
-        let entries = DailyTimeline.entries(for: picks, now: now, timeZone: .current).map {
+        let timeZone = TimeZone.current
+        let fetched = await fetch(date: DailyDate.string(for: now, in: timeZone))
+        let picks = DailyTimeline.picks(fetched: fetched, cached: cache.load())
+        let entries = DailyTimeline.entries(for: picks, now: now, timeZone: timeZone).map {
             DailyEntry(date: $0.date, picks: $0.picks, smallPoem: smallPoem)
         }
-        return Timeline(entries: entries, policy: .after(DailyTimeline.nextMidnight(after: now, in: .current)))
+        let reload = DailyTimeline.reloadDate(fetched: fetched != nil, picks: picks, now: now, timeZone: timeZone)
+        return Timeline(entries: entries, policy: .after(reload))
     }
 
     /// Today's picks from the server, saved to the cache; nil when the read or the decoding fails.

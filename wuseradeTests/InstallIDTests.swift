@@ -14,7 +14,9 @@ final class InstallIDTests {
     }
 
     private func isExcludedFromBackup(_ url: URL) throws -> Bool {
-        try #require(try url.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup)
+        let excluded = try url.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup
+        // `as Bool?` asks #require to unwrap the optional rather than test it as a condition.
+        return try #require(excluded as Bool?)
     }
 
     @Test func `A missing ID is created once and then kept`() throws {

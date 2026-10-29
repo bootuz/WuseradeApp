@@ -1,6 +1,6 @@
 // Minimum iOS 17.
-//  The widgets' timeline without WidgetKit's side: the REST address of a day's document, decoding it, the
-//  entries up to the next local midnight, and the parts of a poem a widget has room for.
+//  The widgets' timeline without WidgetKit's side: the REST address of a day's document, decoding it, which
+//  picks to show, the entries and when to read again, and the parts of a poem a widget has room for.
 
 import Foundation
 
@@ -17,13 +17,30 @@ enum DailyTimeline {
         try FirestoreREST.decode(DailyPicks.self, from: data)
     }
 
-    /// The picks now, then nothing from the next local midnight, so the widget reads the new day's document.
+    /// The picks now and again from the next local midnight. Until the reload after midnight reads the new day, the
+    /// widget keeps the poem it has, and its head shows that document's own date.
     static func entries(for picks: DailyPicks?, now: Date, timeZone: TimeZone) -> [DailyEntry] {
         [
             DailyEntry(date: now, picks: picks),
-            DailyEntry(date: nextMidnight(after: now, in: timeZone), picks: nil),
+            DailyEntry(date: nextMidnight(after: now, in: timeZone), picks: picks),
         ]
     }
+
+    /// The picks to show: the document just read, or else the cached one, even from an earlier day.
+    static func picks(fetched: DailyPicks?, cached: DailyPicks?) -> DailyPicks? {
+        fetched ?? cached
+    }
+
+    /// When to read again: at the next local midnight once today's document was read, otherwise within the hour
+    /// (never past midnight), so a failed read or an older day does not stand until the next day.
+    static func reloadDate(fetched: Bool, picks: DailyPicks?, now: Date, timeZone: TimeZone) -> Date {
+        let midnight = nextMidnight(after: now, in: timeZone)
+        let current = fetched && picks?.date == DailyDate.string(for: now, in: timeZone)
+        return current ? midnight : min(now.addingTimeInterval(retryInterval), midnight)
+    }
+
+    /// How long a widget without today's document waits before it reads again.
+    static let retryInterval: TimeInterval = 3600
 
     /// The start of the next local day.
     static func nextMidnight(after date: Date, in timeZone: TimeZone) -> Date {

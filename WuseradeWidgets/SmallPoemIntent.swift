@@ -1,6 +1,7 @@
 // Minimum iOS 17.
 //  The small widget's one setting: the short poem of the day (the default) or the day's poem. App Intents
-//  metadata takes only literals, so the strings repeat `WidgetCopy.smallName`, `kindShort` and `kindDay`.
+//  metadata takes only literals, so this file is the one place for these owner-copy slots. The widget's name,
+//  '[owner copy: widget: a short poem]', also appears as `WidgetCopy.smallName`: change both together.
 
 import AppIntents
 

@@ -43,6 +43,16 @@ struct DailyProviderTests {
     }
     """#
 
+    private static func picks(date: String) -> DailyPicks {
+        let poem = DailyPoem(id: 1, title: "Title", authorId: 2, authorName: "Poet Two", text: "Line")
+        return DailyPicks(
+            date: date,
+            poem: poem,
+            shortPoem: poem,
+            poet: DailyPoet(id: 2, name: "Poet Two", poemsCount: 1, photoURL: nil, topPoems: [])
+        )
+    }
+
     @Test func `REST URL for a date`() {
         #expect(
             DailyTimeline.restURL(date: "2026-10-29").absoluteString
@@ -61,8 +71,50 @@ struct DailyProviderTests {
         #expect(entries[0].date == now)
         #expect(entries[0].picks == picks)
         #expect(entries[1].date == (try Date("2026-10-29T21:00:00Z", strategy: .iso8601)))
-        #expect(entries[1].picks == nil, "the midnight entry carries nothing, so the widget reads the new day")
+        #expect(entries[1].picks == picks, "past midnight the widget keeps the poem, under that document's own date")
         #expect(DailyTimeline.nextMidnight(after: now, in: moscow) == entries[1].date)
+    }
+
+    @Test func `A fetched document wins, and the cache stands in from any day`() throws {
+        let today = try DailyTimeline.picks(fromREST: Data(Self.fixture.utf8))
+        let older = Self.picks(date: "2026-10-20")
+
+        #expect(DailyTimeline.picks(fetched: today, cached: older) == today)
+        #expect(DailyTimeline.picks(fetched: nil, cached: older) == older)
+        #expect(DailyTimeline.picks(fetched: nil, cached: nil) == nil)
+    }
+
+    @Test func `Today's fetched document holds until midnight`() throws {
+        let now = try Date("2026-10-29T08:00:00Z", strategy: .iso8601)
+        let utc = try #require(TimeZone(identifier: "UTC"))
+        let midnight = try Date("2026-10-30T00:00:00Z", strategy: .iso8601)
+
+        let reload = DailyTimeline.reloadDate(fetched: true, picks: Self.picks(date: "2026-10-29"), now: now, timeZone: utc)
+
+        #expect(reload == midnight)
+    }
+
+    @Test func `A failed read or an older day is tried again within the hour`() throws {
+        let now = try Date("2026-10-29T08:00:00Z", strategy: .iso8601)
+        let utc = try #require(TimeZone(identifier: "UTC"))
+        let inAnHour = now.addingTimeInterval(3600)
+
+        // The read failed: even today's cache is tried again.
+        #expect(DailyTimeline.reloadDate(fetched: false, picks: Self.picks(date: "2026-10-29"), now: now, timeZone: utc) == inAnHour)
+        // The read failed and the cache is from an earlier day, or there is none.
+        #expect(DailyTimeline.reloadDate(fetched: false, picks: Self.picks(date: "2026-10-28"), now: now, timeZone: utc) == inAnHour)
+        #expect(DailyTimeline.reloadDate(fetched: false, picks: nil, now: now, timeZone: utc) == inAnHour)
+        // Picks that are not today's, however they came.
+        #expect(DailyTimeline.reloadDate(fetched: true, picks: Self.picks(date: "2026-10-28"), now: now, timeZone: utc) == inAnHour)
+    }
+
+    @Test func `A retry never runs past midnight`() throws {
+        let now = try Date("2026-10-29T20:30:00Z", strategy: .iso8601)  // 23:30 in Moscow
+        let moscow = try #require(TimeZone(identifier: "Europe/Moscow"))
+
+        let reload = DailyTimeline.reloadDate(fetched: false, picks: nil, now: now, timeZone: moscow)
+
+        #expect(reload == (try Date("2026-10-29T21:00:00Z", strategy: .iso8601)))
     }
 
     @Test func `Without picks the timeline still ends at midnight`() throws {
