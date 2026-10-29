@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>Privacy Policy – Wuserade</title>
-<meta name="description" content="How the Wuserade app handles your data: accounts, likes, photos you send, analytics and notifications, and how to delete them.">
+<meta name="description" content="How the Wuserade app handles your data: accounts, likes, poems you have read, photos you send, analytics and notifications, and how to delete them.">
 <style>
   :root {
     color-scheme: light dark;
@@ -72,7 +72,7 @@
 <main>
   <header>
     <h1>Wuserade Privacy Policy</h1>
-    <p class="updated">Last updated: 28 October 2026</p>
+    <p class="updated">Last updated: [owner copy: release date]</p>
   </header>
 
   <p class="lead">
@@ -104,6 +104,18 @@
         you liked it, and a copy of the poem’s title, author name and text. Your likes are saved
         under your account in Cloud Firestore (a Google Firebase service), in the europe-west3
         (Frankfurt) region.
+      </li>
+      <li>
+        <strong>Poems you have read.</strong> For each poem you read, we store the poem’s ID and
+        the time you first read it, under your account in Cloud Firestore, in the europe-west3
+        (Frankfurt) region. We use it only to suggest poems you haven’t read. It is deleted with
+        your account.
+      </li>
+      <li>
+        <strong>Morning poem settings.</strong> If you turn on the morning poem, we store your time
+        zone, the time you chose and your push token under your account, to send you the morning
+        poem. If you turn it off, the settings stay, marked as off, so nothing is sent. They are
+        deleted when you sign out or delete your account.
       </li>
       <li>
         <strong>Photos you send.</strong> Only readers signed in with Apple or Google can send a
@@ -141,7 +153,8 @@
     <h2>How we use it</h2>
     <p>
       We use this data only to run the app: to keep your likes, to let you sign in on
-      another device, to send notifications, and to understand how the app is used so we can
+      another device, to suggest poems you haven’t read, to send notifications and the morning
+      poem, and to understand how the app is used so we can
       improve it.
     </p>
   </section>
@@ -158,10 +171,12 @@
   <section>
     <h2>Who handles your data</h2>
     <p>
-      The app runs on Google Firebase (Authentication, Cloud Firestore, Firebase Storage,
-      Analytics and Cloud Messaging). Google processes your data on our behalf. Your likes are
-      stored in Frankfurt, and photos waiting for review are stored in the United States; other
-      Firebase services may process data in other countries. See
+      The app runs on Google Firebase (Authentication, Cloud Firestore, Cloud Functions, Firebase
+      Storage, Analytics and Cloud Messaging). Google processes your data on our behalf. Your
+      likes, the poems you have read and your morning poem settings are stored in Frankfurt,
+      where Cloud Functions also works out your suggestions and sends the morning poem. Photos
+      waiting for review are stored in the United States. Other Firebase services may process
+      data in other countries. See
       <a href="https://firebase.google.com/support/privacy" rel="noopener">Firebase privacy
       and security</a> for how Google handles it.
     </p>
@@ -172,16 +187,17 @@
     <ul>
       <li>
         <strong>Signed in with Apple or Google:</strong> open Settings in the app and tap
-        Delete account. This deletes your account, all your likes, your profile and any photos
+        Delete account. This deletes your account, all your likes, the poems you have read, your
+        morning poem settings, your profile and any photos
         you sent that are still waiting for review, and revokes Sign in with Apple. Approved
         photos stay on the poet’s page.
       </li>
       <li>
-        <strong>Using the app without signing in:</strong> your likes are saved under a random
-        ID that is not linked to your name or email. Deleting the app does not remove them from
-        our servers. To delete them, sign in with Apple or Google (your likes move to that
-        account), then go to Settings and tap Delete account, which deletes your account and
-        all your likes.
+        <strong>Using the app without signing in:</strong> your likes and the poems you have read
+        are saved under a random ID that is not linked to your name or email. Deleting the app
+        does not remove them from our servers. To delete them, sign in with Apple or Google (your
+        likes and the poems you have read move to that account), then go to Settings and tap
+        Delete account, which deletes your account and all of them.
       </li>
       <li>
         <strong>Usage data:</strong> analytics data is kept and handled according to Google

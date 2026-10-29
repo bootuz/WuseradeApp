@@ -10,7 +10,17 @@
     {
       "source": "functions",
       "codebase": "default",
-      "runtime": "python312"
+      "runtime": "python312",
+      "ignore": [
+        "venv",
+        ".venv",
+        ".git",
+        "*.local",
+        "__pycache__",
+        ".pytest_cache",
+        "*.egg-info",
+        "tests"
+      ]
     }
   ],
   "hosting": {

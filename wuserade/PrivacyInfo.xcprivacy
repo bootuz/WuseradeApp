@@ -6,10 +6,42 @@
 	<false/>
 	<key>NSPrivacyTrackingDomains</key>
 	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array>
+		<!-- users/{uid}/reads: the poems the reader has read, under their account, so suggestions skip them. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<!-- users/{uid}/devices/{installId}: the FCM token and a random install ID, under the reader's account,
+		     to send the morning poem. FirebaseMessaging declares the token as a Device ID not linked to the user;
+		     the app stores it with the account, so it is declared again here as linked. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
 		<!-- UserDefaults.standard and @AppStorage: font settings, appearance, onboarding,
-		     pending likes and the legacy likes migration flag. Only this app reads them. -->
+		     pending likes and the legacy likes migration flag, pending and known reads, the
+		     morning poem setting and the days the app was opened. Only this app reads them. -->
 		<dict>
 			<key>NSPrivacyAccessedAPIType</key>
 			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>

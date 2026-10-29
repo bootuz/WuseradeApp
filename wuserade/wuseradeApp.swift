@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import FirebaseAnalytics
 import FirebaseCore
 import FirebaseMessaging
 import GoogleSignIn
@@ -20,8 +21,20 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     let poemLinks = PoemLinkInbox()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        #if DEBUG
+        if Emulators.isRequested() {
+            // No APNs registration, so no FCM token is fetched from production either.
+            Emulators.configure()
+        } else {
+            application.registerForRemoteNotifications()
+            FirebaseApp.configure()
+            // An emulator run switched Analytics off for this install; this is its default.
+            Analytics.setAnalyticsCollectionEnabled(true)
+        }
+        #else
         application.registerForRemoteNotifications()
         FirebaseApp.configure()
+        #endif
         Messaging.messaging().delegate = self
         UNUserNotificationCenter.current().delegate = self
         return true
@@ -88,11 +101,19 @@ struct wuseradeApp: App {
         // The day's poem used to be picked on the device and kept here; it now comes from `daily/{date}`.
         UserDefaults.standard.removeObject(forKey: "daysPoem.day")
         UserDefaults.standard.removeObject(forKey: "daysPoem.poem")
+        #if DEBUG
+        // `-useEmulators` keeps the emulators' content apart from production's on disk. Its daily picks are not
+        // cached at all, so the widgets are never asked to reload (they read production).
+        let emulators = Emulators.isRequested()
+        let store = CatalogStore(repository: FirestoreContentRepository(), cache: emulators ? Emulators.freshCatalogCache() : .default)
+        #else
         let store = CatalogStore(repository: FirestoreContentRepository(), cache: .default)
+        #endif
         _catalogStore = State(initialValue: store)
         #if DEBUG
         // `-previewDaily` runs the app over the in-memory preview content, with today's picks, for screenshots.
-        let library = ProcessInfo.processInfo.arguments.contains("-previewDaily") ? Library.preview() : Library(store: store)
+        let library = ProcessInfo.processInfo.arguments.contains("-previewDaily") ? Library.preview()
+            : emulators ? Library(store: store, dailyCache: DailyCache(directory: nil)) : Library(store: store)
         // `-previewKeepReading` answers the end of every poem with made-up suggestions, for screenshots.
         keepReading = ProcessInfo.processInfo.arguments.contains("-previewKeepReading")
             ? PreviewKeepReadingService() : FirebaseKeepReadingService()

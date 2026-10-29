@@ -113,6 +113,17 @@ release. Things to know:
 Its output ends with `daily re-synced: N`: the number of `daily/{date}` documents, from yesterday
 (UTC) onward, that it rewrote because their poems or poet changed or were removed.
 
+**The daily documents.** The `writeDailyPicks` Cloud Function (see `firebase/functions/README.md`)
+writes one `daily/{date}` document per day, a week ahead, and copies into it the titles, texts and
+poet details the app shows. So after you correct or remove a poem or a poet in the console, `rebuild`
+brings those documents up to date, from yesterday onward:
+
+- Corrected titles, texts, poet names, poem counts, photos and top poems are copied again.
+- A day whose poem, short poem or poet no longer exists gets a new one in that slot, picked by the
+  same rules. The other picks of that day stay.
+- Older days are left as they are. Readers who already loaded today see the change when Home
+  refreshes.
+
 Run it after any manual edit in the Firebase console. It reads all content, recomputes
 `poemsCount` on authors and themes, and refreshes the author name copied onto each poem
 (`poems/{id}.authorName`) wherever it no longer matches `authors/{authorId}.name`, so renaming
@@ -294,6 +305,10 @@ Then, in `firebase/admin`, put the emulator variables in front of the command. `
 ```sh
 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 .venv/bin/python -m wuserade_admin rebuild
 ```
+
+On a Mac where port 8080 is taken, run the emulators from a copy of `firebase.json` with another
+Firestore port, as `firebase/firebase.test.json` does (port 8085, git-ignored): add
+`--config firebase.test.json` to the `emulators:` commands and use `127.0.0.1:8085` above.
 
 The `photos` commands need all three emulators, because they use Firestore, Storage and
 Auth. With only some of the variables set they stop with an error instead of going to project
