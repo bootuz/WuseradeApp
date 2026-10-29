@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import warnings
 from datetime import date, datetime, time, timedelta, timezone
 from typing import TYPE_CHECKING, Callable
 from zoneinfo import ZoneInfo
@@ -52,12 +53,17 @@ def message(token: str, daily: dict) -> messaging.Message:
         headline = sentence_case(title)
     else:
         headline = (lines[0] if lines else "").rstrip(_TRAILING)
-    return messaging.Message(
-        token=token,
-        notification=messaging.Notification(title=f"{headline} — {poem['authorName']}", body="\n".join(lines)),
-        data={"poemId": str(poem["id"]), "date": daily["date"]},
-        apns=messaging.APNSConfig(payload=messaging.APNSPayload(aps=messaging.Aps())),
-    )
+    with warnings.catch_warnings():
+        # `token` is right for an iOS FCM registration token; the SDK's `fid` is a different ID.
+        warnings.filterwarnings("ignore", message="Message.token is deprecated", category=DeprecationWarning)
+        return messaging.Message(
+            token=token,
+            notification=messaging.Notification(
+                title=f"{headline} \u2014 {poem['authorName']}", body="\n".join(lines)
+            ),
+            data={"poemId": str(poem["id"]), "date": daily["date"]},
+            apns=messaging.APNSConfig(payload=messaging.APNSPayload(aps=messaging.Aps())),
+        )
 
 
 def _is_dead_token(error: Exception | None) -> bool:
@@ -101,41 +107,53 @@ def _load_daily(db: Client, day: date, cache: dict[str, dict | None]) -> dict | 
 
 def _send_page(db, page, now, send, daily_cache) -> int:
     to_send = []  # (device snapshot, message)
-    advance = []  # (device snapshot, next send time)
+    updates = []  # (device snapshot, next send time)
     for device in page:
         data = device.to_dict()
         try:
+            token = data["fcmToken"]
+            if not isinstance(token, str) or not token:
+                raise ValueError("fcmToken must be a non-empty string")
             zone = ZoneInfo(data["timeZone"])
             following = next_send_at(data["timeZone"], data["notifyAt"], now)
             daily = _load_daily(db, now.astimezone(zone).date(), daily_cache)
-            token = data["fcmToken"]
-        except Exception:  # noqa: BLE001 - one malformed device must not stop the run
-            log.exception("skipping malformed device %s", device.reference.path)
+            built = message(token, daily) if daily is not None else None
+        except Exception as error:  # noqa: BLE001 - one malformed device must not stop the run
+            log.warning("malformed device %s, retrying in a day: %r", device.reference.path, error)
+            updates.append((device, now + timedelta(days=1)))
             continue
-        advance.append((device, following))
-        if daily is None:
+        updates.append((device, following))
+        if built is None:
             log.warning("no daily document for %s, skipping", device.reference.path)
             continue
-        to_send.append((device, message(token, daily)))
+        to_send.append((device, built))
+
+    # Advance first: a failed commit sends nothing, and a rerun or overlapping run finds nothing due.
+    _commit(db, [(d.reference, {"nextSendAt": t, "updatedAt": firestore.SERVER_TIMESTAMP}) for d, t in updates])
+    if not to_send:
+        return 0
 
     sent = 0
-    dead = set()
-    if to_send:
-        response = send([m for _, m in to_send])
-        for (device, _), result in zip(to_send, response.responses):
-            if result.success:
-                sent += 1
-            elif _is_dead_token(result.exception):
-                dead.add(device.reference.path)
-            else:
-                log.error("send failed for %s: %s", device.reference.path, result.exception)
-
-    for start in range(0, len(advance), PAGE_SIZE):
-        batch = db.batch()
-        for device, following in advance[start : start + PAGE_SIZE]:
-            if device.reference.path in dead:
-                batch.delete(device.reference)
-            else:
-                batch.update(device.reference, {"nextSendAt": following, "updatedAt": firestore.SERVER_TIMESTAMP})
-        batch.commit()
+    dead = []
+    response = send([m for _, m in to_send])
+    for (device, _), result in zip(to_send, response.responses):
+        if result.success:
+            sent += 1
+        elif _is_dead_token(result.exception):
+            dead.append(device.reference)
+        else:
+            log.error("send failed for %s: %s", device.reference.path, result.exception)
+    _commit(db, [(ref, None) for ref in dead])
     return sent
+
+
+def _commit(db, writes) -> None:
+    """Apply (ref, fields) updates, or deletes where fields is None, in batches."""
+    for start in range(0, len(writes), PAGE_SIZE):
+        batch = db.batch()
+        for ref, fields in writes[start : start + PAGE_SIZE]:
+            if fields is None:
+                batch.delete(ref)
+            else:
+                batch.update(ref, fields)
+        batch.commit()

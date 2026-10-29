@@ -21,7 +21,7 @@ def writeDailyPicks(event: scheduler_fn.ScheduledEvent) -> None:
     print(f"daily documents written: {written}")
 
 
-@scheduler_fn.on_schedule(schedule="*/15 * * * *", region="europe-west3")
+@scheduler_fn.on_schedule(schedule="*/15 * * * *", region="europe-west3", max_instances=1, timeout_sec=540)
 def sendMorningPoems(event: scheduler_fn.ScheduledEvent) -> None:
     """Send the day's poem to every device whose morning time has come."""
     sent = send_due(firestore.client(), datetime.now(timezone.utc), messaging.send_each)

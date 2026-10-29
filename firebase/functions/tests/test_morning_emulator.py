@@ -1,8 +1,9 @@
 """send_due against the emulator (project demo-wuserade), with a fake sender."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
+import pytest
 from firebase_admin import messaging
 
 from wuserade_daily.morning import next_send_at, send_due
@@ -115,3 +116,56 @@ def test_send_due_pages_over_500(db):
     send = FakeSend()
     assert send_due(db, NOW, send) == 520
     assert len({m.token for m in send.sent}) == 520
+
+
+class FailingCommitDb:
+    """Wraps the client so every batch commit raises."""
+
+    def __init__(self, db):
+        self._db = db
+
+    def __getattr__(self, name):
+        return getattr(self._db, name)
+
+    def batch(self):
+        batch = self._db.batch()
+
+        def boom():
+            raise RuntimeError("commit failed")
+
+        batch.commit = boom
+        return batch
+
+
+def test_commit_failure_sends_nothing(db):
+    seed_daily(db, "2026-10-29")
+    device = seed_device(db, "u1", "i1", "t1")
+    send = FakeSend()
+    with pytest.raises(RuntimeError):
+        send_due(FailingCommitDb(db), NOW, send)
+    assert send.sent == []
+    assert device.get().get("nextSendAt") == NOW
+
+
+def test_empty_token_does_not_block_others(db):
+    seed_daily(db, "2026-10-29")
+    bad = seed_device(db, "u1", "i1", "")
+    ok = seed_device(db, "u2", "i2", "ok")
+    send = FakeSend()
+    assert send_due(db, NOW, send) == 1
+    assert [m.token for m in send.sent] == ["ok"]
+    assert bad.get().get("nextSendAt") == NOW + timedelta(days=1)
+    assert ok.get().get("nextSendAt") > NOW
+
+
+def test_malformed_zone_and_time_advance_a_day(db):
+    seed_daily(db, "2026-10-29")
+    bad_zone = seed_device(db, "u1", "i1", "t1", tz="Nowhere/Land")
+    bad_time = seed_device(db, "u2", "i2", "t2", notify="late")
+    send = FakeSend()
+    assert send_due(db, NOW, send) == 0
+    assert send.sent == []
+    for ref in (bad_zone, bad_time):
+        snapshot = ref.get()
+        assert snapshot.exists and snapshot.get("enabled") is True
+        assert snapshot.get("nextSendAt") == NOW + timedelta(days=1)
