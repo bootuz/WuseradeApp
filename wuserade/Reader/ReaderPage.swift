@@ -17,6 +17,8 @@ struct ReaderPage: View {
     @Environment(Library.self) private var library
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.readTracker) private var readTracker
+    @Environment(\.keepReading) private var keepReading
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     @ScaledMetric(relativeTo: .body) private var stanzaGap: CGFloat = 28
 
@@ -32,6 +34,8 @@ struct ReaderPage: View {
     /// once the lozenge's top is above the bottom edge.
     @State private var scrollHeight: CGFloat = 0
     @State private var endTop: CGFloat = .greatestFiniteMagnitude
+    /// The server's suggestions after this poem, once asked for; nil while they load.
+    @State private var suggestions: (poemId: Int, result: Result<KeepReading, Error>)?
 
     private static let contentSpace = "readerContent"
     private static let scrollSpace = "readerScroll"
@@ -125,15 +129,50 @@ struct ReaderPage: View {
                     endTop = $0
                 }
                 .padding(.top, stanzaGap)
-            if let next {
-                Rectangle()
-                    .fill(Palette.hairline)
-                    .frame(height: 1)
-                    .padding(.top, Space.twelve)
-                NextPoemRow(poem: next) { onNext(next) }
-            }
+            endOfPoem
         }
         .transition(.opacity)
+        .task(id: summary.id) { await loadSuggestions() }
+    }
+
+    /// Below the lozenge: the suggestions once they arrive, otherwise the list's next poem.
+    @ViewBuilder
+    private var endOfPoem: some View {
+        let result = suggestions.flatMap { $0.poemId == summary.id ? $0.result : nil }
+        switch KeepReadingState.resolve(result: result, next: next) {
+        case .suggestions(let suggestions):
+            VStack(alignment: .leading, spacing: 0) {
+                endRule
+                KeepReadingSection(suggestions: suggestions, author: summary.author)
+            }
+            .transition(.opacity)
+        case .next(let next):
+            VStack(alignment: .leading, spacing: 0) {
+                endRule
+                NextPoemRow(poem: next) { onNext(next) }
+            }
+            .transition(.opacity)
+        case .nothing:
+            EmptyView()
+        }
+    }
+
+    private var endRule: some View {
+        Rectangle()
+            .fill(Palette.hairline)
+            .frame(height: 1)
+            .padding(.top, Space.twelve)
+    }
+
+    /// Asks once per poem. Coming back to the page keeps what arrived; a failure leaves the next row in place.
+    private func loadSuggestions() async {
+        guard let keepReading, suggestions?.poemId != summary.id else { return }
+        let poemId = summary.id
+        let result = await KeepReadingState.load(poemId, from: keepReading)
+        guard !Task.isCancelled else { return }
+        withAnimation(reduceMotion ? nil : .easeIn(duration: 0.25)) {
+            suggestions = (poemId, result)
+        }
     }
 
     private var titleBlock: some View {

@@ -53,6 +53,8 @@ struct wuseradeApp: App {
     @State private var readTracker: ReadTracker
     /// The poet photos the signed-in reader has sent and that wait for the owner.
     @State private var photos: PhotoSubmissions
+    /// What the reader offers once a poem ends.
+    private let keepReading: any KeepReadingService
 
     init() {
         AppLanguage.applyDefault()
@@ -65,8 +67,12 @@ struct wuseradeApp: App {
         #if DEBUG
         // `-previewDaily` runs the app over the in-memory preview content, with today's picks, for screenshots.
         let library = ProcessInfo.processInfo.arguments.contains("-previewDaily") ? Library.preview() : Library(store: store)
+        // `-previewKeepReading` answers the end of every poem with made-up suggestions, for screenshots.
+        keepReading = ProcessInfo.processInfo.arguments.contains("-previewKeepReading")
+            ? PreviewKeepReadingService() : FirebaseKeepReadingService()
         #else
         let library = Library(store: store)
+        keepReading = FirebaseKeepReadingService()
         #endif
         _library = State(initialValue: library)
         let photos = PhotoSubmissions(
@@ -128,6 +134,7 @@ struct wuseradeApp: App {
                 .environment(likes)
                 .environment(photos)
                 .environment(\.readTracker, readTracker)
+                .environment(\.keepReading, keepReading)
                 .sheet(isPresented: $firstLaunch) {
                     OnboardingView()
                 }

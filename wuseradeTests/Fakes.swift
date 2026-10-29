@@ -679,6 +679,31 @@ final class FakeDailyStore: DailyStore, @unchecked Sendable {
     }
 }
 
+// MARK: - Keep reading
+
+/// In-memory `KeepReadingService`: answers every call with `result` and records the poem ID of each call.
+final class FakeKeepReadingService: KeepReadingService, @unchecked Sendable {
+    struct Unavailable: Error {}
+
+    private let lock = NSLock()
+    private let result: Result<KeepReading, Error>
+    private var _calls: [Int] = []
+
+    init(result: Result<KeepReading, Error>) {
+        self.result = result
+    }
+
+    /// The poem ID of every call, in call order.
+    var calls: [Int] { lock.withLock { _calls } }
+
+    func suggestions(for poemId: Int) async throws -> KeepReading {
+        try lock.withLock {
+            _calls.append(poemId)
+            return try result.get()
+        }
+    }
+}
+
 // MARK: - Reading history
 
 /// In-memory `ReadsStore`. When `ownerUid` is given it acts like the security rules: every call for a uid other

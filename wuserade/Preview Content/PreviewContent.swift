@@ -94,6 +94,20 @@ struct PreviewDailyStore: DailyStore {
     }
 }
 
+/// Suggestions for previews and the `-previewKeepReading` launch argument: two more poems by the poet being read
+/// and two by others, after any poem. Never reaches the server.
+struct PreviewKeepReadingService: KeepReadingService {
+    func suggestions(for poemId: Int) async throws -> KeepReading {
+        KeepReading(
+            poet: [KeepReading.Ref(id: 1, title: "Гъатхэ"), KeepReading.Ref(id: 2, title: "Бжьыхьэ")],
+            similar: [
+                KeepReading.Similar(id: 3, title: "Щ\u{04C0}ымахуэ", authorId: 2, authorName: PreviewContent.authors[1].name),
+                KeepReading.Similar(id: 4, title: "Хэку", authorId: 2, authorName: PreviewContent.authors[1].name),
+            ]
+        )
+    }
+}
+
 extension Library {
     /// A library for previews over `CatalogStore.preview(loaded:)`, with today's picks from `PreviewDailyStore`
     /// when `loaded`. It keeps no daily cache.

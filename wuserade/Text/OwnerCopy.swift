@@ -10,6 +10,8 @@ enum OwnerCopy {
     static let shortPoem = "[owner copy: a short poem]"
     static let allTheirPoems = "[owner copy: all their poems]"
     static let readOn = "[owner copy: read on]"
+    static let moreBy = "[owner copy: more by]"
+    static let youMightAlsoLike = "[owner copy: you might also like]"
     static let like = "[owner copy: like]"
     static let unlike = "[owner copy: unlike]"
     static let copy = "[owner copy: copy]"
