@@ -24,8 +24,9 @@ struct DailyCache {
         return try? JSONDecoder().decode(DailyPicks.self, from: data)
     }
 
-    /// Keeps `picks`, and asks the widgets to reload when the stored day changes.
-    func save(_ picks: DailyPicks) {
+    /// Keeps `picks`, and asks the widgets to reload when the stored day changes. The widget passes
+    /// `reloadingWidgets: false`: it saves while building its own timeline, which a reload would only repeat.
+    func save(_ picks: DailyPicks, reloadingWidgets: Bool = true) {
         guard let fileURL, let data = try? JSONEncoder().encode(picks) else { return }
         let previousDate = load()?.date
         do {
@@ -37,7 +38,7 @@ struct DailyCache {
         } catch {
             return
         }
-        if previousDate != picks.date {
+        if reloadingWidgets, previousDate != picks.date {
             WidgetCenter.shared.reloadAllTimelines()
         }
     }

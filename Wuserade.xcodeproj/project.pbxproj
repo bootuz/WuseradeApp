@@ -26,6 +26,7 @@
 		C0DDE2FD3092A417005CA778 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C0DDE2FB3092A417005CA778 /* InfoPlist.xcstrings */; };
 		C0DDE2FE3092A417005CA778 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C0DDE2FC3092A417005CA778 /* Localizable.xcstrings */; };
 		FD7DD152D55E4C5480DB52D3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 264F5D6D5733431A8225553F /* PrivacyInfo.xcprivacy */; };
+		E1D0A0010000000000000010 /* WuseradeWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E1D0A0010000000000000002 /* WuseradeWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -43,7 +44,28 @@
 			remoteGlobalIDString = C07F16212B7E429A007F11B7;
 			remoteInfo = wuserade;
 		};
+		E1D0A001000000000000000D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C07F161A2B7E429A007F11B7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E1D0A0010000000000000001;
+			remoteInfo = WuseradeWidgets;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E1D0A001000000000000000F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E1D0A0010000000000000010 /* WuseradeWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		264F5D6D5733431A8225553F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -61,7 +83,36 @@
 		C0DDE2F83092A3EE005CA778 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = "Base.lproj/Launch Screen.storyboard"; sourceTree = "<group>"; };
 		C0DDE2FB3092A417005CA778 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		C0DDE2FC3092A417005CA778 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		E1D0A0010000000000000002 /* WuseradeWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WuseradeWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		E1D0A0010000000000000005 /* Exceptions for "wuserade/Design" folder in "WuseradeWidgets" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Ornament/LozengeShape.swift,
+				Space.swift,
+				Typography/SerifFace.swift,
+				Typography/SerifStyle.swift,
+				Typography/TypeToken.swift,
+			);
+			target = E1D0A0010000000000000001 /* WuseradeWidgets */;
+		};
+		E1D0A0010000000000000006 /* Exceptions for "wuserade/Text" folder in "WuseradeWidgets" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				KabardianText.swift,
+			);
+			target = E1D0A0010000000000000001 /* WuseradeWidgets */;
+		};
+		E1D0A0010000000000000004 /* Exceptions for "WuseradeWidgets" folder in "WuseradeWidgets" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = E1D0A0010000000000000001 /* WuseradeWidgets */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C04FC81D2FF58F02004A18CC /* Preview Content */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "Preview Content"; sourceTree = "<group>"; };
@@ -71,7 +122,7 @@
 		C04FC88F2FF58F1C004A18CC /* Managers */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Managers; sourceTree = "<group>"; };
 		D0A1E5000000000000000001 /* Catalog */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Catalog; sourceTree = "<group>"; };
 		D0A1E5000000000000000002 /* Components */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Components; sourceTree = "<group>"; };
-		D0A1E5000000000000000003 /* Design */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Design; sourceTree = "<group>"; };
+		D0A1E5000000000000000003 /* Design */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (E1D0A0010000000000000005 /* Exceptions for "wuserade/Design" folder in "WuseradeWidgets" target */, ); explicitFileTypes = {}; explicitFolders = (); path = Design; sourceTree = "<group>"; };
 		D0A1E5000000000000000004 /* Home */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Home; sourceTree = "<group>"; };
 		D0A1E5000000000000000005 /* Lists */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Lists; sourceTree = "<group>"; };
 		D0A1E5000000000000000006 /* Navigation */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Navigation; sourceTree = "<group>"; };
@@ -81,10 +132,11 @@
 		D0A1E500000000000000000A /* Search */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Search; sourceTree = "<group>"; };
 		D0A1E500000000000000000B /* Settings */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Settings; sourceTree = "<group>"; };
 		D0A1E500000000000000000C /* Shell */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Shell; sourceTree = "<group>"; };
-		D0A1E500000000000000000D /* Text */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Text; sourceTree = "<group>"; };
+		D0A1E500000000000000000D /* Text */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (E1D0A0010000000000000006 /* Exceptions for "wuserade/Text" folder in "WuseradeWidgets" target */, ); explicitFileTypes = {}; explicitFolders = (); path = Text; sourceTree = "<group>"; };
 		D0A1E500000000000000000E /* Photos */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Photos; sourceTree = "<group>"; };
 		D0A1E500000000000000000F /* Shared */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Shared; sourceTree = "<group>"; };
 		DC8B981E9B7DE480FB341F65 /* wuseradeTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = wuseradeTests; sourceTree = "<group>"; };
+		E1D0A0010000000000000003 /* WuseradeWidgets */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (E1D0A0010000000000000004 /* Exceptions for "WuseradeWidgets" folder in "WuseradeWidgets" target */, ); explicitFileTypes = {}; explicitFolders = (); path = WuseradeWidgets; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -118,6 +170,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E1D0A0010000000000000008 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -128,6 +187,7 @@
 				C07F16242B7E429A007F11B7 /* wuserade */,
 				DC8B981E9B7DE480FB341F65 /* wuseradeTests */,
 				C07F16412B7E429B007F11B7 /* wuseradeUITests */,
+				E1D0A0010000000000000003 /* WuseradeWidgets */,
 				C07F16232B7E429A007F11B7 /* Products */,
 				C0EA77062B921F0F00E736C0 /* Frameworks */,
 			);
@@ -139,6 +199,7 @@
 				C07F16222B7E429A007F11B7 /* Wuserade.app */,
 				C07F16342B7E429B007F11B7 /* WuseradeTests.xctest */,
 				C07F163E2B7E429B007F11B7 /* WuseradeUITests.xctest */,
+				E1D0A0010000000000000002 /* WuseradeWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -205,10 +266,12 @@
 				C07F161E2B7E429A007F11B7 /* Sources */,
 				C07F161F2B7E429A007F11B7 /* Frameworks */,
 				C07F16202B7E429A007F11B7 /* Resources */,
+				E1D0A001000000000000000F /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				E1D0A001000000000000000E /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C04FC81D2FF58F02004A18CC /* Preview Content */,
@@ -287,6 +350,30 @@
 			productReference = C07F163E2B7E429B007F11B7 /* WuseradeUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		E1D0A0010000000000000001 /* WuseradeWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E1D0A001000000000000000A /* Build configuration list for PBXNativeTarget "WuseradeWidgets" */;
+			buildPhases = (
+				E1D0A0010000000000000007 /* Sources */,
+				E1D0A0010000000000000008 /* Frameworks */,
+				E1D0A0010000000000000009 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				E1D0A0010000000000000003 /* WuseradeWidgets */,
+				D0A1E500000000000000000F /* Shared */,
+				C04FC8892FF58F18004A18CC /* fonts */,
+			);
+			name = WuseradeWidgets;
+			packageProductDependencies = (
+			);
+			productName = WuseradeWidgets;
+			productReference = E1D0A0010000000000000002 /* WuseradeWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -307,6 +394,9 @@
 					C07F163D2B7E429B007F11B7 = {
 						CreatedOnToolsVersion = 15.2;
 						TestTargetID = C07F16212B7E429A007F11B7;
+					};
+					E1D0A0010000000000000001 = {
+						CreatedOnToolsVersion = 27.2;
 					};
 				};
 			};
@@ -336,6 +426,7 @@
 				C07F16212B7E429A007F11B7 /* Wuserade */,
 				C07F16332B7E429B007F11B7 /* WuseradeTests */,
 				C07F163D2B7E429B007F11B7 /* WuseradeUITests */,
+				E1D0A0010000000000000001 /* WuseradeWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -369,6 +460,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E1D0A0010000000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -396,6 +494,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E1D0A0010000000000000007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -408,6 +513,11 @@
 			isa = PBXTargetDependency;
 			target = C07F16212B7E429A007F11B7 /* Wuserade */;
 			targetProxy = C07F163F2B7E429B007F11B7 /* PBXContainerItemProxy */;
+		};
+		E1D0A001000000000000000E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E1D0A0010000000000000001 /* WuseradeWidgets */;
+			targetProxy = E1D0A001000000000000000D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -692,6 +802,66 @@
 			};
 			name = Release;
 		};
+		E1D0A001000000000000000B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = WuseradeWidgets/WuseradeWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WuseradeWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WuseradeWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nart.wuserade.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E1D0A001000000000000000C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = WuseradeWidgets/WuseradeWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WuseradeWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WuseradeWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nart.wuserade.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -727,6 +897,15 @@
 			buildConfigurations = (
 				C07F164F2B7E429B007F11B7 /* Debug */,
 				C07F16502B7E429B007F11B7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E1D0A001000000000000000A /* Build configuration list for PBXNativeTarget "WuseradeWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1D0A001000000000000000B /* Debug */,
+				E1D0A001000000000000000C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
