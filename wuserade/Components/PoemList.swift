@@ -11,6 +11,9 @@ struct PoemList<Header: View>: View {
     var onRowAppear: ((PoemSummary) -> Void)?
     /// Liked: a trailing swipe removes the like at once, with no confirmation.
     var onUnlike: ((PoemSummary) -> Void)?
+    /// Called with a row's id when the reader selects it (regular width). Programmatic changes to the
+    /// selection, such as the detail's next-poem button, never call it.
+    var onSelect: ((Int) -> Void)?
     @ViewBuilder var header: Header
 
     @Environment(SplitSelection.self) private var split: SplitSelection?
@@ -18,7 +21,14 @@ struct PoemList<Header: View>: View {
     var body: some View {
         if let split {
             @Bindable var split = split
-            List(selection: $split.poemID) {
+            let selection = Binding<Int?>(
+                get: { split.poemID },
+                set: { id in
+                    split.poemID = id
+                    if let id { onSelect?(id) }
+                }
+            )
+            List(selection: selection) {
                 header
                 rows(selecting: true)
             }
@@ -65,7 +75,7 @@ struct PoemList<Header: View>: View {
 extension PoemList where Header == EmptyView {
     init(poems: [PoemSummary], subtitle: PoemRowLabel.Subtitle = .author, highlight: String = "",
          onRowAppear: ((PoemSummary) -> Void)? = nil, onUnlike: ((PoemSummary) -> Void)? = nil) {
-        self.init(poems: poems, subtitle: subtitle, highlight: highlight, onRowAppear: onRowAppear, onUnlike: onUnlike) {
+        self.init(poems: poems, subtitle: subtitle, highlight: highlight, onRowAppear: onRowAppear, onUnlike: onUnlike, onSelect: nil) {
             EmptyView()
         }
     }

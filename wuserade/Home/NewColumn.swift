@@ -7,12 +7,11 @@ import SwiftUI
 struct NewColumn: View {
     @Environment(Library.self) private var library
     @Environment(\.navigate) private var navigate
-    @Environment(SplitSelection.self) private var split: SplitSelection?
 
     var body: some View {
         Group {
             if let latest = library.latest {
-                PoemList(poems: latest) {
+                PoemList(poems: latest, onSelect: logDailySelection) {
                     if let poem = library.daysPoem {
                         SectionLabel(text: OwnerCopy.daysPageLabel)
                             .contentRow(separator: .hidden)
@@ -59,13 +58,15 @@ struct NewColumn: View {
                     .frame(maxHeight: .infinity, alignment: .top)
             }
         }
-        .onChange(of: split?.poemID) { _, id in
-            guard let id, let daily = library.daily else { return }
-            if id == daily.poem.id { AnalyticsManager.shared.dailyOpen(source: "home_poem") }
-            if id == daily.shortPoem.id { AnalyticsManager.shared.dailyOpen(source: "home_short") }
-        }
         .background(Palette.page)
         .navigationTitle("УсэщӀэхэр")
         .task { await library.loadHome() }
+    }
+
+    /// A row the reader selected: the day's poem or the short poem is a daily open.
+    private func logDailySelection(_ id: Int) {
+        guard let daily = library.daily else { return }
+        if id == daily.poem.id { AnalyticsManager.shared.dailyOpen(source: "home_poem") }
+        else if id == daily.shortPoem.id { AnalyticsManager.shared.dailyOpen(source: "home_short") }
     }
 }
