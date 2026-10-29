@@ -21,7 +21,11 @@ Needs Python 3.11 or newer.
 cd firebase/admin
 python3.11 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
+.venv/bin/pip install -e ../functions
 ```
+
+The second install is the `wuserade_daily` package in `firebase/functions`: the picking rules for
+the daily discovery, which the admin tool shares with the Cloud Functions.
 
 ## Credentials
 

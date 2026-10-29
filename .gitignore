@@ -95,6 +95,8 @@ firebase/admin/.env
 firebase/**/*-key.json
 firebase/**/*adminsdk*.json
 firebase/**/.venv
+firebase/functions/venv/
+firebase/functions/.venv/
 firebase/*.log
 firebase/.firebase/
 # Copy of firebase.json on another Firestore emulator port (8080 is taken on the owner's Mac).

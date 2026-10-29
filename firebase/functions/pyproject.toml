@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wuserade-daily"
+version = "0.1.0"
+description = "Picking, ranking and scheduling rules for Wuserade's daily discovery, shared by the Cloud Functions and the admin tool."
+requires-python = ">=3.11"
+# The rules are pure Python. The Cloud Functions' own dependencies are in requirements.txt.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["wuserade_daily"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "emulator: needs the Firestore emulator (FIRESTORE_EMULATOR_HOST); skipped without it",
+]
+filterwarnings = [
+    # Google libraries warn that Python 3.11 loses support in 2027. Not actionable yet.
+    "ignore:You are using a Python version:FutureWarning",
+]
