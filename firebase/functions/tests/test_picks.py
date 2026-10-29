@@ -260,6 +260,23 @@ def test_cycles_are_shuffled_not_repeated_in_the_same_order():
     assert big_cycles[1] != big_cycles[0] and big_cycles[2] != big_cycles[0]
 
 
+def test_cycles_stay_complete_over_three_years_with_the_365_day_history_cap():
+    catalog = standard_catalog(poet_ids=range(1, 101))
+    poets = [p.poet_id for p in run_days(catalog, 1100)]
+
+    # Cycle boundaries from a replay of the whole run: a cycle closes once all 100 have appeared.
+    blocks, seen, block = [], set(), []
+    for poet_id in poets:
+        block.append(poet_id)
+        seen.add(poet_id)
+        if len(seen) == 100:
+            blocks.append(block)
+            seen, block = set(), []
+
+    assert len(blocks) >= 10
+    assert all(len(b) == 100 and len(set(b)) == 100 for b in blocks)
+
+
 def test_history_that_starts_mid_cycle_or_names_departed_poets_never_empties_the_candidates():
     for poet_ids in ([1], [1, 2], [99, 98, 1], [2, 99, 1, 98, 3, 97]):
         history = [DayPicks(101, 102, poet_id) for poet_id in poet_ids]

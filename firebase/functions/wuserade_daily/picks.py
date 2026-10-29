@@ -108,6 +108,10 @@ def _poets_in_current_cycle(history: list[DayPicks], eligible_ids: set[int]) -> 
     A cycle closes, and a new one opens empty, once it covers every eligible poet, so the result
     never covers them all. A history that starts mid-cycle, or poets who became eligible or
     ineligible, only shift where cycles close.
+
+    Limit: `history` is at most 365 days, so the replay starts at an arbitrary point of a cycle.
+    "Every poet once per cycle" holds only while about two cycles fit in that window, that is
+    with about 180 eligible poets or fewer. Above that, a cycle can repeat a poet early.
     """
     seen: set[int] = set()
     for picks in reversed(history):
