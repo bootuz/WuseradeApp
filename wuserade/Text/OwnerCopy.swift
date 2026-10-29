@@ -29,11 +29,6 @@ enum OwnerCopy {
     static let onboardingFirstLine = "[owner copy: replaces the weekly-poem promise]"
     static let acknowledgements = "[owner copy: acknowledgements: Alegreya, SIL Open Font License]"
     static let nothingSelected = "[owner copy: choose a poem]"
-    /// Keyed, unlike the rest, so the English and Russian translations survive the Kabardian being written.
-    static let languageOnNextLaunch = String(
-        localized: "settings.language.nextLaunch",
-        defaultValue: "[owner copy: the language changes the next time the app is opened]"
-    )
 
     static let unlikeSwipe = "[owner copy: unlike]"
     static let googleSignInConfirm = "[owner copy: Google sign-in wording]"

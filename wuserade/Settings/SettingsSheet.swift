@@ -8,7 +8,6 @@ import SwiftUI
 struct SettingsSheet: View {
     @Environment(\.openURL) private var openURL
     @State private var showContact = false
-    @State private var language = AppLanguage.selected
 
     var body: some View {
         NavigationStack {
@@ -16,20 +15,15 @@ struct SettingsSheet: View {
                 AccountSection()
 
                 Section {
-                    // TODO(owner): copy. Meaning: "Language".
-                    Picker(selection: $language) {
-                        ForEach(AppLanguage.allCases) { language in
-                            Text(verbatim: language.name).tag(language)
+                    // The app's page in the iOS Settings app has the per-app language. iOS restarts the app
+                    // in the new language itself, which the app can't do.
+                    Button {
+                        if let settings = URL(string: UIApplication.openSettingsURLString) {
+                            openURL(settings)
                         }
                     } label: {
-                        SettingsRowLabel(title: String(localized: "Бзэр"), systemImage: "globe")
-                    }
-                    .onChange(of: language) { _, language in
-                        AppLanguage.selected = language
-                    }
-                } footer: {
-                    if language != AppLanguage.current {
-                        Text(OwnerCopy.languageOnNextLaunch)
+                        // TODO(owner): copy. Meaning: "Language".
+                        SettingsRowLabel(title: String(localized: "Бзэр"), systemImage: "globe", leavesApp: true)
                     }
                 }
 

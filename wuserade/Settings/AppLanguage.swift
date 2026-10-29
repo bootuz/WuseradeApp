@@ -1,30 +1,13 @@
 // Minimum iOS 17.
-//  The interface languages. The choice is kept where iOS keeps the per-app language from Settings
-//  (AppleLanguages in the app's own defaults), so the two stay in sync. It takes effect on the next launch.
+//  The interface language. iOS keeps the per-app language from its Settings app in AppleLanguages in the app's
+//  own defaults, and Settings' Language row opens that page. Until the reader picks one there, it is Kabardian.
 
 import Foundation
 
-enum AppLanguage: String, CaseIterable, Identifiable {
-    case kabardian = "kbd"
-    case english = "en"
-    case russian = "ru"
-    case turkish = "tr"
-    case arabic = "ar"
-
-    var id: String { rawValue }
-
-    /// Each language named in itself, so a reader finds theirs whatever the interface is showing.
-    var name: String {
-        switch self {
-        case .kabardian: "Адыгэбзэ"
-        case .english: "English"
-        case .russian: "Русский"
-        case .turkish: "Türkçe"
-        case .arabic: "العربية"
-        }
-    }
-
+enum AppLanguage {
     private static let key = "AppleLanguages"
+    private static let kabardian = "kbd"
+    private static let defaultAppliedKey = "languageDefaultApplied"
 
     /// The app's own list, not the device's: `UserDefaults.standard` would fall back to the global domain.
     private static var stored: [String]? {
@@ -32,26 +15,14 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         return UserDefaults.standard.persistentDomain(forName: id)?[key] as? [String]
     }
 
-    /// The language for the next launch, chosen here or in the iOS Settings app.
-    static var selected: AppLanguage {
-        get { stored?.first.flatMap(matching) ?? .kabardian }
-        set { UserDefaults.standard.set([newValue.rawValue], forKey: key) }
-    }
-
-    /// The language the interface is showing in this launch.
-    static var current: AppLanguage {
-        Bundle.main.preferredLocalizations.first.flatMap(matching) ?? .kabardian
-    }
-
-    /// Kabardian whatever the device language, until the reader picks another.
+    /// Kabardian on the first launch, whatever the device language. Only once: choosing the device's own language
+    /// in the iOS Settings app removes the stored list, and that choice must stick.
     static func applyDefault() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: defaultAppliedKey) else { return }
+        defaults.set(true, forKey: defaultAppliedKey)
         if stored == nil {
-            selected = .kabardian
+            defaults.set([kabardian], forKey: key)
         }
-    }
-
-    /// 'en-GB' is English and 'ru-RU' Russian.
-    private static func matching(_ identifier: String) -> AppLanguage? {
-        allCases.first { identifier == $0.rawValue || identifier.hasPrefix($0.rawValue + "-") }
     }
 }
