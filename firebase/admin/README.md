@@ -10,6 +10,7 @@ Firestore and Storage security rules do not apply to it.
 | `migrate` | Copies themes, authors and poems from the old Postgres into Firestore, rebuilds, and checks the counts. |
 | `rebuild` | Recomputes `poemsCount`, the `catalog` chunks and `meta/content` after edits made in the Firebase console. |
 | `add-poem` | Adds one poem from a text file, then rebuilds. |
+| `views` | Copies the old site's view counts onto the poems from Postgres or a `data.json` dump, then rebuilds. |
 | `photos` | Lists, approves, rejects and removes the photos readers send of poets, and blocks senders. See [Poet photos](#poet-photos). |
 
 ## Setup
@@ -61,7 +62,8 @@ Or pass `--dsn URL` instead. Postgres is only read, never written. The tool neve
 URL or its password: a URL that cannot be parsed gets a generic "not valid" message instead of
 the text from the database driver (which would quote it), other connection errors have the URL
 and password removed, and anything that looks like `user:password@` or `password=...` is
-masked in error output, including when a URL is pasted without `--dsn`.
+masked in error output, including when a URL is pasted without `--dsn`. `views --dsn` reads
+Postgres through the same code, so it has the same protection.
 
 ## Commands
 
@@ -110,6 +112,10 @@ written). It then writes `catalog/0..n-1` with a new `version` (previous `catalo
 deletes catalog chunks that are no longer needed, and writes `meta/content` last, so the app
 never sees a new `catalogVersion` before its chunks exist.
 
+Each catalog entry carries `lines` (the number of non-blank lines in the poem's text, counting
+CRLF, LF and CR as line breaks) and `views` (the count stored on `poems/{id}.views`, 0 when there
+is none). Both are recomputed from the poem documents on every rebuild.
+
 `--min-version` sets `meta/content.minimumAppVersion`, the app version below which the app
 shows its "update the app" screen. Without the flag the current value is kept. `--min-version ''`
 clears it. A value must look like `1.5` or `1.5.1`.
@@ -140,7 +146,41 @@ under 1 MiB; lower `CHUNK_SIZE` in `wuserade_admin/catalog.py` if that ever happ
 `--theme-id` is optional. The text file must be UTF-8; leading and trailing blank space is
 trimmed. The poem gets the id in `meta/content.nextPoemId`, which is advanced in the same
 transaction, and the author and theme must already exist. Then the catalog is rebuilt, so
-the new poem shows up in the app after its next catalog refresh.
+the new poem shows up in the app after its next catalog refresh. A new poem starts with 0 views.
+
+### views
+
+```sh
+.venv/bin/python -m wuserade_admin views --dsn 'postgresql://USER:PASSWORD@HOST/DBNAME'
+.venv/bin/python -m wuserade_admin views --json data.json
+```
+
+The old site counted how often each poem was read, in Django's `poems_poem.views`. The catalog
+carries that number as `views` on each entry, beside `lines`, so the server can rank poems by
+the old counts and find short ones without reading every poem. `migrate` copies the counts along
+with the poems; `views` copies them on their own, for example into poems that are in Firestore
+already. Give exactly one source:
+
+- **`--dsn URL`** reads the counts from Postgres (read only, with the password masking described
+  above).
+- **`--json PATH`** reads them from a Django `dumpdata` file instead. This is the fallback for
+  when Render's Postgres is gone: a JSON list of records, of which only `poems.poem` records are
+  read (`pk` is the poem id and `fields.views` the count) and every other model is ignored. A
+  poem record without a whole-number `views` stops the command before anything is written.
+
+It writes only the `views` field of poems that exist in Firestore, in batches of 500, and skips
+the rest: it never creates a poem. Then it rebuilds, so the catalog has the new counts. It prints
+the number written before the rebuild output:
+
+```
+Using Firestore project wuserade
+views copied: 4091
+Catalog version 5: 3 chunk(s), 4091 poems, 40 authors with poems, 14 themes.
+```
+
+Poems that are missing from the dump keep the count they have, which is 0 unless one was
+copied earlier. Running the command again overwrites the counts of the poems it reads with the
+numbers in its source.
 
 ## Poet photos
 

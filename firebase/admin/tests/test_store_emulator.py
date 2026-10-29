@@ -2,6 +2,7 @@
 
 import os
 from collections import Counter
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -9,7 +10,7 @@ from google.cloud.firestore import DELETE_FIELD
 from google.cloud.firestore_v1.batch import WriteBatch
 from google.cloud.firestore_v1.document import DocumentReference
 
-from wuserade_admin import store
+from wuserade_admin import store, views
 from wuserade_admin.models import AuthorRow, PoemRow, ThemeRow
 from wuserade_admin.store import RebuildResult
 
@@ -35,6 +36,7 @@ def make_content(poem_count: int):
             theme_id=theme_ids[n % 4],
             created_at=START + timedelta(minutes=n),
             updated_at=START + timedelta(minutes=n, seconds=30),
+            views=n * 3,
         )
         for n in range(1, poem_count + 1)
     ]
@@ -93,7 +95,7 @@ def test_upsert_then_rebuild_writes_catalog_meta_and_counts(db):
     assert chunk0["entries"][0]["id"] == 1
     assert chunk1["entries"][-1]["id"] == 2500
     assert set(chunk0["entries"][0]) == {
-        "id", "title", "authorId", "authorName", "themeId", "createdAt"
+        "id", "title", "authorId", "authorName", "themeId", "lines", "views", "createdAt"
     }
     assert doc_ids(db, "catalog") == {"0", "1"}
 
@@ -110,6 +112,7 @@ def test_upsert_denormalizes_author_name_and_keeps_document_shape(db):
     assert poem["themeId"] is None
     assert poem["text"] == "first line 3\r\nsecond line 3"
     assert poem["submittedBy"] is None
+    assert poem["views"] == 9
     assert poem["createdAt"] == START + timedelta(minutes=3)
     assert poem["updatedAt"] == START + timedelta(minutes=3, seconds=30)
     assert doc(db, "poems/1").to_dict()["themeId"] == 2
@@ -231,6 +234,7 @@ def test_add_poem_uses_next_id_and_appears_after_rebuild(db):
     assert created["authorName"] == "Author 2"
     assert created["themeId"] == 3
     assert created["submittedBy"] is None
+    assert created["views"] == 0
     assert created["createdAt"] == created["updatedAt"]
     assert created["createdAt"].tzinfo is not None
     assert meta(db)["nextPoemId"] == 7
@@ -461,3 +465,120 @@ def test_count_documents(db):
     store.upsert_content(db, themes, authors, poems)
 
     assert store.count_documents(db) == {"themes": 3, "authors": 4, "poems": 7}
+
+
+def test_rebuild_puts_lines_and_views_into_the_catalog(db):
+    themes, authors, poems = make_content(5)
+    poems[1] = replace(poems[1], text="one\r\n\r\ntwo\n\nthree\n", views=1234)
+    store.upsert_content(db, themes, authors, poems)
+
+    store.rebuild(db)
+
+    entries = {e["id"]: e for e in doc(db, "catalog/0").to_dict()["entries"]}
+    assert entries[2]["lines"] == 3 and entries[2]["views"] == 1234
+    assert entries[1]["lines"] == 2 and entries[1]["views"] == 3
+    assert entries[5]["views"] == 15
+
+
+def test_rebuild_recounts_lines_after_a_text_edit_in_the_console(db):
+    themes, authors, poems = make_content(3)
+    store.upsert_content(db, themes, authors, poems)
+    store.rebuild(db)
+
+    db.document("poems/2").update({"text": "a\nb\nc\nd"})
+    store.rebuild(db)
+
+    entries = {e["id"]: e for e in doc(db, "catalog/0").to_dict()["entries"]}
+    assert entries[2]["lines"] == 4
+
+
+def test_rebuild_counts_a_poem_without_views_as_zero(db):
+    themes, authors, poems = make_content(4)
+    store.upsert_content(db, themes, authors, poems)
+    db.document("poems/2").update({"views": DELETE_FIELD})
+    db.document("poems/3").update({"views": None})
+
+    store.rebuild(db)
+
+    entries = {e["id"]: e for e in doc(db, "catalog/0").to_dict()["entries"]}
+    assert [entries[n]["views"] for n in (1, 2, 3, 4)] == [3, 0, 0, 12]
+
+
+def test_copy_views_skips_unknown_poems_and_rebuild_reads_them(db):
+    themes, authors, poems = make_content(3)
+    store.upsert_content(db, themes, authors, poems)
+
+    written = views.copy_views(db, {1: 10, 2: 0, 99: 5})
+    store.rebuild(db)
+
+    assert written == 2
+    assert not doc(db, "poems/99").exists
+    assert doc(db, "poems/1").to_dict()["views"] == 10
+    assert doc(db, "poems/2").to_dict()["views"] == 0
+    entries = {e["id"]: e for e in doc(db, "catalog/0").to_dict()["entries"]}
+    assert entries[1]["views"] == 10
+    assert entries[2]["views"] == 0
+    assert entries[3]["views"] == 9  # not in the dump: keeps what it had
+
+
+def test_copy_views_changes_only_the_views_field(db):
+    themes, authors, poems = make_content(3)
+    store.upsert_content(db, themes, authors, poems)
+    before = {n: doc(db, f"poems/{n}") for n in (1, 2, 3)}
+
+    views.copy_views(db, {1: 500})
+
+    assert doc(db, "poems/1").to_dict() == {**before[1].to_dict(), "views": 500}
+    for n in (2, 3):
+        assert doc(db, f"poems/{n}").to_dict() == before[n].to_dict()
+        assert doc(db, f"poems/{n}").update_time == before[n].update_time
+    assert not doc(db, "meta/content").exists  # only the command rebuilds the catalog
+
+
+def test_copy_views_with_nothing_to_copy_writes_nothing(db):
+    themes, authors, poems = make_content(2)
+    store.upsert_content(db, themes, authors, poems)
+    before = doc(db, "poems/1")
+
+    assert views.copy_views(db, {}) == 0
+    assert views.copy_views(db, {50: 1, 51: 2}) == 0
+    assert doc(db, "poems/1").update_time == before.update_time
+
+
+def test_copy_views_can_be_run_again_with_a_newer_dump(db):
+    themes, authors, poems = make_content(3)
+    store.upsert_content(db, themes, authors, poems)
+
+    assert views.copy_views(db, {1: 10, 2: 20}) == 2
+    assert views.copy_views(db, {1: 11, 2: 20}) == 2
+
+    assert [doc(db, f"poems/{n}").to_dict()["views"] for n in (1, 2, 3)] == [11, 20, 9]
+
+
+def test_copy_views_splits_writes_into_batches_of_at_most_500(db, monkeypatch):
+    themes, authors, poems = make_content(1200)
+    store.upsert_content(db, themes, authors, poems)
+    sizes = []
+    real_batch = db.batch
+
+    def spying_batch():
+        batch = real_batch()
+        real_update = batch.update
+        index = len(sizes)
+        sizes.append(0)
+
+        def counting_update(*args, **kwargs):
+            sizes[index] += 1
+            return real_update(*args, **kwargs)
+
+        batch.update = counting_update
+        return batch
+
+    monkeypatch.setattr(db, "batch", spying_batch)
+
+    written = views.copy_views(db, {n: n + 1000 for n in range(1, 1201)} | {5000: 1})
+
+    assert written == 1200
+    assert sum(sizes) == 1200
+    assert max(sizes) <= 500
+    assert doc(db, "poems/1200").to_dict()["views"] == 2200

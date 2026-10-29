@@ -6,6 +6,7 @@ from wuserade_admin.catalog import (
     author_document,
     catalog_entries,
     chunk,
+    line_count,
     meta_document,
     poem_document,
     theme_document,
@@ -20,17 +21,20 @@ def make_poem(
     poem_id: int,
     *,
     title: str = "Title",
+    text: str = "line one\nline two",
     author_id: int = 1,
     theme_id: int | None = None,
+    views: int = 0,
 ) -> PoemRow:
     return PoemRow(
         id=poem_id,
         title=title,
-        text="line one\nline two",
+        text=text,
         author_id=author_id,
         theme_id=theme_id,
         created_at=CREATED,
         updated_at=UPDATED,
+        views=views,
     )
 
 
@@ -56,15 +60,53 @@ def test_entry_has_exact_keys_and_author_name():
 
     assert len(entries) == 1
     entry = entries[0]
-    assert set(entry) == {"id", "title", "authorId", "authorName", "themeId", "createdAt"}
+    assert set(entry) == {"id", "title", "authorId", "authorName", "themeId", "lines", "views", "createdAt"}
     assert entry == {
         "id": 1,
         "title": "Сурэт",
         "authorId": 7,
         "authorName": "Бейтыгъуэн",
         "themeId": 3,
+        "lines": 2,
+        "views": 0,
         "createdAt": CREATED,
     }
+
+
+def test_line_count_ignores_blank_lines_and_crlf():
+    assert line_count("a\r\n\r\nb\nc\r") == 3
+    assert line_count("") == 0
+
+
+def test_line_count_splits_only_on_crlf_lf_and_cr():
+    assert line_count("a\nb") == 2
+    assert line_count("a\rb") == 2
+    assert line_count("a\r\nb") == 2
+    # Blank means empty or only spaces and tabs; a lone separator is not a line.
+    assert line_count("  \n\t\n \r\n") == 0
+    assert line_count("\n\nonly\n\n") == 1
+    # Other Unicode separators stay inside their line, as they do for the server and the app.
+    assert line_count("a\u2028b\x0bc\x85d") == 1
+
+
+def test_line_count_counts_a_line_with_indentation():
+    assert line_count("  indented\n\tTabbed\nПалочка Ӏ") == 3
+
+
+def test_catalog_entries_carry_lines_and_views():
+    entry = catalog_entries(
+        [make_poem(1, text="a\nb", views=7)], {1: make_author(1)}
+    )[0]
+    assert entry["lines"] == 2 and entry["views"] == 7
+
+
+def test_catalog_entry_counts_lines_without_blank_ones():
+    poems = [make_poem(1, text="a\r\n\r\nb\n\n"), make_poem(2, text="")]
+
+    first, second = catalog_entries(poems, {1: make_author(1)})
+
+    assert first["lines"] == 2
+    assert second["lines"] == 0
 
 
 def test_theme_id_none_is_preserved():
@@ -173,7 +215,7 @@ def test_realistic_chunk_fits_firestore_limit():
 
 
 def test_poem_document_fields():
-    poem = make_poem(4130, title="Сурэт", author_id=7, theme_id=3)
+    poem = make_poem(4130, title="Сурэт", author_id=7, theme_id=3, views=12)
 
     doc = poem_document(poem, "Бейтыгъуэн")
 
@@ -187,7 +229,13 @@ def test_poem_document_fields():
         "createdAt": CREATED,
         "updatedAt": UPDATED,
         "submittedBy": None,
+        "views": 12,
     }
+
+
+def test_poem_row_views_default_to_zero():
+    assert make_poem(1).views == 0
+    assert poem_document(make_poem(1), "A")["views"] == 0
 
 
 def test_author_document_blank_photo_becomes_null():

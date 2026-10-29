@@ -1,6 +1,8 @@
 """CLI tests. They run against the emulator only (project demo-wuserade)."""
 
+import json
 import os
+from dataclasses import replace
 from datetime import datetime, timezone
 from io import BytesIO
 
@@ -36,6 +38,7 @@ def pg_rows(poem_count: int = 6):
             theme_id=None if n % 3 == 0 else (n % 2) + 1,
             created_at=NOW,
             updated_at=NOW,
+            views=n * 10,
         )
         for n in range(1, poem_count + 1)
     ]
@@ -71,6 +74,10 @@ def test_migrate_upserts_rebuilds_and_reports_matching_counts(db, postgres, caps
     assert "themes=2" in out and "poems=6" in out
     assert "match" in out.lower()
     assert "example/db" not in out
+    # Migrating keeps the view counts and puts them into the catalog.
+    assert db.document("poems/3").get().to_dict()["views"] == 30
+    entry = next(e for e in db.document("catalog/0").get().to_dict()["entries"] if e["id"] == 3)
+    assert entry["views"] == 30 and entry["lines"] == 1
 
 
 def test_migrate_takes_the_dsn_from_the_environment(db, postgres, monkeypatch):
@@ -99,6 +106,72 @@ def test_migrate_exits_non_zero_when_counts_differ(db, postgres, capsys):
     assert code == 1
     assert "poems" in captured.err
     assert "MISMATCH" in captured.err
+
+
+def seed_without_views(db):
+    """What Firestore holds before `views` runs: the poems of pg_rows(), every count at 0."""
+    themes, authors, poems = pg_rows()
+    store.upsert_content(db, themes, authors, [replace(p, views=0) for p in poems])
+
+
+def catalog_views(db) -> dict[int, int]:
+    entries = db.document("catalog/0").get().to_dict()["entries"]
+    return {e["id"]: e["views"] for e in entries}
+
+
+def test_views_command_copies_from_postgres_then_rebuilds(db, postgres, capsys):
+    seed_without_views(db)
+
+    code = cli.main(["views", "--dsn", "postgresql://example/db"])
+
+    lines = capsys.readouterr().out.splitlines()
+    assert code == 0
+    assert postgres == ["postgresql://example/db"]
+    assert lines[0].startswith("Using the Firestore emulator")
+    assert lines[1] == "views copied: 6"
+    assert lines[2].startswith("Catalog version 1:") and "6 poems" in lines[2]
+    assert len(lines) == 3
+    assert catalog_views(db) == {n: n * 10 for n in range(1, 7)}
+    assert db.document("poems/4").get().to_dict()["views"] == 40
+    assert "example/db" not in "\n".join(lines)
+
+
+def test_views_command_copies_from_a_json_dump_and_keeps_poems_missing_from_it(db, tmp_path, capsys):
+    seed_without_views(db)
+    db.document("poems/6").update({"views": 3})
+    dump = tmp_path / "data.json"
+    dump.write_text(
+        json.dumps(
+            [
+                {"model": "poems.author", "pk": 1, "fields": {"name": "First"}},
+                {"model": "poems.poem", "pk": 1, "fields": {"views": 111}},
+                {"model": "poems.poem", "pk": 2, "fields": {"views": 0}},
+                {"model": "poems.poem", "pk": 404, "fields": {"views": 9}},
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    code = cli.main(["views", "--json", str(dump)])
+
+    lines = capsys.readouterr().out.splitlines()
+    assert code == 0
+    assert lines[1] == "views copied: 2"
+    assert lines[2].startswith("Catalog version 1:")
+    assert catalog_views(db) == {1: 111, 2: 0, 3: 0, 4: 0, 5: 0, 6: 3}
+    assert not db.document("poems/404").get().exists
+
+
+def test_views_command_changes_nothing_when_the_dump_is_broken(db, tmp_path, capsys):
+    seed_without_views(db)
+    dump = tmp_path / "data.json"
+    dump.write_text('[{"model": "poems.poem", "pk": 1, "fields": {}}]', encoding="utf-8")
+
+    assert cli.main(["views", "--json", str(dump)]) == 1
+
+    assert "poem 1" in capsys.readouterr().err
+    assert db.document("poems/1").get().to_dict()["views"] == 0
+    assert not db.document("meta/content").get().exists
 
 
 def test_rebuild_command_and_min_version_flag(db, capsys):

@@ -30,7 +30,7 @@ _PASSWORD_PARAM = re.compile(r"""(password\s*=\s*)('(?:[^'\\]|\\.)*'|\S+)""", re
 THEMES_SQL = "SELECT id, title FROM poems_theme ORDER BY id"
 AUTHORS_SQL = "SELECT id, name, bio, photo FROM poems_author ORDER BY id"
 POEMS_SQL = (
-    "SELECT id, title, text, author_id, category_id, created_at, updated_at "
+    "SELECT id, title, text, author_id, category_id, created_at, updated_at, views "
     "FROM poems_poem ORDER BY id"
 )
 
@@ -53,7 +53,7 @@ def author_from_row(row: tuple) -> AuthorRow:
 
 
 def poem_from_row(row: tuple) -> PoemRow:
-    poem_id, title, text, author_id, category_id, created_at, updated_at = row
+    poem_id, title, text, author_id, category_id, created_at, updated_at, views = row
     return PoemRow(
         id=poem_id,
         title=title,
@@ -62,6 +62,7 @@ def poem_from_row(row: tuple) -> PoemRow:
         theme_id=category_id,
         created_at=to_utc(created_at),
         updated_at=to_utc(updated_at),
+        views=views or 0,
     )
 
 

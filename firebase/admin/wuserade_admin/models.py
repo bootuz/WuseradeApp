@@ -29,3 +29,5 @@ class PoemRow:
     theme_id: int | None
     created_at: datetime
     updated_at: datetime
+    # Reads counted on the old site (Django's poems_poem.views). Poems added since have none.
+    views: int = 0

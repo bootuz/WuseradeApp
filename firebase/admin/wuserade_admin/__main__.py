@@ -4,6 +4,7 @@ Commands:
   migrate    copy themes, authors and poems from the old Postgres into Firestore, rebuild, check counts
   rebuild    recompute counts, the catalog and meta/content after edits made in the Firebase console
   add-poem   add one poem from a text file, then rebuild
+  views      copy the old site's view counts onto the poems from Postgres or a data.json dump, then rebuild
   photos     review the photos readers send of poets: list, approve, reject, remove, ban, unban
 
 Credentials: Application Default Credentials. With FIRESTORE_EMULATOR_HOST set, everything
@@ -25,7 +26,7 @@ warnings.filterwarnings("ignore", message="You are using a Python version", cate
 
 from dotenv import load_dotenv  # noqa: E402
 
-from . import photos, store  # noqa: E402
+from . import photos, store, views  # noqa: E402
 from .source import mask_passwords, read_postgres  # noqa: E402
 
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
@@ -109,6 +110,24 @@ def _add_poem(args: argparse.Namespace) -> int:
     return 0
 
 
+def _views(args: argparse.Namespace) -> int:
+    # The source is read before anything connects, so a bad URL or dump stops the command early.
+    if args.dsn is not None:
+        _, _, poems = read_postgres(args.dsn)
+        counts = {poem.id: poem.views for poem in poems}
+    else:
+        counts = views.views_from_json(args.json)
+    db = _connect()
+    print(f"views copied: {views.copy_views(db, counts)}")
+    try:
+        _print_rebuild(store.rebuild(db))
+    except ValueError as error:
+        raise ValueError(
+            f"the view counts were copied, but the rebuild failed: {error}. Fix that, then run 'rebuild'."
+        ) from error
+    return 0
+
+
 def _connect_photos() -> photos.PhotoServices:
     services = photos.connect()
     if os.environ.get("FIRESTORE_EMULATOR_HOST"):
@@ -186,6 +205,19 @@ def build_parser() -> argparse.ArgumentParser:
     add_poem.add_argument("--author-id", required=True, type=int)
     add_poem.add_argument("--theme-id", type=int)
     add_poem.set_defaults(handler=_add_poem)
+
+    views_command = commands.add_parser(
+        "views", help="copy the old site's view counts onto the poems, then rebuild"
+    )
+    views_source = views_command.add_mutually_exclusive_group(required=True)
+    views_source.add_argument("--dsn", help="Postgres URL to read the counts from")
+    views_source.add_argument(
+        "--json",
+        type=Path,
+        metavar="PATH",
+        help="Django data.json dump to read the counts from, for when Postgres is gone",
+    )
+    views_command.set_defaults(handler=_views)
 
     photo_commands = commands.add_parser(
         "photos", help="review the photos readers send of poets"

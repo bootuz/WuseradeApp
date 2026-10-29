@@ -113,6 +113,8 @@ def _read_content(db) -> tuple[list[ThemeRow], list[AuthorRow], list[PoemRow], d
             theme_id=d.get("themeId"),
             created_at=d["createdAt"],
             updated_at=d["updatedAt"],
+            # Poems from before the counts were copied, or with the field cleared, have none.
+            views=d.get("views") or 0,
         ),
     )
     stored_author_names = {poem.id: data.get("authorName") for poem, data in poems}
@@ -187,8 +189,8 @@ def upsert_content(
 ) -> None:
     """Write themes, authors and poems by id. Safe to run again with the same rows.
 
-    Author names are copied onto the poems. Counts are computed from the rows given; `rebuild`
-    recomputes them from what is in Firestore.
+    Author names are copied onto the poems, and each poem's `views` is the row's. Counts are
+    computed from the rows given; `rebuild` recomputes them from what is in Firestore.
 
     Author documents are merged, not replaced, and a blank Django photo leaves out `photoURL`,
     so a photo the owner approved in Firestore is never overwritten.

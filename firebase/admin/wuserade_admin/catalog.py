@@ -7,6 +7,7 @@ Field names are exactly what the iOS app decodes.
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 
 from .models import AuthorRow, PoemRow, ThemeRow
@@ -14,9 +15,21 @@ from .models import AuthorRow, PoemRow, ThemeRow
 # 2,000 entries of ~300 bytes each stay well under Firestore's 1 MiB document limit.
 CHUNK_SIZE = 2000
 
+# The only line separators: other Unicode separators stay inside their line.
+_LINE_BREAK = re.compile(r"\r\n|\n|\r")
+
+
+def line_count(text: str) -> int:
+    """The number of non-blank lines in `text`, split on CRLF, LF and CR."""
+    return sum(1 for line in _LINE_BREAK.split(text) if line.strip())
+
 
 def catalog_entries(poems: list[PoemRow], authors: dict[int, AuthorRow]) -> list[dict]:
-    """One lightweight catalog entry per poem, sorted by poem id ascending."""
+    """One lightweight catalog entry per poem, sorted by poem id ascending.
+
+    `lines` (non-blank lines of the text) and `views` let the server pick short poems and
+    rank by the old view counts without reading every poem.
+    """
     return [
         {
             "id": p.id,
@@ -24,6 +37,8 @@ def catalog_entries(poems: list[PoemRow], authors: dict[int, AuthorRow]) -> list
             "authorId": p.author_id,
             "authorName": authors[p.author_id].name,
             "themeId": p.theme_id,
+            "lines": line_count(p.text),
+            "views": p.views,
             "createdAt": p.created_at,
         }
         for p in sorted(poems, key=lambda p: p.id)
@@ -47,6 +62,7 @@ def poem_document(p: PoemRow, author_name: str) -> dict:
         "createdAt": p.created_at,
         "updatedAt": p.updated_at,
         "submittedBy": None,
+        "views": p.views,
     }
 
 

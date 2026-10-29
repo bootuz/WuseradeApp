@@ -97,3 +97,8 @@ firebase/**/*adminsdk*.json
 firebase/**/.venv
 firebase/*.log
 firebase/.firebase/
+# Copy of firebase.json on another Firestore emulator port (8080 is taken on the owner's Mac).
+firebase/firebase.test.json
+
+# Agent working files (task briefs and reports)
+.superpowers/
