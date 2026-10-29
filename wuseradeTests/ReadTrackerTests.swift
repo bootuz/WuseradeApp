@@ -85,6 +85,22 @@ final class ReadTrackerTests {
         #expect(reads == [7])
     }
 
+    @Test func `A timer woken just before the poem is shown again does not count`() async {
+        let tracker = makeTracker()
+        tracker.shown(7)
+        await settle() // The timer is now asleep on the clock.
+        // The three-second timer is woken, but before it runs the poem is hidden and shown again, and its end appears.
+        clock.advance(by: .seconds(3))
+        tracker.hidden(7)
+        tracker.shown(7)
+        tracker.reachedEnd(7)
+        await settle()
+        #expect(reads == [], "the new showing has lasted no time at all")
+
+        await advance(.seconds(3))
+        #expect(reads == [7])
+    }
+
     @Test func `Showing another poem stops the first one's timer`() async {
         let tracker = makeTracker()
         tracker.shown(7)

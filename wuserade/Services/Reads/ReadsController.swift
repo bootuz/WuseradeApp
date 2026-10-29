@@ -1,6 +1,6 @@
 // Minimum iOS 17.
 //  Writes the current account's reading history. Each poem is written once per account: the IDs already written
-//  are remembered on the device, per uid, in `reads.known.<uid>`.
+//  are remembered on the device, per uid, by `KnownReadsStore`. Nothing is written while `isPaused` says so.
 
 import Foundation
 import Observation
@@ -13,47 +13,38 @@ final class ReadsController {
     private(set) var uid: String?
 
     @ObservationIgnored private let store: any ReadsStore
-    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let knownReads: KnownReadsStore
+    /// True while an account operation runs: a read written then could land on an account being deleted or merged.
+    @ObservationIgnored private let isPaused: @MainActor () -> Bool
     /// The poems of `uid` already written, or being written now.
     @ObservationIgnored private var known: Set<Int> = []
 
-    init(store: any ReadsStore, defaults: UserDefaults = .standard) {
+    init(store: any ReadsStore, defaults: UserDefaults = .standard, isPaused: @escaping @MainActor () -> Bool = { false }) {
         self.store = store
-        self.defaults = defaults
+        knownReads = KnownReadsStore(defaults: defaults)
+        self.isPaused = isPaused
     }
 
     /// Writes reads to `uid` from now on. Binding the account that is already bound changes nothing.
     func bind(uid: String?) {
         guard uid != self.uid else { return }
         self.uid = uid
-        known = uid.map { Set(defaults.array(forKey: Self.key($0)) as? [Int] ?? []) } ?? []
+        known = uid.map { knownReads.load(uid: $0) } ?? []
     }
 
-    /// Writes the read of `poemId` unless this account already has it. A failed write is logged and dropped, so
-    /// the next read of the poem tries again.
+    /// Writes the read of `poemId` unless this account already has it. A failed write, or a read while paused, is
+    /// dropped, so the next read of the poem tries again.
     func markRead(_ poemId: Int) {
-        guard let uid, known.insert(poemId).inserted else { return }
+        guard let uid, !isPaused(), known.insert(poemId).inserted else { return }
         Task {
             do {
                 try await store.markRead(poemId: poemId, uid: uid)
-                remember(poemId, uid: uid)
+                knownReads.add(poemId, uid: uid)
             } catch {
                 Self.logger.error("Could not save the read of poem \(poemId): \(error.localizedDescription, privacy: .public)")
                 if self.uid == uid { known.remove(poemId) }
             }
         }
-    }
-
-    /// Adds the poem to the IDs saved for `uid`, which may no longer be the bound account.
-    private func remember(_ poemId: Int, uid: String) {
-        let key = Self.key(uid)
-        var saved = Set(defaults.array(forKey: key) as? [Int] ?? [])
-        guard saved.insert(poemId).inserted else { return }
-        defaults.set(saved.sorted(), forKey: key)
-    }
-
-    private static func key(_ uid: String) -> String {
-        "reads.known.\(uid)"
     }
 
     private static let logger = Logger(

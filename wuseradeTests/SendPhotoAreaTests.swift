@@ -59,6 +59,7 @@ final class SendPhotoAreaTests {
             pending: PendingLikesStore(defaults: try #require(UserDefaults(suiteName: suiteName))),
             reads: FakeReadsStore(log: log, ownerUid: { [auth] in auth.currentUser?.uid }),
             pendingReads: PendingReadsStore(defaults: try #require(UserDefaults(suiteName: suiteName))),
+            knownReads: KnownReadsStore(defaults: try #require(UserDefaults(suiteName: suiteName))),
             deleteWaitingPhotos: { _ in },
             setAnalyticsUserID: { _ in }
         )

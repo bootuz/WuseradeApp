@@ -74,17 +74,21 @@ struct wuseradeApp: App {
             poetIDs: { [library] in try await library.poetIDs() }
         )
         _photos = State(initialValue: photos)
-        let reads = ReadsController(store: FirestoreReadsStore())
-        _reads = State(initialValue: reads)
-        _readTracker = State(initialValue: ReadTracker { [reads] in reads.markRead($0) })
-        _account = State(initialValue: AccountManager(
+        let account = AccountManager(
             auth: FirebaseAuthBackend(),
             likes: FirestoreLikesStore(),
             pending: PendingLikesStore(),
             reads: FirestoreReadsStore(),
             pendingReads: PendingReadsStore(),
+            knownReads: KnownReadsStore(),
             deleteWaitingPhotos: { [photos] uid in try await photos.deleteAll(uid: uid) }
-        ))
+        )
+        _account = State(initialValue: account)
+        // No read is written while a sign-in, sign-out or deletion runs: it could land on an account being merged
+        // away or deleted.
+        let reads = ReadsController(store: FirestoreReadsStore(), isPaused: { [account] in account.isBusy })
+        _reads = State(initialValue: reads)
+        _readTracker = State(initialValue: ReadTracker { [reads] in reads.markRead($0) })
     }
 
     var sharedModelContainer: ModelContainer = {

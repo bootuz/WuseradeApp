@@ -694,6 +694,7 @@ final class FakeReadsStore: ReadsStore, @unchecked Sendable {
     private var _calls: [String] = []
     private var _reads: [String: Set<Int>] = [:]
     private var _markReadError: Error?
+    private var _markReadHangs = false
     private var _fetchError: Error?
     private var _deleteError: Error?
 
@@ -702,7 +703,8 @@ final class FakeReadsStore: ReadsStore, @unchecked Sendable {
         self.ownerUid = ownerUid
     }
 
-    /// Every call to this fake, in order, as "markRead 7 alice", "fetchReadIDs alice" or "deleteAllReads alice".
+    /// Every call to this fake, in order, as "markRead 7 alice", "enqueueRead 7 alice", "fetchReadIDs alice" or
+    /// "deleteAllReads alice".
     var calls: [String] { lock.withLock { _calls } }
 
     func reads(for uid: String) -> Set<Int> {
@@ -717,6 +719,11 @@ final class FakeReadsStore: ReadsStore, @unchecked Sendable {
     /// `markRead` throws this error until it is set back to nil.
     func setMarkReadError(_ error: Error?) {
         lock.withLock { _markReadError = error }
+    }
+
+    /// While true, `markRead` never answers, as a write does offline. Pair it with a test time limit.
+    func setMarkReadHangs(_ hangs: Bool) {
+        lock.withLock { _markReadHangs = hangs }
     }
 
     /// `fetchReadIDs` throws this error until it is set back to nil.
@@ -737,10 +744,21 @@ final class FakeReadsStore: ReadsStore, @unchecked Sendable {
 
     func markRead(poemId: Int, uid: String) async throws {
         try record("markRead", detail: "\(poemId) \(uid)", uid: uid)
+        if lock.withLock({ _markReadHangs }) { try await Task.sleep(for: .seconds(3600)) }
         try lock.withLock {
             if let _markReadError { throw _markReadError }
             _reads[uid, default: []].insert(poemId)
         }
+    }
+
+    /// Stores the read at once, as Firestore's local queue would; a refused write is dropped.
+    func enqueueRead(poemId: Int, uid: String) {
+        do {
+            try record("enqueueRead", detail: "\(poemId) \(uid)", uid: uid)
+        } catch {
+            return
+        }
+        lock.withLock { _ = _reads[uid, default: []].insert(poemId) }
     }
 
     func fetchReadIDs(uid: String) async throws -> [Int] {

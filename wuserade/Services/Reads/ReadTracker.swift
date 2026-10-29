@@ -68,15 +68,17 @@ final class ReadTracker {
         let shownEnough = minimumShown
         return Task { [weak self] in
             do {
+                // After each sleep, `isCancelled` comes first: a sleep can finish just before the poem is hidden and
+                // shown again, and the new showing (same poem, so `current` matches) must not inherit this one's time.
                 try await sleep(atEnd)
-                guard let self, self.current == poemId else { return }
+                guard !Task.isCancelled, let self, self.current == poemId else { return }
                 self.currentShownLongEnoughForEnd = true
                 if self.currentReachedEnd {
                     self.count(poemId)
                     return
                 }
                 try await sleep(shownEnough)
-                guard self.current == poemId else { return }
+                guard !Task.isCancelled, self.current == poemId else { return }
                 self.count(poemId)
             } catch {
                 // Cancelled: the poem was hidden or another one shown.

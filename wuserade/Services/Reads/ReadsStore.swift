@@ -9,6 +9,9 @@ import os
 protocol ReadsStore: Sendable {
     /// Records that `uid` read the poem. A read that already exists counts as written.
     func markRead(poemId: Int, uid: String) async throws
+    /// Hands the read to Firestore's local write queue and returns at once, without waiting for the server.
+    /// Offline it is sent once the device reconnects. Errors are logged, never thrown.
+    func enqueueRead(poemId: Int, uid: String)
     /// The IDs of every poem `uid` has read, confirmed by the server. Lists only the user's own reads.
     func fetchReadIDs(uid: String) async throws -> [Int]
     /// Deletes `users/{uid}/reads/*`. Safe to run again after a partial failure.
@@ -30,14 +33,31 @@ struct FirestoreReadsStore: ReadsStore {
 
     func markRead(poemId: Int, uid: String) async throws {
         do {
-            try await readsCollection(uid).document(String(poemId)).setData([
-                "poemId": poemId,
-                "readAt": FieldValue.serverTimestamp(),
-            ])
-        } catch let error as NSError
-            where error.domain == FirestoreErrorDomain && error.code == FirestoreErrorCode.permissionDenied.rawValue {
+            try await readDocument(poemId: poemId, uid: uid).setData(Self.fields(poemId))
+        } catch where Self.isAlreadyRead(error) {
             // The create rule refuses a second write of the same read: it already exists.
         }
+    }
+
+    func enqueueRead(poemId: Int, uid: String) {
+        readDocument(poemId: poemId, uid: uid).setData(Self.fields(poemId)) { error in
+            guard let error, !Self.isAlreadyRead(error) else { return }
+            Self.logger.error("Could not save the read of poem \(poemId): \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    private func readDocument(poemId: Int, uid: String) -> DocumentReference {
+        readsCollection(uid).document(String(poemId))
+    }
+
+    private static func fields(_ poemId: Int) -> [String: Any] {
+        ["poemId": poemId, "readAt": FieldValue.serverTimestamp()]
+    }
+
+    /// The refusal of a second create, which means the read exists.
+    private static func isAlreadyRead(_ error: Error) -> Bool {
+        let error = error as NSError
+        return error.domain == FirestoreErrorDomain && error.code == FirestoreErrorCode.permissionDenied.rawValue
     }
 
     /// Server-confirmed, so the account switch never deletes anonymous reads it read from an incomplete offline

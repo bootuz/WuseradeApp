@@ -48,6 +48,22 @@ final class ReadsControllerTests {
         #expect(store.reads(for: "alice") == [7, 8])
     }
 
+    @Test func `Nothing is written while paused`() async throws {
+        let store = FakeReadsStore()
+        var paused = true
+        let controller = ReadsController(store: store, defaults: try defaults(), isPaused: { paused })
+        controller.bind(uid: "alice")
+
+        controller.markRead(7)
+        await settle()
+        #expect(store.calls == [], "no read is written while an account operation runs")
+
+        paused = false
+        controller.markRead(7)
+        await settle()
+        #expect(store.calls == ["markRead 7 alice"])
+    }
+
     @Test func `A failed write is dropped and tried again next time`() async throws {
         let store = FakeReadsStore()
         let controller = ReadsController(store: store, defaults: try defaults())

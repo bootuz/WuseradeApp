@@ -47,6 +47,8 @@ final class AccountManager {
     @ObservationIgnored private let reads: any ReadsStore
     /// Reads of an anonymous account waiting to be uploaded to the account that replaces it.
     @ObservationIgnored private let pendingReads: PendingReadsStore
+    /// What each account on this device has read; forgotten when an account's reads are deleted.
+    @ObservationIgnored private let knownReads: KnownReadsStore
     /// Deletes the photos `uid` sent that still wait for review. Only `deleteAccount` calls it.
     @ObservationIgnored private let deleteWaitingPhotos: @MainActor (_ uid: String) async throws -> Void
     @ObservationIgnored private let setAnalyticsUserID: (String) -> Void
@@ -61,6 +63,7 @@ final class AccountManager {
         pending: PendingLikesStore,
         reads: any ReadsStore,
         pendingReads: PendingReadsStore,
+        knownReads: KnownReadsStore,
         deleteWaitingPhotos: @escaping @MainActor (_ uid: String) async throws -> Void,
         setAnalyticsUserID: @escaping (String) -> Void = { Analytics.setUserID($0) }
     ) {
@@ -69,6 +72,7 @@ final class AccountManager {
         self.pending = pending
         self.reads = reads
         self.pendingReads = pendingReads
+        self.knownReads = knownReads
         self.deleteWaitingPhotos = deleteWaitingPhotos
         self.setAnalyticsUserID = setAnalyticsUserID
     }
@@ -188,6 +192,7 @@ final class AccountManager {
             try await auth.revokeAppleToken(authorizationCode: appleAuthorizationCode)
         }
         try await reads.deleteAllReads(uid: uid)
+        knownReads.remove(uid: uid)
         try await likes.deleteAllData(uid: uid)
         try await deleteWaitingPhotos(uid)
         try await auth.deleteCurrentUser(expectedUID: uid)
@@ -211,7 +216,7 @@ final class AccountManager {
             Self.logger.error("Could not create the user document: \(error.localizedDescription, privacy: .public)")
         }
         await mergePendingLikes(into: user.uid)
-        await uploadPendingReads(to: user.uid)
+        uploadPendingReads(to: user.uid)
         setAnalyticsUserID(user.uid)
     }
 
@@ -232,6 +237,8 @@ final class AccountManager {
             } catch {
                 Self.logger.error("Could not delete anonymous reads: \(error.localizedDescription, privacy: .public)")
             }
+            // The anonymous uid is never used again, whether or not its reads could be deleted.
+            knownReads.remove(uid: anonymous.uid)
             do {
                 try await likes.deleteAllData(uid: anonymous.uid)
             } catch {
@@ -278,17 +285,15 @@ final class AccountManager {
         }
     }
 
-    /// Writes each pending read into `uid`, then clears them. A read that cannot be written is dropped: the
-    /// history only steers suggestions, so losing one is better than retrying it forever.
-    private func uploadPendingReads(to uid: String) async {
+    /// Hands each pending read for `uid` to Firestore's local write queue, then clears them: from there Firestore
+    /// sends them, offline once the device reconnects. Nothing waits for the server, so an offline launch never
+    /// holds up the account operations behind this one. A read the server refuses is dropped: the history only
+    /// steers suggestions.
+    private func uploadPendingReads(to uid: String) {
         let saved = pendingReads.load()
         guard !saved.isEmpty else { return }
         for poemId in saved.sorted() {
-            do {
-                try await reads.markRead(poemId: poemId, uid: uid)
-            } catch {
-                Self.logger.error("Could not upload the read of poem \(poemId): \(error.localizedDescription, privacy: .public)")
-            }
+            reads.enqueueRead(poemId: poemId, uid: uid)
         }
         pendingReads.clear()
     }

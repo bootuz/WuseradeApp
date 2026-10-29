@@ -26,6 +26,7 @@ final class AccountManagerTests {
         let pending: PendingLikesStore
         let reads: FakeReadsStore
         let pendingReads: PendingReadsStore
+        let knownReads: KnownReadsStore
         let photos: FakePhotoDeleter
         let log: CallLog
     }
@@ -39,6 +40,7 @@ final class AccountManagerTests {
         let pending = PendingLikesStore(defaults: defaults)
         let reads = FakeReadsStore(log: log, ownerUid: { [auth] in auth.currentUser?.uid })
         let pendingReads = PendingReadsStore(defaults: defaults)
+        let knownReads = KnownReadsStore(defaults: defaults)
         let photos = FakePhotoDeleter(log: log)
         let manager = AccountManager(
             auth: auth,
@@ -46,6 +48,7 @@ final class AccountManagerTests {
             pending: pending,
             reads: reads,
             pendingReads: pendingReads,
+            knownReads: knownReads,
             deleteWaitingPhotos: { try await photos.deleteAll(uid: $0) }
         ) { [weak self] uid in
             self?.analyticsUserIDs.append(uid)
@@ -57,6 +60,7 @@ final class AccountManagerTests {
             pending: pending,
             reads: reads,
             pendingReads: pendingReads,
+            knownReads: knownReads,
             photos: photos,
             log: log
         )
@@ -480,12 +484,15 @@ final class AccountManagerTests {
         env.reads.seed([3, 7], uid: "apple-user")
         await env.manager.start()
         env.pendingReads.save([9])
+        env.knownReads.add(3, uid: "apple-user")
+        env.knownReads.add(7, uid: "apple-user")
         env.log.reset()
 
         try await env.manager.deleteAccount(reauthWith: appleCredential())
 
         #expect(env.reads.reads(for: "apple-user") == [])
         #expect(env.pendingReads.load() == [])
+        #expect(env.knownReads.load(uid: "apple-user") == [], "the device forgets what the deleted account read")
         // The reads go before the user document, while the account still exists.
         let calls = env.log.calls
         let readsIndex = try #require(calls.firstIndex(of: "deleteAllReads"))
@@ -500,6 +507,7 @@ final class AccountManagerTests {
         env.reads.seed([2], uid: "google-user")
         await env.manager.start()
         env.reads.seed([1, 2], uid: "anon-1")
+        env.knownReads.add(1, uid: "anon-1")
 
         try await env.manager.signIn(with: googleCredential())
 
@@ -508,8 +516,9 @@ final class AccountManagerTests {
         #expect(env.reads.reads(for: "anon-1") == [])
         #expect(env.pendingReads.load() == [])
         #expect(env.reads.calls == [
-            "fetchReadIDs anon-1", "deleteAllReads anon-1", "markRead 1 google-user", "markRead 2 google-user",
+            "fetchReadIDs anon-1", "deleteAllReads anon-1", "enqueueRead 1 google-user", "enqueueRead 2 google-user",
         ])
+        #expect(env.knownReads.load(uid: "anon-1") == [], "the device forgets what the anonymous account read")
     }
 
     @Test func `Reads read failure leaves anonymous account untouched`() async throws {
@@ -529,14 +538,18 @@ final class AccountManagerTests {
         #expect(env.pendingReads.load() == [])
     }
 
-    @Test func `Pending reads upload ignores failures and clears`() async throws {
+    /// Offline a write only finishes once the device reconnects; the account must not wait for it.
+    @Test(.timeLimit(.minutes(1)))
+    func `Pending reads are queued without waiting for the server`() async throws {
         let env = try makeEnv()
         env.pendingReads.save([4, 5])
-        env.reads.setMarkReadError(FakeReadsStore.Failure())
+        env.reads.setMarkReadHangs(true)
 
         await env.manager.start()
 
-        #expect(env.reads.calls == ["markRead 4 anon-1", "markRead 5 anon-1"])
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
+        #expect(!env.manager.isBusy)
+        #expect(env.reads.calls == ["enqueueRead 4 anon-1", "enqueueRead 5 anon-1"])
         #expect(env.pendingReads.load() == [])
     }
 }
