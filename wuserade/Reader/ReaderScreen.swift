@@ -13,6 +13,7 @@ struct ReaderScreen: View {
     var onNext: ((PoemSummary) -> Void)?
 
     @Environment(\.navigate) private var navigate
+    @Environment(AccountManager.self) private var account
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var pager = ReaderPager()
@@ -52,6 +53,8 @@ struct ReaderScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbar }
         .onChange(of: currentID, initial: true) { pager.currentID = currentID }
+        // The server leaves out the account's reads, so another account's suggestions are asked for again.
+        .onChange(of: account.state.uid, initial: true) { pager.bindSuggestions(uid: account.state.uid) }
         .environment(pager)
     }
 

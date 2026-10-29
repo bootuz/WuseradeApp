@@ -52,6 +52,13 @@ enum KeepReadingState: Equatable {
         return .nothing
     }
 
+    /// Whether a reader page asks for its suggestions now. Only the page being read asks, once the closing
+    /// lozenge's top (`endTop`, in the scroll view's space) is less than a screen below the bottom edge, so a
+    /// short poem asks at once. Nothing is asked before the page is measured, or when the pager keeps them.
+    static func shouldLoad(shown: Bool, endTop: CGFloat, scrollHeight: CGFloat, cached: Bool) -> Bool {
+        shown && !cached && scrollHeight > 0 && endTop < scrollHeight * 2
+    }
+
     /// Asks `service` for the suggestions after `poemId`. A failure is logged and otherwise left silent.
     static func load(_ poemId: Int, from service: any KeepReadingService) async -> Result<KeepReading, Error> {
         do {

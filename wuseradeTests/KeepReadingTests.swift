@@ -64,4 +64,73 @@ struct KeepReadingTests {
         #expect(KeepReadingState.resolve(result: nil, next: next) == .next(next))
         #expect(KeepReadingState.resolve(result: nil, next: nil) == .nothing)
     }
+
+    // MARK: When a page asks
+
+    @Test func `A page that is not being read does not ask`() {
+        #expect(!KeepReadingState.shouldLoad(shown: false, endTop: 100, scrollHeight: 800, cached: false))
+        #expect(!KeepReadingState.shouldLoad(shown: false, endTop: 3000, scrollHeight: 800, cached: false))
+    }
+
+    @Test func `The page being read waits until its end is about a screen away`() {
+        #expect(!KeepReadingState.shouldLoad(shown: true, endTop: 2400, scrollHeight: 800, cached: false))
+        #expect(!KeepReadingState.shouldLoad(shown: true, endTop: 1600, scrollHeight: 800, cached: false))
+        #expect(KeepReadingState.shouldLoad(shown: true, endTop: 1599, scrollHeight: 800, cached: false))
+    }
+
+    @Test func `A short poem asks at once`() {
+        #expect(KeepReadingState.shouldLoad(shown: true, endTop: 500, scrollHeight: 800, cached: false))
+    }
+
+    @Test func `Nothing is asked before the page is measured`() {
+        #expect(!KeepReadingState.shouldLoad(shown: true, endTop: .greatestFiniteMagnitude, scrollHeight: 0, cached: false))
+    }
+
+    @Test func `Kept suggestions are not asked for again`() {
+        #expect(!KeepReadingState.shouldLoad(shown: true, endTop: 500, scrollHeight: 800, cached: true))
+    }
+
+    // MARK: Kept in the pager
+
+    @MainActor
+    @Test func `A rebuilt page reuses the pager's suggestions`() async {
+        let pager = ReaderPager()
+        let service = FakeKeepReadingService(result: .success(suggestions))
+        pager.bindSuggestions(uid: "u1")
+
+        await pager.loadSuggestions(9, from: service)
+        await pager.loadSuggestions(9, from: service)
+
+        #expect(service.calls == [9])
+        #expect(pager.suggestions[9] == suggestions)
+    }
+
+    @MainActor
+    @Test func `A failure is not kept, so the poem asks again next time`() async {
+        let pager = ReaderPager()
+        let service = FakeKeepReadingService(result: .failure(FakeKeepReadingService.Unavailable()))
+        pager.bindSuggestions(uid: "u1")
+
+        await pager.loadSuggestions(9, from: service)
+        await pager.loadSuggestions(9, from: service)
+
+        #expect(service.calls == [9, 9])
+        #expect(pager.suggestions[9] == nil)
+    }
+
+    @MainActor
+    @Test func `Another account forgets the suggestions`() async {
+        let pager = ReaderPager()
+        let service = FakeKeepReadingService(result: .success(suggestions))
+        pager.bindSuggestions(uid: "u1")
+        await pager.loadSuggestions(9, from: service)
+
+        pager.bindSuggestions(uid: "u1")
+        #expect(pager.suggestions[9] == suggestions, "the same account keeps them")
+
+        pager.bindSuggestions(uid: "u2")
+        #expect(pager.suggestions[9] == nil)
+        await pager.loadSuggestions(9, from: service)
+        #expect(service.calls == [9, 9])
+    }
 }

@@ -34,8 +34,12 @@ struct ReaderPage: View {
     /// once the lozenge's top is above the bottom edge.
     @State private var scrollHeight: CGFloat = 0
     @State private var endTop: CGFloat = .greatestFiniteMagnitude
-    /// The server's suggestions after this poem, once asked for; nil while they load.
-    @State private var suggestions: (poemId: Int, result: Result<KeepReading, Error>)?
+
+    /// One ask for this poem's suggestions, for the account the pager holds them for.
+    private struct SuggestionsRequest: Hashable {
+        let poemId: Int
+        let uid: String?
+    }
 
     private static let contentSpace = "readerContent"
     private static let scrollSpace = "readerScroll"
@@ -53,6 +57,20 @@ struct ReaderPage: View {
 
     private var endVisible: Bool {
         endTop < scrollHeight
+    }
+
+    /// The suggestions the pager keeps for this poem; nil until they arrive.
+    private var suggestions: KeepReading? {
+        pager.suggestions[summary.id]
+    }
+
+    /// Set while this page should ask for its suggestions: it is being read, its end is about a screen away, and
+    /// the pager keeps none. Pages laid out beside it never ask.
+    private var suggestionsRequest: SuggestionsRequest? {
+        guard keepReading != nil,
+              KeepReadingState.shouldLoad(shown: isShown, endTop: endTop, scrollHeight: scrollHeight, cached: suggestions != nil)
+        else { return nil }
+        return SuggestionsRequest(poemId: summary.id, uid: pager.suggestionsUid)
     }
 
     private var margin: CGFloat {
@@ -84,6 +102,7 @@ struct ReaderPage: View {
             pager.titleUnderBar[summary.id] = under
         }
         .task(id: summary.id) { await pager.load(summary.id, from: library) }
+        .task(id: suggestionsRequest) { await loadSuggestions() }
         .onChange(of: isShown, initial: true) { reportShown() }
         .onChange(of: endVisible) { _, visible in
             if visible, isShown { readTracker?.reachedEnd(summary.id) }
@@ -130,16 +149,15 @@ struct ReaderPage: View {
                 }
                 .padding(.top, stanzaGap)
             endOfPoem
+                .animation(reduceMotion ? nil : .easeIn(duration: 0.25), value: suggestions)
         }
         .transition(.opacity)
-        .task(id: summary.id) { await loadSuggestions() }
     }
 
     /// Below the lozenge: the suggestions once they arrive, otherwise the list's next poem.
     @ViewBuilder
     private var endOfPoem: some View {
-        let result = suggestions.flatMap { $0.poemId == summary.id ? $0.result : nil }
-        switch KeepReadingState.resolve(result: result, next: next) {
+        switch KeepReadingState.resolve(result: suggestions.map { .success($0) }, next: next) {
         case .suggestions(let suggestions):
             VStack(alignment: .leading, spacing: 0) {
                 endRule
@@ -164,15 +182,11 @@ struct ReaderPage: View {
             .padding(.top, Space.twelve)
     }
 
-    /// Asks once per poem. Coming back to the page keeps what arrived; a failure leaves the next row in place.
+    /// Asks through the pager, which asks once per poem and keeps the answer for this page when it is rebuilt.
+    /// They only ever appear below the lozenge, so nothing being read moves. A failure leaves the next row.
     private func loadSuggestions() async {
-        guard let keepReading, suggestions?.poemId != summary.id else { return }
-        let poemId = summary.id
-        let result = await KeepReadingState.load(poemId, from: keepReading)
-        guard !Task.isCancelled else { return }
-        withAnimation(reduceMotion ? nil : .easeIn(duration: 0.25)) {
-            suggestions = (poemId, result)
-        }
+        guard let suggestionsRequest, let keepReading else { return }
+        await pager.loadSuggestions(suggestionsRequest.poemId, from: keepReading)
     }
 
     private var titleBlock: some View {
