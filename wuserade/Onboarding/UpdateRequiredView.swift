@@ -15,7 +15,7 @@ struct UpdateRequiredView: View {
                     .serif(.headerTitle)
                     .foregroundStyle(Palette.ink)
                     .accessibilityAddTraits(.isHeader)
-                Text("Мы версиэр иджыри къигъэсэбэпын хъункъым. App Store-м щызэхъуэкӀыж.")
+                Text("Мы версиэр афӀэкӀа къэбгъэсэбэп хъунукъым. App Store-м щызэхъуэкӀыж.")
                     .serif(.prose)
                     .foregroundStyle(Palette.inkSecondary)
                 Button("ЗэхъуэкӀын") { openURL(AppLinks.appStore) }

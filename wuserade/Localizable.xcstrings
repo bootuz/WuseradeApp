@@ -210,7 +210,7 @@
       }
     },
     "settings.language.nextLaunch" : {
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -860,7 +860,11 @@
         }
       }
     },
+    "Мы версиэр афӀэкӀа къэбгъэсэбэп хъунукъым. App Store-м щызэхъуэкӀыж." : {
+
+    },
     "Мы версиэр иджыри къигъэсэбэпын хъункъым. App Store-м щызэхъуэкӀыж." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -973,6 +977,7 @@
       }
     },
     "Текстыр" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1029,6 +1034,7 @@
       }
     },
     "Теплъэр теухуэн" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {

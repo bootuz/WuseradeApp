@@ -14,7 +14,7 @@ enum Palette {
     static let inkTertiary = Color("ink-tertiary")
     static let hairline = Color("hairline")
     static let rule = Color("rule")
-    static let accent = Color("accent")
+    static let accent = Color("AccentColor")
     static let accentWash = Color("accent-wash")
     static let onAccent = Color("on-accent")
     static let gilt = Color("gilt")
