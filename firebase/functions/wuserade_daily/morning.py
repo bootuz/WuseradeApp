@@ -12,7 +12,7 @@ from firebase_admin import messaging
 from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
-from wuserade_daily.text import first_lines, sentence_case
+from wuserade_daily.text import first_lines, normalize, sentence_case
 
 if TYPE_CHECKING:
     from google.cloud.firestore import Client
@@ -47,7 +47,8 @@ def next_send_at(time_zone: str, notify_at: str, after: datetime) -> datetime:
 def message(token: str, daily: dict) -> messaging.Message:
     """The notification for a `daily/{date}` document."""
     poem = daily["poem"]
-    lines = first_lines(poem["text"], 2)
+    # Every palochka spelling becomes U+04C0, as in the title and the app.
+    lines = [normalize(line) for line in first_lines(poem["text"], 2)]
     title = (poem.get("title") or "").strip()
     if title:
         headline = sentence_case(title)

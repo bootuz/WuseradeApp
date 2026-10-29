@@ -28,7 +28,7 @@ def sendMorningPoems(event: scheduler_fn.ScheduledEvent) -> None:
     print(f"morning poems sent: {sent}")
 
 
-_catalog_cache =CatalogCache()
+_catalog_cache = CatalogCache()
 
 
 @https_fn.on_call(region="europe-west3")

@@ -55,6 +55,12 @@ struct FirestoreReadsStore: ReadsStore {
     }
 
     /// The refusal of a second create, which means the read exists.
+    ///
+    /// Any `permissionDenied` lands here. The rules allow a reader to create their own read once and never to
+    /// change it, so for a signed-in reader writing under their own uid the only refusal is the one for a read
+    /// that already exists, which is harmless. A read is only ever written under the current account's uid.
+    /// Rules that are not deployed yet would also refuse every write and land here, silently losing reads; the
+    /// README's deploy order (rules before the app ships) prevents that.
     private static func isAlreadyRead(_ error: Error) -> Bool {
         let error = error as NSError
         return error.domain == FirestoreErrorDomain && error.code == FirestoreErrorCode.permissionDenied.rawValue

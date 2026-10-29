@@ -59,6 +59,13 @@ def test_untitled_message_uses_first_line():
     assert m.notification.body == "Line one,\nLine two"
 
 
+def test_body_and_untitled_headline_use_the_one_palochka():
+    # U+04CF and a Latin I beside Cyrillic letters are both spellings of the palochka (U+04C0).
+    m = message("t", _daily(title="", text="аӏб,\nвIг\nдеж"))
+    assert m.notification.title == "аӀб — А"
+    assert m.notification.body == "аӀб,\nвӀг"
+
+
 # One push per token per run. A fake Firestore client: the due query returns `devices` in order, a page at
 # a time; every batch commit is recorded.
 

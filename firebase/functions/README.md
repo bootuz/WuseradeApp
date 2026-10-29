@@ -28,7 +28,9 @@ venv/bin/pip install -r requirements.txt
 venv/bin/pip install -e '.[dev]'
 ```
 
-`venv` is git-ignored and is not uploaded when you deploy (see `ignore` in `firebase.json`).
+`venv` is git-ignored and is not uploaded when you deploy (see `ignore` in `firebase.json`). The
+same `venv` runs the tests below, so they test what is deployed: `requirements.txt` pins the
+versions the tests pass with. The admin tool keeps its own virtual environment (see its README).
 
 ## Tests
 

@@ -5,6 +5,7 @@
 import Foundation
 import Observation
 
+@MainActor
 @Observable
 final class PoemLinkInbox {
     /// The link waiting to be opened. Only the latest is kept.

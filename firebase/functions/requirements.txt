@@ -1,2 +1,4 @@
-firebase-functions
-firebase-admin
+# Pinned to the versions the tests run against. Upgrade them together, and run the tests again.
+firebase-functions==0.6.0
+firebase-admin==7.7.0
+google-cloud-firestore==2.34.1
