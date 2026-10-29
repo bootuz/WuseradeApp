@@ -1,6 +1,8 @@
 """The keep-reading ranking and choice (pure)."""
 
+import random
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pytest
 
@@ -135,16 +137,51 @@ class _FakeDb:
         return Ref()
 
 
+class _Clock:
+    """Seconds, moved by hand."""
+
+    def __init__(self):
+        self.now = 1000.0
+
+    def __call__(self):
+        return self.now
+
+
 def test_catalog_cache_reloads_only_when_the_version_changes():
-    db, cache = _FakeDb(), CatalogCache()
+    clock = _Clock()
+    db, cache = _FakeDb(), CatalogCache(clock=clock)
     first = cache.get(db)
     db.reads.clear()
 
+    clock.now += 60
     assert cache.get(db) is first
     assert db.reads == ["meta/content"]
 
     db.version = 2
+    clock.now += 60
     assert cache.get(db).version == 2
+
+
+def test_catalog_cache_checks_the_version_at_most_once_a_minute():
+    clock = _Clock()
+    db, cache = _FakeDb(), CatalogCache(clock=clock)
+    first = cache.get(db)
+    db.reads.clear()
+
+    db.version = 2
+    clock.now += 59
+    assert cache.get(db) is first  # within the minute: no read at all, the old version is served
+    assert cache.get(db) is first
+    assert db.reads == []
+
+    clock.now += 1
+    assert cache.get(db).version == 2
+    assert db.reads[0] == "meta/content"
+
+    db.reads.clear()
+    clock.now += 30
+    cache.get(db)
+    assert db.reads == []  # the minute counts from the last check
 
 
 def test_get_all_order_does_not_matter():
@@ -179,7 +216,8 @@ def test_cache_loads_once_per_version_and_survives_a_failing_reload(monkeypatch,
         return Catalog(version=state["version"], entries=[], poets=[])
 
     monkeypatch.setattr(kr, "load_catalog", fake_load)
-    db, cache = _FakeDb(), CatalogCache()
+    clock = _Clock()
+    db, cache = _FakeDb(), CatalogCache(clock=clock)
 
     state["fail"] = True
     with pytest.raises(ValueError):  # nothing cached: the error is raised
@@ -187,10 +225,12 @@ def test_cache_loads_once_per_version_and_survives_a_failing_reload(monkeypatch,
 
     state["fail"] = False
     first = cache.get(db)
+    clock.now += 60
     cache.get(db)
     assert len(loads) == 2  # the failed try and one load; the second get was cached
 
     db.version, state["version"], state["fail"] = 2, 2, True
+    clock.now += 60
     assert cache.get(db) is first  # the reload fails: the previous catalog is served
     assert "catalog reload failed" in caplog.text
     assert len(loads) == 3
@@ -200,3 +240,111 @@ def test_cache_loads_once_per_version_and_survives_a_failing_reload(monkeypatch,
     assert len(loads) == 4
     cache.get(db)
     assert len(loads) == 4
+
+
+# Checking the reads in two rounds: first only the poems that would be shown, then the rest of a list only
+# when one of its shown poems turns out to be read.
+
+
+class _ReadsDb:
+    """`read` holds the caller's read poem ids; every get_all call's poem ids are recorded, in order."""
+
+    def __init__(self, read=()):
+        self.read, self.calls = set(read), []
+
+    def document(self, path):
+        return path
+
+    def get_all(self, refs):
+        ids = [int(r.rsplit("/", 1)[1]) for r in refs]
+        self.calls.append(ids)
+        return [SimpleNamespace(id=str(i), exists=i in self.read) for i in reversed(ids)]
+
+    def collection(self, path):  # the likes, read only when the theme is thin: none here
+        return SimpleNamespace(order_by=lambda *a, **k: SimpleNamespace(limit=lambda n: SimpleNamespace(stream=lambda: [])))
+
+    @property
+    def fetched(self):
+        return sum(len(c) for c in self.calls)
+
+
+# Poem 1 is read now. Poet 1 has 11 other poems (ids 2-12); poets 3-12 write 10 poems in theme 7 (ids 20-29),
+# and poets 13-22 write 10 of a similar length outside it (ids 40-49). Most read first means the lowest id first.
+_CAT = catalog(
+    entry(1, theme=7, lines=10),
+    *[entry(i, theme=7, lines=10, views=100 - i) for i in range(2, 13)],
+    *[entry(i, author=i - 17, theme=7, lines=30, views=100 - i) for i in range(20, 30)],
+    *[entry(i, author=i - 27, theme=8, lines=11, views=100 - i) for i in range(40, 50)],
+)
+_THIN = catalog(  # theme 7 has one other poem: the similar list fills from length
+    entry(1, theme=7, lines=10),
+    *[entry(i, lines=10, views=100 - i) for i in range(2, 13)],
+    entry(20, author=3, theme=7, lines=30),
+    *[entry(i, author=i - 27, theme=8, lines=11, views=100 - i) for i in range(40, 50)],
+)
+
+
+def _full(cat, read):
+    """What one check of every candidate returns: the behaviour the two rounds must keep."""
+    poet, similar = choose(rank(1, cat, set()), set(read))
+    return [p for p in poet], [s for s in similar]
+
+
+def _ids(result):
+    return [p["id"] for p in result["poet"]], [s["id"] for s in result["similar"]]
+
+
+def _all_candidates(cat):
+    c = rank(1, cat, set())
+    return [*c.poet, *c.theme, *c.liked, *c.length]
+
+
+@pytest.mark.parametrize("cat", [_CAT, _THIN], ids=["themed", "thin"])
+def test_two_rounds_return_what_one_full_check_returns(cat):
+    candidates = _all_candidates(cat)
+    rng = random.Random(7)
+    cases = [set(), set(candidates)] + [
+        {i for i in candidates if rng.random() < p} for p in (0.1, 0.3, 0.5, 0.8) for _ in range(50)
+    ]
+    for read in cases:
+        assert _ids(keep_reading(_ReadsDb(read), "u", 1, cat)) == _full(cat, read), sorted(read)
+
+
+def test_nothing_read_fetches_only_the_five_shown():
+    db = _ReadsDb()
+
+    result = keep_reading(db, "u", 1, _CAT)
+
+    assert db.calls == [[2, 3, 4, 20, 21]]  # display order: 3 by the poet, then 2 similar
+    assert _ids(result) == ([2, 3, 4], [20, 21])
+
+
+def test_a_read_poet_poem_fetches_only_the_rest_of_the_poet():
+    db = _ReadsDb({3})
+
+    result = keep_reading(db, "u", 1, _CAT)
+
+    assert db.calls == [[2, 3, 4, 20, 21], [5, 6, 7, 8, 9, 10, 11]]
+    assert _ids(result) == ([2, 4, 5], [20, 21])
+
+
+def test_a_read_similar_poem_fetches_only_the_rest_of_the_similar():
+    db = _ReadsDb({20})
+
+    result = keep_reading(db, "u", 1, _CAT)
+
+    assert db.calls[0] == [2, 3, 4, 20, 21]
+    assert db.calls[1] == [22, 23, 24, 40, 41, 42, 43, 44]
+    assert db.fetched == 13
+    assert _ids(result) == ([2, 3, 4], [21, 22])
+
+
+def test_everything_read_fetches_each_candidate_once():
+    candidates = _all_candidates(_CAT)
+    db = _ReadsDb(candidates)
+
+    result = keep_reading(db, "u", 1, _CAT)
+
+    assert len(db.calls) == 2 and db.fetched == len(candidates) == 20
+    assert sorted(i for call in db.calls for i in call) == sorted(candidates)
+    assert _ids(result) == ([], [])

@@ -2,14 +2,16 @@
 
 `rank` orders candidates from the catalog alone. Only then does `keep_reading` check those few
 candidates (at most 25) against the caller's `users/{uid}/reads`, so a reader's whole history is
-never listed. `choose` takes the first unread ones.
+never listed: first the 5 that would be shown, then the rest of a list only if one of those is read.
+`choose` takes the first unread ones.
 """
 
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from wuserade_daily.catalog import META_PATH, Catalog, Entry, load_catalog
 
@@ -84,6 +86,15 @@ def _liked_author_ids(db: Client, uid: str) -> set[int]:
     return {d.get("authorId") for d in query.stream() if d.get("authorId") is not None}
 
 
+def _read_among(db: Client, uid: str, ids: list[int]) -> set[int]:
+    """The poems among `ids` the caller has read, in one batched read (a missing document still counts)."""
+    if not ids:
+        return set()
+    refs = [db.document(f"users/{uid}/reads/{i}") for i in ids]
+    # get_all does not return snapshots in the order of the refs: key on the snapshot's own id.
+    return {int(snap.id) for snap in db.get_all(refs) if snap.exists}
+
+
 def keep_reading(db: Client, uid: str, poem_id: int, catalog: Catalog) -> dict:
     """The suggestions for the caller finishing `poem_id`, as plain JSON-serialisable data."""
     candidates = rank(poem_id, catalog, set())
@@ -91,10 +102,18 @@ def keep_reading(db: Client, uid: str, poem_id: int, catalog: Catalog) -> dict:
         # Liked poets only matter when the theme cannot fill the list; re-rank with them.
         candidates = rank(poem_id, catalog, _liked_author_ids(db, uid))
 
-    ids = [*candidates.poet, *candidates.theme, *candidates.liked, *candidates.length]
-    refs = [db.document(f"users/{uid}/reads/{i}") for i in ids]
-    # get_all does not return snapshots in the order of the refs: key on the snapshot's own id.
-    read_ids = {int(snap.id) for snap in db.get_all(refs) if snap.exists} if refs else set()
+    poet = list(candidates.poet)
+    similar = [*candidates.theme, *candidates.liked, *candidates.length]
+    # Two rounds, with the same result as checking every candidate: first only the poems that would be shown
+    # if none were read. A list whose shown poems are all unread is settled; only a list with a read one needs
+    # the rest of its candidates checked.
+    read_ids = _read_among(db, uid, [*poet[:POET_SHOWN], *similar[:SIMILAR_SHOWN]])
+    rest = []
+    if read_ids.intersection(poet[:POET_SHOWN]):
+        rest += poet[POET_SHOWN:]
+    if read_ids.intersection(similar[:SIMILAR_SHOWN]):
+        rest += similar[SIMILAR_SHOWN:]
+    read_ids |= _read_among(db, uid, rest)
 
     poet_ids, similar_ids = choose(candidates, read_ids)
     by_id = {e.id: e for e in catalog.entries}
@@ -108,18 +127,27 @@ def keep_reading(db: Client, uid: str, poem_id: int, catalog: Catalog) -> dict:
 
 
 class CatalogCache:
-    """Keeps the last catalog, re-loaded when `meta/content.catalogVersion` changes (one read per call)."""
+    """Keeps the last catalog, re-loaded when `meta/content.catalogVersion` changes. The version is read at
+    most once every `CHECK_INTERVAL` seconds per instance, so a new catalog is served within a minute."""
 
-    def __init__(self) -> None:
+    CHECK_INTERVAL = 60.0
+
+    def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
         self._catalog: Catalog | None = None
+        self._clock = clock
+        self._checked_at: float | None = None
 
     def get(self, db: Client) -> Catalog:
         """The catalog for the current version. While a rebuild makes loading fail (ValueError), the
         previous catalog is served and the next call tries again; with none cached the error is raised."""
+        cached = self._catalog
+        now = self._clock()
+        if cached is not None and self._checked_at is not None and now - self._checked_at < self.CHECK_INTERVAL:
+            return cached
         snapshot = db.document(META_PATH).get()
         version = snapshot.to_dict().get("catalogVersion") if snapshot.exists else None
-        cached = self._catalog
         if cached is not None and version is not None and version == cached.version:
+            self._checked_at = now
             return cached
         try:
             loaded = load_catalog(db)
@@ -127,6 +155,7 @@ class CatalogCache:
             if cached is None:
                 raise
             log.warning("catalog reload failed; serving version %s", cached.version, exc_info=True)
-            return cached
+            return cached  # not marked checked: the next call tries again
         self._catalog = loaded
+        self._checked_at = now
         return loaded

@@ -7,7 +7,7 @@ the end of a poem. Python, 2nd-gen Cloud Functions, in `europe-west3` (Frankfurt
 |---|---|---|---|
 | `writeDailyPicks` | scheduled | every day at 00:10 UTC | Writes `daily/{date}` for every date from yesterday to 7 days ahead that has no document yet. A written day never changes, except through the admin tool's `rebuild`. |
 | `sendMorningPoems` | scheduled | every 15 minutes | Finds the devices whose morning time has come, sends each the day's poem in its own time zone, and sets its next time. Deletes devices whose push token is dead. |
-| `keepReading` | callable | when a poem opens in the reader | Returns up to 3 more poems by the same poet and up to 2 others the reader might like, leaving out poems the reader has read. Needs a signed-in user (anonymous is fine). |
+| `keepReading` | callable | when the reader nears the end of a poem | Returns up to 3 more poems by the same poet and up to 2 others the reader might like, leaving out poems the reader has read. Needs a signed-in user (anonymous is fine). |
 
 The code:
 
@@ -107,46 +107,58 @@ counted from the code, for D daily active users (DAU):
 |---|---|---|
 | Home | 1.5 × D | One read of `daily/{today}` per device per day (later opens use the cached day), plus pull-to-refresh, guessed at 0.5 a day. |
 | Widgets | 0.75 × D | One read per widget kind per refresh: at midnight, and when the app saves a new day. Guessed: a quarter of readers have a widget, 1.5 kinds each, 2 refreshes a day. A failed refresh retries within the hour, so a phone offline all day can add up to 24. |
-| `keepReading` | c × q × D | c calls per reader per day, q reads per call (below). |
+| `keepReading` | c × q × D + M | c calls per reader per day, q reads per call, M reads of `meta/content` (below). |
 | `sendMorningPoems` | 96 + E + up to 192 | 96 runs a day, each a query that costs at least 1 read; 1 read per device it sends to (E devices with the morning poem on, guessed at 0.3 × D); 1 read of the day's document per date per run that sends. |
 | `writeDailyPicks` | up to about 380 | `meta/content` and the catalog chunks (4), the 9 days it checks, the history of up to 365 earlier days for the one new day, and 2 poem texts. |
 | Sign-in to an existing account, account deletion | rare | Lists the reader's reads and likes once (deletion also lists their devices). |
 
-**Reads per `keepReading` call (q).** 1 read of `meta/content` (the catalog itself stays in memory),
-then one batched check of the ranked candidates against the reader's history: 10 by the same poet
-and 5 of similar length, plus 5 in the same theme, or else 5 by liked poets. A missing document
-still counts as a read. When the theme has fewer than 5 other poems, it also reads the reader's 20
-latest likes (at least 1 read). So q is 21 for a poem in a well-filled theme, and at most
-1 + 25 + 20 = 46.
+**Reads per `keepReading` call (q).** The candidates are ranked from the catalog in memory, then
+checked against the reader's history in two rounds. The first round reads only the 5 that would be
+shown if none were read: 3 by the same poet and 2 similar. The second round runs only for a list
+whose shown poems include a read one, and reads the rest of that list: 7 more by the poet, and 8
+more similar (5 in the same theme and 5 of similar length, less the 2 already read). A missing
+document still counts as a read. When the theme has fewer than 5 other poems, it also reads the
+reader's 20 latest likes (at least 1 read), and the similar list (up to 4 in the theme, 5 by liked
+poets, 5 of similar length) can leave 12 for the second round. So q is 5 when none of the shown poems
+is read, and at most 5 + 7 + 12 + 20 = 44. Guessing that a third of calls find a shown poem by the
+poet already read, and a tenth find a shown similar one read, a typical q is about
+5 + 7 / 3 + 8 / 10 ≈ 8.
 
-**Calls per reader (c).** One call per reader page that loads. The reader pages through a list and
-prepares the pages next to the one shown, which call too. For a reader who reads 5 poems a day in one
-sitting, c is about 5 + 2 = 7.
+**`meta/content` (M).** Each function instance reads the catalog version at most once a minute, so
+M is at most 1 read per call and at most 1,440 a day per running instance. Below, M is counted as
+min(5 × D, 1,440): one warm instance.
+
+**Calls per reader (c).** Only the page being read calls, once its end is about a screen away (a
+short poem calls when it opens). Pages laid out beside it don't call, and a page rebuilt while paging
+reuses its answer, so it is one call per poem read to near its end, per reader screen. For a reader
+who reads 5 poems a day, c is about 5.
 
 So, with the guesses above:
 
 ```
-reads a day ≈ D × (1.5 + 0.75 + 7 × q + 0.3) + 670
-            ≈ 150 × D + 670   (q = 21, typical)
-            ≈ 325 × D + 670   (q = 46, worst case)
+reads a day ≈ D × (1.5 + 0.75 + 5 × q + 0.3) + 670 + M
+            ≈ 42.55 × D + 670 + M    (q = 8, typical)
+            ≈ 222.55 × D + 670 + M   (q = 44, worst case)
 ```
 
-| DAU | Typical (q = 21) | Worst case (q = 46) |
+| DAU | Typical (q = 8) | Worst case (q = 44) |
 |---:|---:|---:|
-| 100 | 15,600 | 33,100 |
-| 500 | 75,400 | 163,000 |
-| 1,000 | 150,200 | 325,200 |
-| 5,000 | 748,400 | 1,623,400 |
+| 100 | 5,425 | 23,425 |
+| 500 | 23,385 | 113,385 |
+| 1,000 | 44,660 | 224,660 |
+| 5,000 | 214,860 | 1,114,860 |
 
-**The free 50,000 reads a day are used up at about 330 DAU typically, and at about 150 DAU in the
-worst case.** `keepReading` is over 95% of it. Above that, reads cost roughly $0.04 to $0.06 per
-100,000 (check today's price for europe-west3): at 1,000 DAU about $1 to $5 a month, at 5,000 DAU
-about $8 to $28 a month.
+**The free 50,000 reads a day are used up at about 1,100 DAU typically, and at about 215 DAU in the
+worst case** (every call reading the reader's likes and finding a shown poem in both lists read).
+`keepReading` is still about 90% of it. Above that, reads cost roughly $0.04 to $0.06 per 100,000
+(check today's price for europe-west3): at 1,000 DAU nothing typically and up to about $3 a month in
+the worst case, at 5,000 DAU about $2 to $3 a month typically and up to about $20 in the worst case.
+More instances add up to 1,440 reads a day each.
 
 Not counted above: the app's existing reads (`meta/content` at each launch, one read per poem page
 loaded, the likes list), which use the same 50,000. Writes are within the free 20,000 a day up to
 about 3,800 DAU (about 5 new reads written per reader a day, plus device updates). Function calls
-are within the free 2 million a month up to about 9,500 DAU.
+are within the free 2 million a month up to about 13,000 DAU.
 
 These are estimates from the code and the guesses named above, not measurements. After launch, compare
 with the Firestore usage tab in the Firebase console.
