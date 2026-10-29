@@ -1,12 +1,14 @@
 // Minimum iOS 17.
 //  The one root: it owns the tab selection, every navigation path and the Settings sheet, and picks the shell by
 //  size class, never by device. iOS 18 and later: one sidebar-adaptable TabView. iOS 17: a TabView in compact
-//  width and a three-column split in regular width.
+//  width and a three-column split in regular width. It also opens the poem a link or a tapped notification names.
 
 import SwiftUI
 
 struct RootView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(Library.self) private var library
+    @Environment(PoemLinkInbox.self) private var poemLinks
     @SceneStorage("tab") private var tab: AppTab = .new
     @State private var paths = AppPaths()
     @State private var showSettings = false
@@ -62,6 +64,26 @@ struct RootView: View {
         .onChange(of: sizeClass, initial: true) { _, newClass in
             // Compact Home shows the themes as a section, so the hidden tab hands over to it.
             if newClass == .compact, tab == .themes { tab = .new }
+        }
+        // `initial` opens a link that arrived before this view existed, such as the tap that launched the app.
+        .onChange(of: poemLinks.pending, initial: true) {
+            guard let url = poemLinks.take() else { return }
+            openPoemLink(url)
+        }
+    }
+
+    /// Opens the poem on the first tab, over whatever that tab showed. A missing poem or a malformed link opens
+    /// nothing.
+    private func openPoemLink(_ url: URL) {
+        guard let link = DeepLink.poem(from: url) else { return }
+        Task {
+            await PoemLinkOpener.open(id: link.id, fetch: library.fetchPoem) { poem in
+                tab = .new
+                paths.navigate(.reader(ReaderContext(single: PoemSummary(poem))), in: .new, split: !compact)
+                if let source = link.source {
+                    AnalyticsManager.shared.dailyOpen(source: source)
+                }
+            }
         }
     }
 

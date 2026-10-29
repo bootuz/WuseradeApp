@@ -27,6 +27,12 @@ class AnalyticsManager {
         logEvent(name: "morning_poem", params: ["enabled": enabled ? 1 : 0])
     }
 
+    /// The reader answered the morning-poem invitation on Home. `answer` is `accepted` or `dismissed`; accepting
+    /// logs `accepted` even when iOS permission is then refused.
+    func invitation(_ answer: String) {
+        logEvent(name: "invitation", params: ["answer": answer])
+    }
+
     /// A suggestion at the end of a poem was opened. `section` is `poet` or `similar`.
     func keepReadingOpen(section: String) {
         logEvent(name: "keep_reading_open", params: ["section": section])

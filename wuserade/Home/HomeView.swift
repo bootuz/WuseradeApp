@@ -1,6 +1,7 @@
 // Minimum iOS 17.
-//  Усэхэр in compact width, read like a book's opening spread: the day's page, the poet of the day and a short
-//  poem (each left out while there is no pick), the five newest poems, and the themes, in one scroll.
+//  Усэхэр in compact width, read like a book's opening spread: the day's page (with the one-time morning-poem
+//  invitation under it), the poet of the day and a short poem (each left out while there is no pick), the five newest
+//  poems, and the themes, in one scroll.
 
 import SwiftUI
 
@@ -8,6 +9,11 @@ struct HomeView: View {
     @Environment(Library.self) private var library
     @Environment(\.navigate) private var navigate
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(MorningPoemController.self) private var morning
+    /// Observed so the invitation appears when the app records the third day and goes once it is answered. The
+    /// values are read through `VisitDays`.
+    @AppStorage(VisitDays.Keys.days) private var visitDaysStored = ""
+    @AppStorage(VisitDays.Keys.invitationDone) private var invitationDoneStored = false
 
     private static let newestCount = 5
 
@@ -43,6 +49,12 @@ struct HomeView: View {
                     navigate(.reader(ReaderContext(single: PoemSummary(poem))))
                 }
                 .contentRow(separator: .hidden)
+
+                if showsInvitation {
+                    MorningInvitationCard()
+                        .padding(.top, Space.six)
+                        .contentRow(separator: .hidden)
+                }
             }
 
             if let daily = library.daily {
@@ -76,5 +88,16 @@ struct HomeView: View {
         }
         .pageList()
         .refreshable { await library.refreshHome() }
+    }
+
+    private var showsInvitation: Bool {
+        let days = VisitDays()
+        #if DEBUG
+        // `-previewInvitation` shows the invitation whatever the days, for screenshots, until it is answered.
+        if ProcessInfo.processInfo.arguments.contains("-previewInvitation") {
+            return MorningInvitation.shouldShow(visitDays: 3, done: days.invitationDone, enabled: morning.enabled)
+        }
+        #endif
+        return MorningInvitation.shouldShow(visitDays: days.count, done: days.invitationDone, enabled: morning.enabled)
     }
 }

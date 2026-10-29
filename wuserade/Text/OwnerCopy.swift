@@ -63,6 +63,9 @@ enum OwnerCopy {
     static let morningPoemTime = "[owner copy: time]"
     static let notificationsOff = "[owner copy: notifications are off for Wuserade in iOS Settings]"
     static let openSettings = "[owner copy: open Settings]"
+    static let morningInvitation = "[owner copy: invitation to the morning poem]"
+    static let turnOn = "[owner copy: turn on]"
+    static let notNow = "[owner copy: not now]"
 
     /// The day's-page date read in words, such as '28 October'.
     static func dayAndMonth(_ date: Date) -> String {

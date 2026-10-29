@@ -15,6 +15,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     /// The last FCM token received. The app reads it at launch, in case it arrived before the app was observing
     /// `fcmTokenDidChange`.
     private(set) var fcmToken: String?
+    /// Poem links from URLs and tapped notifications, until `RootView` opens them. A tap can launch the app, and then
+    /// arrives before any view exists.
+    let poemLinks = PoemLinkInbox()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         application.registerForRemoteNotifications()
@@ -33,6 +36,19 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         self.fcmToken = fcmToken
         NotificationCenter.default.post(name: .fcmTokenDidChange, object: nil, userInfo: fcmToken.map { ["token": $0] })
+    }
+
+    /// A tapped morning notification opens its poem, the same way as its link would.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        if response.actionIdentifier == UNNotificationDefaultActionIdentifier,
+           let url = DeepLink.notificationURL(userInfo: response.notification.request.content.userInfo) {
+            poemLinks.deliver(url)
+        }
+        completionHandler()
     }
 }
 
@@ -167,6 +183,7 @@ struct wuseradeApp: App {
                 .environment(likes)
                 .environment(photos)
                 .environment(morning)
+                .environment(delegate.poemLinks)
                 .environment(\.readTracker, readTracker)
                 .environment(\.keepReading, keepReading)
                 .sheet(isPresented: $firstLaunch) {
@@ -176,9 +193,14 @@ struct wuseradeApp: App {
                 .fullScreenCover(isPresented: .constant(isUpdateRequired)) {
                     UpdateRequiredView()
                 }
-                // Brings Google sign-in back into the app after the browser or account sheet.
+                // A poem link (from the widget) goes where a tapped notification goes, so `RootView` opens both
+                // the same way. Any other URL brings Google sign-in back after the browser or account sheet.
                 .onOpenURL { url in
-                    GIDSignIn.sharedInstance.handle(url)
+                    if DeepLink.poem(from: url) != nil {
+                        delegate.poemLinks.deliver(url)
+                    } else {
+                        GIDSignIn.sharedInstance.handle(url)
+                    }
                 }
                 // Launch: sign in anonymously (or keep the existing account), show its likes, and upload the
                 // likes this device kept before accounts existed.
@@ -234,6 +256,9 @@ struct wuseradeApp: App {
                 // refresh is still running, and `refresh()` ignores calls while one is running.
                 .onChange(of: scenePhase) { _, phase in
                     guard phase == .active else { return }
+                    // A day the reader opened the app, for the morning-poem invitation on the third.
+                    var visitDays = VisitDays()
+                    visitDays.record(.now)
                     Task {
                         // Notifications may have been allowed or blocked in iOS Settings meanwhile.
                         await morning.refreshPermission()
