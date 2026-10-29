@@ -2,8 +2,11 @@
 
 from datetime import datetime, timezone
 
+import pytest
+
+import wuserade_daily.keep_reading as kr
 from wuserade_daily.catalog import Catalog, Entry
-from wuserade_daily.keep_reading import Candidates, CatalogCache, choose, rank
+from wuserade_daily.keep_reading import Candidates, CatalogCache, choose, keep_reading, rank
 
 CREATED = datetime(2024, 3, 1, tzinfo=timezone.utc)
 
@@ -142,3 +145,58 @@ def test_catalog_cache_reloads_only_when_the_version_changes():
 
     db.version = 2
     assert cache.get(db).version == 2
+
+
+def test_get_all_order_does_not_matter():
+    class Snap:
+        def __init__(self, id, exists):
+            self.id, self.exists = id, exists
+
+    class Db:
+        def document(self, path):
+            return path
+
+        def get_all(self, refs):
+            # Reversed; only poem 3 has been read.
+            return [Snap(r.rsplit("/", 1)[1], r.endswith("/3")) for r in reversed(list(refs))]
+
+    cat = catalog(entry(1, theme=7), entry(2, views=3), entry(3, views=2), entry(4, views=1),
+                  *[entry(10 + i, author=3 + i, theme=7) for i in range(5)])
+
+    result = keep_reading(Db(), "u", 1, cat)
+
+    assert [p["id"] for p in result["poet"]] == [2, 4]
+
+
+def test_cache_loads_once_per_version_and_survives_a_failing_reload(monkeypatch, caplog):
+    loads = []
+    state = {"version": 1, "fail": False}
+
+    def fake_load(db):
+        loads.append(state["version"])
+        if state["fail"]:
+            raise ValueError("a rebuild is probably running")
+        return Catalog(version=state["version"], entries=[], poets=[])
+
+    monkeypatch.setattr(kr, "load_catalog", fake_load)
+    db, cache = _FakeDb(), CatalogCache()
+
+    state["fail"] = True
+    with pytest.raises(ValueError):  # nothing cached: the error is raised
+        cache.get(db)
+
+    state["fail"] = False
+    first = cache.get(db)
+    cache.get(db)
+    assert len(loads) == 2  # the failed try and one load; the second get was cached
+
+    db.version, state["version"], state["fail"] = 2, 2, True
+    assert cache.get(db) is first  # the reload fails: the previous catalog is served
+    assert "catalog reload failed" in caplog.text
+    assert len(loads) == 3
+
+    state["fail"] = False
+    assert cache.get(db).version == 2  # the next call tries again
+    assert len(loads) == 4
+    cache.get(db)
+    assert len(loads) == 4

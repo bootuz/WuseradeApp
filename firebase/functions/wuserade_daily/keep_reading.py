@@ -7,10 +7,13 @@ never listed. `choose` takes the first unread ones.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from wuserade_daily.catalog import META_PATH, Catalog, Entry, load_catalog
+
+log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from google.cloud.firestore import Client
@@ -90,7 +93,8 @@ def keep_reading(db: Client, uid: str, poem_id: int, catalog: Catalog) -> dict:
 
     ids = [*candidates.poet, *candidates.theme, *candidates.liked, *candidates.length]
     refs = [db.document(f"users/{uid}/reads/{i}") for i in ids]
-    read_ids = {i for i, snap in zip(ids, db.get_all(refs)) if snap.exists} if refs else set()
+    # get_all does not return snapshots in the order of the refs: key on the snapshot's own id.
+    read_ids = {int(snap.id) for snap in db.get_all(refs) if snap.exists} if refs else set()
 
     poet_ids, similar_ids = choose(candidates, read_ids)
     by_id = {e.id: e for e in catalog.entries}
@@ -110,8 +114,19 @@ class CatalogCache:
         self._catalog: Catalog | None = None
 
     def get(self, db: Client) -> Catalog:
+        """The catalog for the current version. While a rebuild makes loading fail (ValueError), the
+        previous catalog is served and the next call tries again; with none cached the error is raised."""
         snapshot = db.document(META_PATH).get()
         version = snapshot.to_dict().get("catalogVersion") if snapshot.exists else None
-        if self._catalog is None or version is None or version != self._catalog.version:
-            self._catalog = load_catalog(db)
-        return self._catalog
+        cached = self._catalog
+        if cached is not None and version is not None and version == cached.version:
+            return cached
+        try:
+            loaded = load_catalog(db)
+        except ValueError:
+            if cached is None:
+                raise
+            log.warning("catalog reload failed; serving version %s", cached.version, exc_info=True)
+            return cached
+        self._catalog = loaded
+        return loaded
