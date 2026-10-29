@@ -1,7 +1,7 @@
 """The rules that pick a day's poem, short poem and poet of the day.
 
-Pure functions over a `Catalog` and the earlier days' picks. All randomness comes from
-`random.Random(day.isoformat())`, and candidates are sorted by id before a draw, so a date always
+Pure functions over a `Catalog` and the earlier days' picks. Each slot draws from its own
+`random.Random(f"{day.isoformat()}:<slot>")`, so re-picking one slot never changes the others, and candidates are sorted by id before a draw, so a date always
 gives the same picks for the same inputs, whatever order the catalog is in.
 """
 
@@ -36,15 +36,14 @@ def pick_day(day: date, catalog: Catalog, history: list[DayPicks]) -> DayPicks:
        poem of a day in `history`, preferably by a different poet from the day's poem. When every
        short poem was, the least recently used one.
     3. The poet: a random eligible poet (3 or more poems, not the unknown author) who is not in the
-       current cycle, preferably not the poet of picks 1 and 2. The current cycle is the poets of
-       the longest run of newest days in `history` that do not yet cover every eligible poet.
+       current cycle, preferably not the poet of picks 1 and 2. Cycles are found by replaying
+       `history` from its oldest day: a cycle closes once every eligible poet has appeared in it.
 
     Raises ValueError when the catalog has no poem, no short poem or no poet to pick from.
     """
-    rng = random.Random(day.isoformat())
-    poem = _pick_poem(rng, catalog, history)
-    short_poem = _pick_short_poem(rng, catalog, history, poem)
-    poet = _pick_poet(rng, catalog, history, poem, short_poem)
+    poem = _pick_poem(_rng(day, "poem"), catalog, history)
+    short_poem = _pick_short_poem(_rng(day, "short"), catalog, history, poem)
+    poet = _pick_poet(_rng(day, "poet"), catalog, history, poem, short_poem)
     return DayPicks(poem_id=poem.id, short_poem_id=short_poem.id, poet_id=poet.id)
 
 
@@ -53,6 +52,10 @@ def top_poems(catalog: Catalog, poet_id: int, n: int = 3) -> list[Entry]:
     poems = [e for e in catalog.entries if e.author_id == poet_id]
     poems.sort(key=lambda e: (e.views, e.created_at, e.id), reverse=True)
     return poems[: max(n, 0)]
+
+
+def _rng(day: date, slot: str) -> random.Random:
+    return random.Random(f"{day.isoformat()}:{slot}")
 
 
 def _recency(ids_newest_first: list[int]) -> dict[int, int]:
@@ -100,14 +103,18 @@ def _eligible_poets(catalog: Catalog) -> list[Poet]:
 
 
 def _poets_in_current_cycle(history: list[DayPicks], eligible_ids: set[int]) -> set[int]:
-    """The poets of the longest run of newest days that does not yet cover every eligible poet."""
-    in_cycle: set[int] = set()
-    for picks in history:
-        grown = in_cycle | {picks.poet_id}
-        if eligible_ids <= grown:
-            break
-        in_cycle = grown
-    return in_cycle
+    """The poets seen in the open cycle, replaying `history` (newest first) from its oldest day.
+
+    A cycle closes, and a new one opens empty, once it covers every eligible poet, so the result
+    never covers them all. A history that starts mid-cycle, or poets who became eligible or
+    ineligible, only shift where cycles close.
+    """
+    seen: set[int] = set()
+    for picks in reversed(history):
+        seen.add(picks.poet_id)
+        if eligible_ids <= seen:
+            seen = set()
+    return seen
 
 
 def _pick_poet(
@@ -122,6 +129,6 @@ def _pick_poet(
     if not eligible:
         raise ValueError(f"the catalog has no poet with at least {MIN_POET_POEMS} poems")
     in_cycle = _poets_in_current_cycle(history, {p.id for p in eligible})
-    candidates = [p for p in eligible if p.id not in in_cycle]
+    candidates = [p for p in eligible if p.id not in in_cycle] or eligible
     avoided = {poem.author_id, short_poem.author_id}
     return rng.choice([p for p in candidates if p.id not in avoided] or candidates)

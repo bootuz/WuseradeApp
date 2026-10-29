@@ -232,12 +232,38 @@ def test_every_eligible_poet_appears_once_before_any_repeats():
     assert set(poets) == {1, 2, 3, 4, 5, 6}
 
 
-def test_poet_is_the_only_one_missing_from_the_current_cycle():
-    # Newest first. The newest five days cover poets 2 to 6; the sixth day (poet 1) would complete
-    # the cycle, so a new one begins only after the five. Older days no longer matter.
+def test_a_cycle_closes_once_every_eligible_poet_has_appeared_in_it():
+    # Newest first. Replayed from the oldest day (3), poets 3, 2, 1, 6, 5, 4 close a cycle; the
+    # open cycle holds only the two newest days, poets 3 and 2.
     history = [DayPicks(101, 102, poet_id) for poet_id in (2, 3, 4, 5, 6, 1, 2, 3)]
 
-    assert {pick_day(day, CAT, history).poet_id for day in dates(20)} == {1}
+    assert {pick_day(day, CAT, history).poet_id for day in dates(40)} <= {1, 4, 5, 6}
+
+
+def test_a_new_cycle_starts_with_every_eligible_poet_a_candidate():
+    history = [DayPicks(101, 102, poet_id) for poet_id in (1, 2, 3, 4, 5, 6)]
+
+    assert len({pick_day(day, CAT, history).poet_id for day in dates(60)}) > 1
+
+
+def test_cycles_are_shuffled_not_repeated_in_the_same_order():
+    picks = run_days(CAT, 18)
+    poets = [p.poet_id for p in picks]
+    cycles = [poets[i : i + 6] for i in (0, 6, 12)]
+    assert all(len(set(cycle)) == 6 for cycle in cycles)
+
+    big = standard_catalog(poet_ids=range(1, 41))
+    big_poets = [p.poet_id for p in run_days(big, 120)]
+    big_cycles = [big_poets[i : i + 40] for i in (0, 40, 80)]
+    assert all(len(set(cycle)) == 40 for cycle in big_cycles)
+    assert big_cycles[1] != big_cycles[0] or big_cycles[2] != big_cycles[0]
+    assert big_cycles[1] != big_cycles[0] and big_cycles[2] != big_cycles[0]
+
+
+def test_history_that_starts_mid_cycle_or_names_departed_poets_never_empties_the_candidates():
+    for poet_ids in ([1], [1, 2], [99, 98, 1], [2, 99, 1, 98, 3, 97]):
+        history = [DayPicks(101, 102, poet_id) for poet_id in poet_ids]
+        assert pick_day(D, CAT, history).poet_id in range(1, 7)
 
 
 def test_poet_is_never_one_of_the_current_cycle():
@@ -246,13 +272,13 @@ def test_poet_is_never_one_of_the_current_cycle():
     assert {pick_day(day, CAT, history).poet_id for day in dates(40)} <= {3, 4, 5, 6}
 
 
-def test_a_cycle_with_a_repeated_poet_still_ends_when_the_run_covers_everyone():
-    # Poets 1 to 3 are eligible. Newest first: 1, 2, 1 and then 3 would complete coverage, so the
-    # run is the first three days (poets 1 and 2) and only 3 is left.
+def test_a_repeated_poet_does_not_close_a_cycle_early():
+    # Poets 1 to 3 are eligible. Replayed oldest first (3, 1, 2, 1): poets 3, 1, 2 close a cycle,
+    # so the open cycle holds only the newest day, poet 1.
     catalog = standard_catalog(poet_ids=[1, 2, 3])
     history = [DayPicks(101, 102, poet_id) for poet_id in (1, 2, 1, 3)]
 
-    assert {pick_day(day, catalog, history).poet_id for day in dates(20)} == {3}
+    assert {pick_day(day, catalog, history).poet_id for day in dates(40)} <= {2, 3}
 
 
 def test_unknown_author_and_poets_under_three_poems_are_never_poet_of_the_day():
