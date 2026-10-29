@@ -3,12 +3,13 @@
 from datetime import datetime, timezone
 
 import firebase_admin
-from firebase_admin import firestore
+from firebase_admin import firestore, messaging
 from firebase_functions import https_fn, scheduler_fn
 
 from wuserade_daily.daily import write_missing_days
 from wuserade_daily.handler import handle_keep_reading
 from wuserade_daily.keep_reading import CatalogCache
+from wuserade_daily.morning import send_due
 
 firebase_admin.initialize_app()
 
@@ -20,7 +21,14 @@ def writeDailyPicks(event: scheduler_fn.ScheduledEvent) -> None:
     print(f"daily documents written: {written}")
 
 
-_catalog_cache = CatalogCache()
+@scheduler_fn.on_schedule(schedule="*/15 * * * *", region="europe-west3")
+def sendMorningPoems(event: scheduler_fn.ScheduledEvent) -> None:
+    """Send the day's poem to every device whose morning time has come."""
+    sent = send_due(firestore.client(), datetime.now(timezone.utc), messaging.send_each)
+    print(f"morning poems sent: {sent}")
+
+
+_catalog_cache =CatalogCache()
 
 
 @https_fn.on_call(region="europe-west3")
