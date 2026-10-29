@@ -16,18 +16,6 @@ struct SettingsSheet: View {
                 AccountSection()
 
                 Section {
-                    NavigationLink {
-                        ReadingStyleForm()
-                            .navigationTitle("Теплъэр")
-                            .navigationBarTitleDisplayMode(.inline)
-                    } label: {
-                        SettingsRowLabel(title: String(localized: "Теплъэр теухуэн"), systemImage: "textformat")
-                    }
-                } header: {
-                    Text("Текстыр")
-                }
-
-                Section {
                     // TODO(owner): copy. Meaning: "Language".
                     Picker(selection: $language) {
                         ForEach(AppLanguage.allCases) { language in
