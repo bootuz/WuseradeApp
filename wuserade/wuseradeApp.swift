@@ -47,6 +47,10 @@ struct wuseradeApp: App {
     @State private var account: AccountManager
     /// The likes of the current account.
     @State private var likes = LikesController(store: FirestoreLikesStore())
+    /// The reading history of the current account, which the server's suggestions skip.
+    @State private var reads: ReadsController
+    /// Decides when a poem in the reader counts as read, and writes it to `reads`.
+    @State private var readTracker: ReadTracker
     /// The poet photos the signed-in reader has sent and that wait for the owner.
     @State private var photos: PhotoSubmissions
 
@@ -70,10 +74,15 @@ struct wuseradeApp: App {
             poetIDs: { [library] in try await library.poetIDs() }
         )
         _photos = State(initialValue: photos)
+        let reads = ReadsController(store: FirestoreReadsStore())
+        _reads = State(initialValue: reads)
+        _readTracker = State(initialValue: ReadTracker { [reads] in reads.markRead($0) })
         _account = State(initialValue: AccountManager(
             auth: FirebaseAuthBackend(),
             likes: FirestoreLikesStore(),
             pending: PendingLikesStore(),
+            reads: FirestoreReadsStore(),
+            pendingReads: PendingReadsStore(),
             deleteWaitingPhotos: { [photos] uid in try await photos.deleteAll(uid: uid) }
         ))
     }
@@ -114,6 +123,7 @@ struct wuseradeApp: App {
                 .environment(account)
                 .environment(likes)
                 .environment(photos)
+                .environment(\.readTracker, readTracker)
                 .sheet(isPresented: $firstLaunch) {
                     OnboardingView()
                 }
@@ -131,14 +141,16 @@ struct wuseradeApp: App {
                     guard !Self.isRunningTests else { return }
                     await account.start()
                     likes.bind(uid: account.state.uid)
+                    reads.bind(uid: account.state.uid)
                     if let uid = account.state.uid {
                         await migrator.migrateIfNeeded(uid: uid)
                     }
                 }
-                // Sign-in, sign-out and account deletion change the uid. Likes always follow the current account,
-                // and an account that could not be created at launch (offline) is migrated once it exists.
+                // Sign-in, sign-out and account deletion change the uid. Likes and reads always follow the current
+                // account, and an account that could not be created at launch (offline) is migrated once it exists.
                 .onChange(of: account.state.uid) { _, uid in
                     likes.bind(uid: uid)
+                    reads.bind(uid: uid)
                     guard let uid else { return }
                     Task { await migrator.migrateIfNeeded(uid: uid) }
                 }

@@ -1,6 +1,6 @@
 // Minimum iOS 17.
-//  Shared state of one reader: loaded poems by id, failures, and which page's title has scrolled under the bar
-//  (the toolbar shows that poem's running head).
+//  Shared state of one reader: loaded poems by id, failures, the page on screen, and which page's title has scrolled
+//  under the bar (the toolbar shows that poem's running head).
 
 import Foundation
 import Observation
@@ -14,6 +14,8 @@ final class ReaderPager {
     private(set) var failed: Set<Int> = []
     private(set) var loading: Set<Int> = []
     var titleUnderBar: [Int: Bool] = [:]
+    /// The poem whose page is on screen. Pages beside it may be laid out, but only this one is being read.
+    var currentID: Int?
 
     /// Uses the library's copy when the poem was opened before or came with the reader's likes; otherwise one
     /// read of `poems/{id}`.

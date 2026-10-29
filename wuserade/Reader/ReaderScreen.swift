@@ -51,6 +51,7 @@ struct ReaderScreen: View {
         .navigationTitle(current.map(runningHead) ?? "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbar }
+        .onChange(of: currentID, initial: true) { pager.currentID = currentID }
         .environment(pager)
     }
 

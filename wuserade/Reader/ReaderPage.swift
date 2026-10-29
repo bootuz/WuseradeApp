@@ -16,6 +16,8 @@ struct ReaderPage: View {
     @Environment(ReaderPager.self) private var pager
     @Environment(Library.self) private var library
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.readTracker) private var readTracker
+    @Environment(\.scenePhase) private var scenePhase
     @ScaledMetric(relativeTo: .body) private var stanzaGap: CGFloat = 28
 
     /// The title's bottom edge, measured from the top of the scroll content.
@@ -26,6 +28,10 @@ struct ReaderPage: View {
     @State private var contentTop: CGFloat = 0
     @State private var insetTop: CGFloat = 0
     @State private var width: CGFloat = 0
+    /// The scroll view's height, and the closing lozenge's top in the scroll view's space: the end is on screen
+    /// once the lozenge's top is above the bottom edge.
+    @State private var scrollHeight: CGFloat = 0
+    @State private var endTop: CGFloat = .greatestFiniteMagnitude
 
     private static let contentSpace = "readerContent"
     private static let scrollSpace = "readerScroll"
@@ -34,6 +40,15 @@ struct ReaderPage: View {
     /// view's own geometry instead.
     private var scrolled: CGFloat {
         if #available(iOS 18, *) { scrollDistance } else { insetTop - contentTop }
+    }
+
+    /// The loaded poem is the reader's current page while the app is in front.
+    private var isShown: Bool {
+        pager.currentID == summary.id && pager.poems[summary.id] != nil && scenePhase == .active
+    }
+
+    private var endVisible: Bool {
+        endTop < scrollHeight
     }
 
     private var margin: CGFloat {
@@ -58,12 +73,31 @@ struct ReaderPage: View {
         .scrollIndicators(.hidden)
         .background(Palette.page)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { scrollHeight = $0 }
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { insetTop = $0 }
         .modifier(ScrollDistanceReader(distance: $scrollDistance))
         .onChange(of: scrolled > titleBottom, initial: true) { _, under in
             pager.titleUnderBar[summary.id] = under
         }
         .task(id: summary.id) { await pager.load(summary.id, from: library) }
+        .onChange(of: isShown, initial: true) { reportShown() }
+        .onChange(of: endVisible) { _, visible in
+            if visible, isShown { readTracker?.reachedEnd(summary.id) }
+        }
+        // Coming back from a pushed screen changes no state, so `onChange` would not report it.
+        .onAppear { reportShown() }
+        .onDisappear { readTracker?.hidden(summary.id) }
+    }
+
+    /// Tells the reading history whether this poem is being read, and whether its end is already on screen.
+    private func reportShown() {
+        guard let readTracker else { return }
+        if isShown {
+            readTracker.shown(summary.id)
+            if endVisible { readTracker.reachedEnd(summary.id) }
+        } else {
+            readTracker.hidden(summary.id)
+        }
     }
 
     @ViewBuilder
@@ -87,6 +121,9 @@ struct ReaderPage: View {
             VerseView(poem: parsed, wide: wide)
                 .padding(.top, Space.eight)
             Lozenge()
+                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(Self.scrollSpace)).minY } action: {
+                    endTop = $0
+                }
                 .padding(.top, stanzaGap)
             if let next {
                 Rectangle()

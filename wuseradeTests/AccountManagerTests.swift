@@ -24,6 +24,8 @@ final class AccountManagerTests {
         let auth: FakeAuthBackend
         let likes: FakeLikesStore
         let pending: PendingLikesStore
+        let reads: FakeReadsStore
+        let pendingReads: PendingReadsStore
         let photos: FakePhotoDeleter
         let log: CallLog
     }
@@ -33,17 +35,31 @@ final class AccountManagerTests {
         let log = CallLog()
         let auth = FakeAuthBackend(currentUser: currentUser, log: log)
         let likes = FakeLikesStore(log: log, ownerUid: { [auth] in auth.currentUser?.uid })
-        let pending = PendingLikesStore(defaults: try #require(UserDefaults(suiteName: suiteName)))
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        let pending = PendingLikesStore(defaults: defaults)
+        let reads = FakeReadsStore(log: log, ownerUid: { [auth] in auth.currentUser?.uid })
+        let pendingReads = PendingReadsStore(defaults: defaults)
         let photos = FakePhotoDeleter(log: log)
         let manager = AccountManager(
             auth: auth,
             likes: likes,
             pending: pending,
+            reads: reads,
+            pendingReads: pendingReads,
             deleteWaitingPhotos: { try await photos.deleteAll(uid: $0) }
         ) { [weak self] uid in
             self?.analyticsUserIDs.append(uid)
         }
-        return Env(manager: manager, auth: auth, likes: likes, pending: pending, photos: photos, log: log)
+        return Env(
+            manager: manager,
+            auth: auth,
+            likes: likes,
+            pending: pending,
+            reads: reads,
+            pendingReads: pendingReads,
+            photos: photos,
+            log: log
+        )
     }
 
     private func like(_ id: Int, at date: Date) -> Like {
@@ -149,7 +165,7 @@ final class AccountManagerTests {
         // because the rules only let a user touch their own data.
         #expect(env.log.calls == [
             "link",
-            "fetchLikes", "deleteAllData", "deleteCurrentUser",
+            "fetchReadIDs", "fetchLikes", "deleteAllReads", "deleteAllData", "deleteCurrentUser",
             "signIn", "ensureUserDocument",
             "fetchLikes", "setLikes",
         ])
@@ -255,7 +271,8 @@ final class AccountManagerTests {
         // The second sign-in runs only after the first finished, so it starts from the existing
         // (non-anonymous) account and deletes nothing.
         #expect(env.log.calls == [
-            "link", "fetchLikes", "deleteAllData", "deleteCurrentUser", "signIn", "ensureUserDocument",
+            "link", "fetchReadIDs", "fetchLikes", "deleteAllReads", "deleteAllData", "deleteCurrentUser",
+            "signIn", "ensureUserDocument",
             "fetchLikes", "setLikes",
             "link",
         ])
@@ -360,7 +377,7 @@ final class AccountManagerTests {
 
         // The brief's sequence, followed by the user-document check of the fresh anonymous account.
         #expect(env.log.calls == [
-            "reauthenticate", "revokeAppleToken", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser",
+            "reauthenticate", "revokeAppleToken", "deleteAllReads", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser",
             "signInAnonymously", "ensureUserDocument",
         ])
         #expect(env.auth.revokedCodes == ["fresh-code"])
@@ -379,7 +396,7 @@ final class AccountManagerTests {
         try await env.manager.deleteAccount(reauthWith: googleCredential())
 
         #expect(env.log.calls == [
-            "reauthenticate", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser", "signInAnonymously",
+            "reauthenticate", "deleteAllReads", "deleteAllData", "deleteWaitingPhotos", "deleteCurrentUser", "signInAnonymously",
             "ensureUserDocument",
         ])
         #expect(env.auth.revokedCodes == [])
@@ -454,5 +471,72 @@ final class AccountManagerTests {
         #expect(env.auth.calls.filter { $0 == "deleteCurrentUser" }.count == 2)
         #expect(env.auth.deletedUids == ["apple-user"])
         #expect(env.manager.state == .anonymous(uid: "anon-1"))
+    }
+
+    // MARK: Reading history
+
+    @Test func deleteAccountRemovesReadsAndDevice() async throws {
+        let env = try makeEnv(currentUser: appleUser)
+        env.reads.seed([3, 7], uid: "apple-user")
+        await env.manager.start()
+        env.pendingReads.save([9])
+        env.log.reset()
+
+        try await env.manager.deleteAccount(reauthWith: appleCredential())
+
+        #expect(env.reads.reads(for: "apple-user") == [])
+        #expect(env.pendingReads.load() == [])
+        // The reads go before the user document, while the account still exists.
+        let calls = env.log.calls
+        let readsIndex = try #require(calls.firstIndex(of: "deleteAllReads"))
+        let dataIndex = try #require(calls.firstIndex(of: "deleteAllData"))
+        #expect(readsIndex < dataIndex)
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
+    }
+
+    @Test func `Switching to an existing account carries anonymous reads`() async throws {
+        let env = try makeEnv()
+        env.auth.addExistingAccount(googleUser, for: .google)
+        env.reads.seed([2], uid: "google-user")
+        await env.manager.start()
+        env.reads.seed([1, 2], uid: "anon-1")
+
+        try await env.manager.signIn(with: googleCredential())
+
+        #expect(env.manager.state == .signedIn(uid: "google-user", provider: .google, email: "g@example.com"))
+        #expect(env.reads.reads(for: "google-user") == [1, 2])
+        #expect(env.reads.reads(for: "anon-1") == [])
+        #expect(env.pendingReads.load() == [])
+        #expect(env.reads.calls == [
+            "fetchReadIDs anon-1", "deleteAllReads anon-1", "markRead 1 google-user", "markRead 2 google-user",
+        ])
+    }
+
+    @Test func `Reads read failure leaves anonymous account untouched`() async throws {
+        let env = try makeEnv()
+        env.auth.addExistingAccount(googleUser, for: .google)
+        await env.manager.start()
+        env.reads.seed([1], uid: "anon-1")
+        env.reads.setFetchError(FakeReadsStore.Failure())
+
+        await #expect(throws: FakeReadsStore.Failure.self, "signIn should rethrow the read failure") {
+            try await env.manager.signIn(with: googleCredential())
+        }
+
+        #expect(env.manager.state == .anonymous(uid: "anon-1"))
+        #expect(env.reads.reads(for: "anon-1") == [1])
+        #expect(env.auth.deletedUids == [])
+        #expect(env.pendingReads.load() == [])
+    }
+
+    @Test func `Pending reads upload ignores failures and clears`() async throws {
+        let env = try makeEnv()
+        env.pendingReads.save([4, 5])
+        env.reads.setMarkReadError(FakeReadsStore.Failure())
+
+        await env.manager.start()
+
+        #expect(env.reads.calls == ["markRead 4 anon-1", "markRead 5 anon-1"])
+        #expect(env.pendingReads.load() == [])
     }
 }

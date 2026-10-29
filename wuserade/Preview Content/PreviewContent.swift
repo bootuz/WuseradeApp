@@ -136,6 +136,13 @@ struct PreviewLikesStore: LikesStore {
     func deleteAllData(uid: String) async throws {}
 }
 
+/// Reading history for previews: remembers nothing and never reaches Firestore.
+struct PreviewReadsStore: ReadsStore {
+    func markRead(poemId: Int, uid: String) async throws {}
+    func fetchReadIDs(uid: String) async throws -> [Int] { [] }
+    func deleteAllReads(uid: String) async throws {}
+}
+
 extension LikesController {
     /// A controller for previews, signed in as a made-up account whose likes are `likes`.
     static func preview(likes: [Like] = []) -> LikesController {
@@ -168,6 +175,8 @@ extension AccountManager {
             auth: PreviewAuthBackend(currentUser: user),
             likes: PreviewLikesStore(),
             pending: PendingLikesStore(),
+            reads: PreviewReadsStore(),
+            pendingReads: PendingReadsStore(),
             deleteWaitingPhotos: { _ in },
             setAnalyticsUserID: { _ in }
         )

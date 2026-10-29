@@ -25,7 +25,8 @@ enum AccountError: Error, Equatable {
 }
 
 /// Owns the Firebase account: a silent anonymous account on launch, upgraded by linking Apple
-/// or Google, plus sign-out and account deletion. Likes follow the account (`users/{uid}/likes`).
+/// or Google, plus sign-out and account deletion. Likes and the reading history follow the account
+/// (`users/{uid}/likes` and `users/{uid}/reads`).
 ///
 /// `start`, `signIn`, `signOut` and `deleteAccount` run one at a time, in the order they were
 /// called: each waits for the ones before it, then runs against the account as it is by then.
@@ -43,6 +44,9 @@ final class AccountManager {
     @ObservationIgnored private let auth: AuthBackend
     @ObservationIgnored private let likes: LikesStore
     @ObservationIgnored private let pending: PendingLikesStore
+    @ObservationIgnored private let reads: any ReadsStore
+    /// Reads of an anonymous account waiting to be uploaded to the account that replaces it.
+    @ObservationIgnored private let pendingReads: PendingReadsStore
     /// Deletes the photos `uid` sent that still wait for review. Only `deleteAccount` calls it.
     @ObservationIgnored private let deleteWaitingPhotos: @MainActor (_ uid: String) async throws -> Void
     @ObservationIgnored private let setAnalyticsUserID: (String) -> Void
@@ -55,12 +59,16 @@ final class AccountManager {
         auth: AuthBackend,
         likes: LikesStore,
         pending: PendingLikesStore,
+        reads: any ReadsStore,
+        pendingReads: PendingReadsStore,
         deleteWaitingPhotos: @escaping @MainActor (_ uid: String) async throws -> Void,
         setAnalyticsUserID: @escaping (String) -> Void = { Analytics.setUserID($0) }
     ) {
         self.auth = auth
         self.likes = likes
         self.pending = pending
+        self.reads = reads
+        self.pendingReads = pendingReads
         self.deleteWaitingPhotos = deleteWaitingPhotos
         self.setAnalyticsUserID = setAnalyticsUserID
     }
@@ -90,8 +98,8 @@ final class AccountManager {
         try await serialized { try await self.performSignOut() }
     }
 
-    /// Re-authenticates, revokes the Apple token (Apple accounts), deletes the account's data and
-    /// its waiting photos, then the Firebase user, and starts a fresh anonymous account. The photos
+    /// Re-authenticates, revokes the Apple token (Apple accounts), deletes the account's reads and data,
+    /// then its waiting photos, then the Firebase user, and starts a fresh anonymous account. The photos
     /// go first because the rules only let the signed-in user delete them: if that fails the user
     /// stays, so nothing is left that no one could delete. Every step can run again, so after a
     /// failure the person can simply retry.
@@ -179,11 +187,13 @@ final class AccountManager {
         if let appleAuthorizationCode {
             try await auth.revokeAppleToken(authorizationCode: appleAuthorizationCode)
         }
+        try await reads.deleteAllReads(uid: uid)
         try await likes.deleteAllData(uid: uid)
         try await deleteWaitingPhotos(uid)
         try await auth.deleteCurrentUser(expectedUID: uid)
 
         pending.clear()
+        pendingReads.clear()
         state = .signedOut
         await performStart()
     }
@@ -191,7 +201,7 @@ final class AccountManager {
     // MARK: Helpers
 
     /// Makes `user` the current account: updates the state, makes sure `users/{uid}` exists,
-    /// merges pending likes and sets the analytics user ID.
+    /// merges pending likes, uploads pending reads and sets the analytics user ID.
     private func adopt(_ user: AuthUserInfo) async {
         state = AccountState(user)
         do {
@@ -201,19 +211,27 @@ final class AccountManager {
             Self.logger.error("Could not create the user document: \(error.localizedDescription, privacy: .public)")
         }
         await mergePendingLikes(into: user.uid)
+        await uploadPendingReads(to: user.uid)
         setAnalyticsUserID(user.uid)
     }
 
     private func switchToExistingAccount(from anonymous: AuthUserInfo, using credential: ProviderCredential) async throws {
-        // 1. Read the anonymous likes while still signed in as that user, and keep them on the device.
-        //    If the read fails, nothing has changed yet and the error is rethrown.
+        // 1. Read the anonymous likes and reads while still signed in as that user, and keep them on the device.
+        //    If either read fails, nothing has changed yet and the error is rethrown.
+        let anonymousReads = try await reads.fetchReadIDs(uid: anonymous.uid)
         let anonymousLikes = try await likes.fetchLikes(uid: anonymous.uid)
         pending.save(LikesMerge.merge(existing: pending.load(), incoming: anonymousLikes))
+        pendingReads.save(pendingReads.load().union(anonymousReads))
 
         // 2. Clean up the anonymous account, but only while it is still the signed-in user: deleting
         //    "the current user" must never hit anyone else. Skipping or failing only leaves orphaned
-        //    anonymous data; the likes are safe in `pending`.
+        //    anonymous data; the likes and reads are safe in `pending` and `pendingReads`.
         if let signedIn = auth.currentUser, signedIn.uid == anonymous.uid, signedIn.isAnonymous {
+            do {
+                try await reads.deleteAllReads(uid: anonymous.uid)
+            } catch {
+                Self.logger.error("Could not delete anonymous reads: \(error.localizedDescription, privacy: .public)")
+            }
             do {
                 try await likes.deleteAllData(uid: anonymous.uid)
             } catch {
@@ -238,7 +256,7 @@ final class AccountManager {
             throw error
         }
 
-        // 4–5. Make sure the user document exists, then merge the pending likes and clear them.
+        // 4–5. Make sure the user document exists, then merge the pending likes and reads and clear them.
         await adopt(user)
     }
 
@@ -258,6 +276,21 @@ final class AccountManager {
         } catch {
             Self.logger.error("Could not merge pending likes: \(error.localizedDescription, privacy: .public)")
         }
+    }
+
+    /// Writes each pending read into `uid`, then clears them. A read that cannot be written is dropped: the
+    /// history only steers suggestions, so losing one is better than retrying it forever.
+    private func uploadPendingReads(to uid: String) async {
+        let saved = pendingReads.load()
+        guard !saved.isEmpty else { return }
+        for poemId in saved.sorted() {
+            do {
+                try await reads.markRead(poemId: poemId, uid: uid)
+            } catch {
+                Self.logger.error("Could not upload the read of poem \(poemId): \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        pendingReads.clear()
     }
 
     private static let logger = Logger(

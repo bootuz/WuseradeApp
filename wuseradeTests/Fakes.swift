@@ -678,3 +678,144 @@ final class FakeDailyStore: DailyStore, @unchecked Sendable {
         }
     }
 }
+
+// MARK: - Reading history
+
+/// In-memory `ReadsStore`. When `ownerUid` is given it acts like the security rules: every call for a uid other
+/// than the signed-in one throws `PermissionDenied`. Writing a read that already exists succeeds, as the real
+/// store treats the rules' refusal of a second create.
+final class FakeReadsStore: ReadsStore, @unchecked Sendable {
+    struct PermissionDenied: Error {}
+    struct Failure: Error {}
+
+    let log: CallLog
+    private let ownerUid: (@Sendable () -> String?)?
+    private let lock = NSLock()
+    private var _calls: [String] = []
+    private var _reads: [String: Set<Int>] = [:]
+    private var _markReadError: Error?
+    private var _fetchError: Error?
+    private var _deleteError: Error?
+
+    init(log: CallLog = CallLog(), ownerUid: (@Sendable () -> String?)? = nil) {
+        self.log = log
+        self.ownerUid = ownerUid
+    }
+
+    /// Every call to this fake, in order, as "markRead 7 alice", "fetchReadIDs alice" or "deleteAllReads alice".
+    var calls: [String] { lock.withLock { _calls } }
+
+    func reads(for uid: String) -> Set<Int> {
+        lock.withLock { _reads[uid] ?? [] }
+    }
+
+    /// Stores reads directly, without recording a call or checking the owner.
+    func seed(_ ids: [Int], uid: String) {
+        lock.withLock { _reads[uid, default: []].formUnion(ids) }
+    }
+
+    /// `markRead` throws this error until it is set back to nil.
+    func setMarkReadError(_ error: Error?) {
+        lock.withLock { _markReadError = error }
+    }
+
+    /// `fetchReadIDs` throws this error until it is set back to nil.
+    func setFetchError(_ error: Error?) {
+        lock.withLock { _fetchError = error }
+    }
+
+    /// `deleteAllReads` throws this error until it is set back to nil.
+    func setDeleteError(_ error: Error?) {
+        lock.withLock { _deleteError = error }
+    }
+
+    private func record(_ name: String, detail: String, uid: String) throws {
+        lock.withLock { _calls.append("\(name) \(detail)") }
+        log.record(name)
+        if let ownerUid, ownerUid() != uid { throw PermissionDenied() }
+    }
+
+    func markRead(poemId: Int, uid: String) async throws {
+        try record("markRead", detail: "\(poemId) \(uid)", uid: uid)
+        try lock.withLock {
+            if let _markReadError { throw _markReadError }
+            _reads[uid, default: []].insert(poemId)
+        }
+    }
+
+    func fetchReadIDs(uid: String) async throws -> [Int] {
+        try record("fetchReadIDs", detail: uid, uid: uid)
+        return try lock.withLock {
+            if let _fetchError { throw _fetchError }
+            return (_reads[uid] ?? []).sorted()
+        }
+    }
+
+    /// Idempotent, like the real store.
+    func deleteAllReads(uid: String) async throws {
+        try record("deleteAllReads", detail: uid, uid: uid)
+        try lock.withLock {
+            if let _deleteError { throw _deleteError }
+            _reads[uid] = nil
+        }
+    }
+}
+
+/// A manual `Clock` for tests. Time moves only through `advance(by:)`, which wakes every sleeper whose deadline has
+/// been reached. A sleep whose deadline has already passed returns at once; a cancelled sleep throws.
+final class TestClock: Clock, @unchecked Sendable {
+    struct Instant: InstantProtocol {
+        var offset: Duration
+
+        func advanced(by duration: Duration) -> Instant { Instant(offset: offset + duration) }
+        func duration(to other: Instant) -> Duration { other.offset - offset }
+        static func < (lhs: Instant, rhs: Instant) -> Bool { lhs.offset < rhs.offset }
+    }
+
+    private struct Sleeper {
+        let deadline: Instant
+        let continuation: CheckedContinuation<Void, Error>
+    }
+
+    private let lock = NSLock()
+    private var _now = Instant(offset: .zero)
+    private var sleepers: [UUID: Sleeper] = [:]
+
+    var now: Instant { lock.withLock { _now } }
+    var minimumResolution: Duration { .zero }
+
+    func sleep(until deadline: Instant, tolerance: Duration? = nil) async throws {
+        let id = UUID()
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                let resumeNow: Result<Void, Error>? = lock.withLock {
+                    if Task.isCancelled { return .failure(CancellationError()) }
+                    if deadline <= _now { return .success(()) }
+                    sleepers[id] = Sleeper(deadline: deadline, continuation: continuation)
+                    return nil
+                }
+                if let resumeNow { continuation.resume(with: resumeNow) }
+            }
+        } onCancel: {
+            let sleeper = lock.withLock { sleepers.removeValue(forKey: id) }
+            sleeper?.continuation.resume(throwing: CancellationError())
+        }
+    }
+
+    /// Moves time forward and wakes the sleepers that are due.
+    func advance(by duration: Duration) {
+        let due: [Sleeper] = lock.withLock {
+            _now = _now.advanced(by: duration)
+            let due = sleepers.filter { $0.value.deadline <= _now }
+            for key in due.keys { sleepers[key] = nil }
+            return Array(due.values)
+        }
+        for sleeper in due { sleeper.continuation.resume() }
+    }
+}
+
+/// Lets main-actor work that was woken (e.g. by `TestClock.advance`) run to its next suspension, without real sleeps.
+@MainActor
+func settle() async {
+    for _ in 0 ..< 50 { await Task.yield() }
+}
