@@ -134,11 +134,13 @@ def resync_days(db: Client, today: date, catalog: Catalog) -> list[str]:
         stored = snapshot.to_dict()
         day = date.fromisoformat(snapshot.id)
         picks = _repick(db, day, catalog, entries, poets, stored_picks[snapshot.id])
-        # A poem without a text document keeps the text it had.
-        day_texts = {
-            poem_id: texts.get(poem_id, _stored_text(stored, poem_id))
-            for poem_id in (picks.poem_id, picks.short_poem_id)
-        }
+        day_texts = {}
+        for poem_id in (picks.poem_id, picks.short_poem_id):
+            if poem_id not in texts:  # re-picked: its text was not fetched yet
+                texts.update(_texts(db, {poem_id}))
+            if poem_id not in texts:
+                raise ValueError(f"poems/{poem_id} does not exist, but the catalog lists it")
+            day_texts[poem_id] = texts[poem_id]
         fresh = daily_document(day, picks, catalog, day_texts)
         if "createdAt" in stored:
             fresh["createdAt"] = stored["createdAt"]
@@ -146,13 +148,6 @@ def resync_days(db: Client, today: date, catalog: Catalog) -> list[str]:
             snapshot.reference.set(fresh)
             changed.append(snapshot.id)
     return changed
-
-
-def _stored_text(stored: dict, poem_id: int) -> str:
-    for slot in ("poem", "shortPoem"):
-        if stored[slot]["id"] == poem_id:
-            return stored[slot].get("text", "")
-    return ""
 
 
 def _repick(

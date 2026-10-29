@@ -24,8 +24,10 @@ python3.11 -m venv .venv
 .venv/bin/pip install -e ../functions
 ```
 
-The second install is the `wuserade_daily` package in `firebase/functions`: the picking rules for
-the daily discovery, which the admin tool shares with the Cloud Functions.
+The second install is required: it is the `wuserade_daily` package in `firebase/functions`, the
+picking rules for the daily discovery, which the admin tool shares with the Cloud Functions.
+`wuserade_admin.store` imports it, so without it every command fails with an ImportError. It is not
+listed in `pyproject.toml`, because a relative path there does not work for every pip.
 
 ## Credentials
 
@@ -108,6 +110,9 @@ release. Things to know:
 .venv/bin/python -m wuserade_admin rebuild --min-version ''
 ```
 
+Its output ends with `daily re-synced: N`: the number of `daily/{date}` documents, from yesterday
+(UTC) onward, that it rewrote because their poems or poet changed or were removed.
+
 Run it after any manual edit in the Firebase console. It reads all content, recomputes
 `poemsCount` on authors and themes, and refreshes the author name copied onto each poem
 (`poems/{id}.authorName`) wherever it no longer matches `authors/{authorId}.name`, so renaming
@@ -180,6 +185,7 @@ the number written before the rebuild output:
 Using Firestore project wuserade
 views copied: 4091
 Catalog version 5: 3 chunk(s), 4091 poems, 40 authors with poems, 14 themes.
+daily re-synced: 0
 ```
 
 Poems that are missing from the dump keep the count they have, which is 0 unless one was

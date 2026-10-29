@@ -149,6 +149,7 @@ def test_resync_repicks_a_removed_poem_and_a_removed_poet(db):
     assert "2026-10-30" in changed
     after = daily(db, "2026-10-30")
     assert after["poem"]["id"] != gone_poem
+    assert after["poem"]["text"] == f"line a {after['poem']['id']}\nline b\nline c\nline d"
     assert after["poem"]["authorId"] != gone_poet
     assert after["poet"]["id"] != gone_poet
     assert after["shortPoem"]["id"] != after["poem"]["id"]
@@ -169,3 +170,19 @@ def test_resync_repicks_only_the_poet_when_only_the_poet_is_gone(db):
     assert after["poet"]["id"] != before["poet"]["id"]
     assert after["poem"]["id"] == before["poem"]["id"]
     assert after["shortPoem"]["id"] == before["shortPoem"]["id"]
+
+
+def test_resync_says_which_poem_has_no_text_document(db):
+    import pytest
+
+    seed(db)
+    write_missing_days(db, TODAY)
+    before = daily(db, "2026-10-30")
+    gone = before["poem"]["id"]
+    seed(db, drop_poems=(gone,))
+    for n in range(1, 13):
+        if n != gone:
+            db.document(f"poems/{n}").delete()
+
+    with pytest.raises(ValueError, match=r"poems/\d+ does not exist"):
+        resync_days(db, TODAY, load_catalog(db))
