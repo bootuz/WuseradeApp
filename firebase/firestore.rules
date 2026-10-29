@@ -30,6 +30,35 @@ service cloud.firestore {
         && d.text is string;
     }
 
+    // users/{uid}/reads/{poemId}: exactly poemId:int and readAt:timestamp, poemId == int(readId),
+    // readAt is the server time. Created once; never updated.
+    function validRead(readId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['poemId', 'readAt'])
+        && d.keys().hasAll(['poemId', 'readAt'])
+        && d.poemId is int
+        && d.poemId == int(readId)
+        && d.readAt == request.time;
+    }
+
+    // users/{uid}/devices/{installId}: exactly these six fields. notifyAt is "HH:MM" on a 24-hour
+    // clock (rules regexes match the whole string), updatedAt is the server time.
+    function validDevice(installId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['fcmToken', 'timeZone', 'notifyAt', 'enabled', 'nextSendAt', 'updatedAt'])
+        && d.keys().hasAll(['fcmToken', 'timeZone', 'notifyAt', 'enabled', 'nextSendAt', 'updatedAt'])
+        && d.fcmToken is string
+        && d.fcmToken.size() <= 4096
+        && d.timeZone is string
+        && d.timeZone.size() <= 64
+        && d.notifyAt is string
+        && d.notifyAt.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$')
+        && d.enabled is bool
+        && d.nextSendAt is timestamp
+        && d.updatedAt == request.time
+        && installId.size() <= 64;
+    }
+
     // True when the caller may send a photo: signed in with Apple or Google (so not anonymous),
     // or an account that has linked one of them, and not banned. A token minted right after
     // linking can still say `anonymous` as its sign-in provider; its `identities` already name the
@@ -87,6 +116,10 @@ service cloud.firestore {
     match /meta/{docId} {
       allow get: if true;
     }
+    // The poem of the day, written only through the Admin SDK. Get by date; never listed.
+    match /daily/{date} {
+      allow get: if true;
+    }
 
     // Per-user data: only the signed-in owner, with validated shapes.
     match /users/{uid} {
@@ -96,6 +129,19 @@ service cloud.firestore {
       match /likes/{likeId} {
         allow read, delete: if isOwner(uid);
         allow create, update: if isOwner(uid) && validLike(likeId);
+      }
+
+      // Poems the user has opened: created once, listed only by the account merge, never updated.
+      match /reads/{readId} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid) && validRead(readId);
+      }
+
+      // One document per app install, for the morning push. The server reads these through a
+      // collection-group query with the Admin SDK, which bypasses rules.
+      match /devices/{installId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validDevice(installId);
       }
     }
 

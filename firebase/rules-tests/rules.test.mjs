@@ -304,3 +304,112 @@ test('nobody can list photo records', async () => {
   // Even a query pinned to one document ID is a list, and a list is denied.
   await assertFails(getDocs(query(submissions, where(documentId(), '==', '7_alice'))))
 })
+
+// ---- daily, reads and devices ----
+
+test('daily documents can be read by anyone, never listed or written', async () => {
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'daily/2026-10-29'), { date: '2026-10-29', poem: 1 })
+  })
+  for (const db of [anon(), alice()]) {
+    await assertSucceeds(getDoc(doc(db, 'daily/2026-10-29')))
+    await assertFails(getDocs(collection(db, 'daily')))
+    await assertFails(setDoc(doc(db, 'daily/2026-10-30'), { date: '2026-10-30', poem: 2 }))
+    await assertFails(deleteDoc(doc(db, 'daily/2026-10-29')))
+  }
+})
+
+test("a reader can create their own read, not another user's", async () => {
+  const data = () => ({ poemId: 5, readAt: serverTimestamp() })
+  await assertSucceeds(setDoc(doc(alice(), 'users/alice/reads/5'), data()))
+  await assertFails(setDoc(doc(alice(), 'users/bob/reads/5'), data()))
+  await assertFails(setDoc(doc(anon(), 'users/alice/reads/6'), { poemId: 6, readAt: serverTimestamp() }))
+})
+
+test('a read must have exactly poemId and readAt, matching its ID', async () => {
+  const db = alice()
+  await assertFails(setDoc(doc(db, 'users/alice/reads/5'), { poemId: 5, readAt: serverTimestamp(), extra: 1 }))
+  await assertFails(setDoc(doc(db, 'users/alice/reads/5'), { poemId: 5 }))
+  await assertFails(setDoc(doc(db, 'users/alice/reads/5'), { poemId: '5', readAt: serverTimestamp() }))
+  await assertFails(setDoc(doc(db, 'users/alice/reads/5'), { poemId: 6, readAt: serverTimestamp() }))
+})
+
+test('a read with a client-supplied readAt is refused', async () => {
+  await assertFails(
+    setDoc(doc(alice(), 'users/alice/reads/5'), { poemId: 5, readAt: Timestamp.fromMillis(1000) }),
+  )
+})
+
+test('updating a read is refused', async () => {
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice/reads/5'), { poemId: 5, readAt: Timestamp.now() })
+  })
+  await assertFails(setDoc(doc(alice(), 'users/alice/reads/5'), { poemId: 5, readAt: serverTimestamp() }))
+})
+
+test('the owner can list and delete their own reads, others cannot', async () => {
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice/reads/5'), { poemId: 5, readAt: Timestamp.now() })
+  })
+  const bob = testEnv.authenticatedContext('bob').firestore()
+  const snapshot = await assertSucceeds(getDocs(collection(alice(), 'users/alice/reads')))
+  assert.equal(snapshot.size, 1)
+  await assertFails(getDocs(collection(bob, 'users/alice/reads')))
+  await assertFails(getDocs(collection(anon(), 'users/alice/reads')))
+  await assertFails(deleteDoc(doc(bob, 'users/alice/reads/5')))
+  await assertSucceeds(deleteDoc(doc(alice(), 'users/alice/reads/5')))
+})
+
+const validDevice = (overrides = {}) => ({
+  fcmToken: 'token',
+  timeZone: 'Europe/Moscow',
+  notifyAt: '08:00',
+  enabled: true,
+  nextSendAt: Timestamp.fromMillis(Date.now() + 3600_000),
+  updatedAt: serverTimestamp(),
+  ...overrides,
+})
+
+test('a device with a valid shape can be created', async () => {
+  await assertSucceeds(setDoc(doc(alice(), 'users/alice/devices/inst1'), validDevice()))
+})
+
+test('notifyAt must be HH:MM on a 24-hour clock', async () => {
+  const ref = doc(alice(), 'users/alice/devices/inst1')
+  for (const notifyAt of ['00:00', '23:59', '08:00', '19:30']) {
+    await assertSucceeds(setDoc(ref, validDevice({ notifyAt })))
+  }
+  for (const notifyAt of ['8:00', '24:00', '12:60', '08:0', '08:00:00', ' 08:00', '08:00\n', 'ab:cd', '', 800]) {
+    await assertFails(setDoc(ref, validDevice({ notifyAt })))
+  }
+})
+
+test('a device with an extra or missing field or a wrong type is refused', async () => {
+  const db = alice()
+  const ref = doc(db, 'users/alice/devices/inst1')
+  await assertFails(setDoc(ref, validDevice({ extra: 1 })))
+  await assertFails(setDoc(ref, withoutKey(validDevice(), 'timeZone')))
+  await assertFails(setDoc(ref, validDevice({ enabled: 'yes' })))
+  await assertFails(setDoc(ref, validDevice({ fcmToken: 5 })))
+  await assertFails(setDoc(ref, validDevice({ fcmToken: 'x'.repeat(4097) })))
+  await assertFails(setDoc(ref, validDevice({ timeZone: 'x'.repeat(65) })))
+  await assertFails(setDoc(ref, validDevice({ nextSendAt: '2026-10-30' })))
+  await assertFails(setDoc(ref, validDevice({ updatedAt: Timestamp.fromMillis(1000) })))
+  await assertFails(setDoc(doc(db, `users/alice/devices/${'i'.repeat(65)}`), validDevice()))
+})
+
+test("a device can't be written under another uid", async () => {
+  await assertFails(setDoc(doc(alice(), 'users/bob/devices/inst1'), validDevice()))
+  await assertFails(setDoc(doc(anon(), 'users/alice/devices/inst1'), validDevice()))
+})
+
+test('the owner can update, read and delete their own device; others cannot', async () => {
+  const ref = doc(alice(), 'users/alice/devices/inst1')
+  const bob = testEnv.authenticatedContext('bob').firestore()
+  await assertSucceeds(setDoc(ref, validDevice()))
+  await assertSucceeds(setDoc(ref, validDevice({ enabled: false, notifyAt: '21:15' })))
+  await assertSucceeds(getDoc(ref))
+  await assertFails(getDoc(doc(bob, 'users/alice/devices/inst1')))
+  await assertFails(deleteDoc(doc(bob, 'users/alice/devices/inst1')))
+  await assertSucceeds(deleteDoc(ref))
+})
