@@ -75,8 +75,14 @@ def send_due(
     now: datetime,
     send: Callable[[list[messaging.Message]], messaging.BatchResponse],
 ) -> int:
-    """Send the day's poem to every enabled device that is due at `now`; returns how many were sent."""
+    """Send the day's poem to every enabled device that is due at `now`; returns how many were sent.
+
+    Each push token gets at most one push a run. The same token can sit under two accounts (a sign-out whose
+    device delete did not finish, for one), so of the due devices sharing a token the newest `updatedAt` is
+    kept and the others are deleted.
+    """
     daily_cache: dict[str, dict | None] = {}
+    kept: dict[str, object] = {}  # token -> the device kept for it so far in this run
     sent = 0
     query = (
         db.collection_group("devices")
@@ -91,7 +97,7 @@ def send_due(
         if not page:
             break
         cursor = page[-1]
-        sent += _send_page(db, page, now, send, daily_cache)
+        sent += _send_page(db, page, now, send, daily_cache, kept)
         if len(page) < PAGE_SIZE:
             break
     return sent
@@ -105,9 +111,21 @@ def _load_daily(db: Client, day: date, cache: dict[str, dict | None]) -> dict | 
     return cache[key]
 
 
-def _send_page(db, page, now, send, daily_cache) -> int:
+_OLDEST = datetime.min.replace(tzinfo=timezone.utc)
+
+
+def _newness(device) -> tuple:
+    """Orders devices sharing a token: the newest `updatedAt` last, then by path so the choice is stable."""
+    updated = device.to_dict().get("updatedAt")
+    return (updated if isinstance(updated, datetime) else _OLDEST, device.reference.path)
+
+
+def _send_page(db, page, now, send, daily_cache, kept) -> int:
+    """Advance and send one page. `kept` maps each token met earlier in this run to the device kept for it;
+    a token in it was already sent to, so it is not sent again."""
     to_send = []  # (device snapshot, message)
     updates = []  # (device snapshot, next send time)
+    due = []  # (device snapshot, token, next send time, message or None)
     for device in page:
         data = device.to_dict()
         try:
@@ -122,14 +140,38 @@ def _send_page(db, page, now, send, daily_cache) -> int:
             log.warning("malformed device %s, retrying in a day: %r", device.reference.path, error)
             updates.append((device, now + timedelta(days=1)))
             continue
+        due.append((device, token, following, built))
+
+    # One device per token: the newest is kept, here or on an earlier page, and the others are deleted.
+    sent_before = set(kept)
+    duplicates = []
+    for device, token, _, _ in due:
+        earlier = kept.get(token)
+        if earlier is None:
+            kept[token] = device
+            continue
+        older, newer = sorted((earlier, device), key=_newness)
+        kept[token] = newer
+        duplicates.append(older.reference)
+    deleted = {ref.path for ref in duplicates}
+
+    for device, token, following, built in due:
+        if device.reference.path in deleted:
+            continue
         updates.append((device, following))
+        if token in sent_before:
+            continue
         if built is None:
             log.warning("no daily document for %s, skipping", device.reference.path)
             continue
         to_send.append((device, built))
 
     # Advance first: a failed commit sends nothing, and a rerun or overlapping run finds nothing due.
-    _commit(db, [(d.reference, {"nextSendAt": t, "updatedAt": firestore.SERVER_TIMESTAMP}) for d, t in updates])
+    _commit(
+        db,
+        [(d.reference, {"nextSendAt": t, "updatedAt": firestore.SERVER_TIMESTAMP}) for d, t in updates]
+        + [(ref, None) for ref in duplicates],
+    )
     if not to_send:
         return 0
 
