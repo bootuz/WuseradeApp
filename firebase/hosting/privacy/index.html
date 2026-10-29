@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>Privacy Policy – Wuserade</title>
-<meta name="description" content="How the Wuserade app handles your data: accounts, likes, analytics and notifications, and how to delete them.">
+<meta name="description" content="How the Wuserade app handles your data: accounts, likes, photos you send, analytics and notifications, and how to delete them.">
 <style>
   :root {
     color-scheme: light dark;
@@ -101,9 +101,20 @@
       </li>
       <li>
         <strong>Your likes.</strong> For each poem you like, we store the poem’s ID, the time
-        you liked it, and a copy of the poem’s title, author name and text. This is saved under
-        your account in Cloud Firestore (a Google Firebase service), in the europe-west3
+        you liked it, and a copy of the poem’s title, author name and text. Your likes are saved
+        under your account in Cloud Firestore (a Google Firebase service), in the europe-west3
         (Frankfurt) region.
+      </li>
+      <li>
+        <strong>Photos you send.</strong> Only readers signed in with Apple or Google can send a
+        photo for a poet. The app removes the photo’s location and camera data on your device
+        before it is uploaded. The photo is then stored in Firebase Storage (a Google Firebase
+        service) in the United States (us-central1), linked to your account, until we review it.
+        If we approve it, it is published on the poet’s page and is not linked to you. If we
+        reject it, it is deleted. A waiting photo is also deleted when we approve a different
+        photo of the same poet. If you delete your account, photos of yours that are still
+        waiting are deleted; approved photos stay on the poet’s page. A blocked account cannot
+        send photos.
       </li>
       <li>
         <strong>Usage data (Firebase Analytics).</strong> Which screens you view and what you
@@ -147,9 +158,10 @@
   <section>
     <h2>Who handles your data</h2>
     <p>
-      The app runs on Google Firebase (Authentication, Cloud Firestore, Analytics and Cloud
-      Messaging). Google processes your data on our behalf. Your likes are stored in
-      Frankfurt; other Firebase services may process data in other countries. See
+      The app runs on Google Firebase (Authentication, Cloud Firestore, Firebase Storage,
+      Analytics and Cloud Messaging). Google processes your data on our behalf. Your likes are
+      stored in Frankfurt, and photos waiting for review are stored in the United States; other
+      Firebase services may process data in other countries. See
       <a href="https://firebase.google.com/support/privacy" rel="noopener">Firebase privacy
       and security</a> for how Google handles it.
     </p>
@@ -160,8 +172,9 @@
     <ul>
       <li>
         <strong>Signed in with Apple or Google:</strong> open Settings in the app and tap
-        Delete account. This deletes your account, all your likes and your profile, and
-        revokes Sign in with Apple.
+        Delete account. This deletes your account, all your likes, your profile and any photos
+        you sent that are still waiting for review, and revokes Sign in with Apple. Approved
+        photos stay on the poet’s page.
       </li>
       <li>
         <strong>Using the app without signing in:</strong> your likes are saved under a random

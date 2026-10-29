@@ -1,5 +1,5 @@
 // Firestore security rules tests. Run through the emulator, never against production:
-//   npx -y firebase-tools@latest emulators:exec --project demo-wuserade --only firestore "npm --prefix rules-tests test"
+//   npx -y firebase-tools@latest emulators:exec --project demo-wuserade --only firestore,storage "npm --prefix rules-tests test"
 import { test, before, after, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -13,6 +13,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  documentId,
   getDoc,
   getDocs,
   orderBy,
@@ -21,6 +22,7 @@ import {
   setDoc,
   setLogLevel,
   Timestamp,
+  where,
 } from 'firebase/firestore'
 
 // Denied writes are expected here; keep the SDK from logging each one.
@@ -38,7 +40,7 @@ before(async () => {
 })
 
 after(async () => {
-  await testEnv.cleanup()
+  await testEnv?.cleanup()
 })
 
 beforeEach(async () => {
@@ -198,4 +200,107 @@ test('unknown collections are denied', async () => {
   const db = alice()
   await assertFails(getDoc(doc(db, 'other/1')))
   await assertFails(setDoc(doc(db, 'other/1'), { id: 1 }))
+})
+
+// Photo records: signed in with Apple or Google, a ban claim blocks sending, and the ID,
+// shape and server time are all checked. Reads and deletes look at the ID only.
+const reader = (uid, claims = {}) =>
+  testEnv.authenticatedContext(uid, { firebase: { sign_in_provider: 'apple.com' }, ...claims }).firestore()
+const googleReader = (uid) =>
+  testEnv.authenticatedContext(uid, { firebase: { sign_in_provider: 'google.com' } }).firestore()
+const anonymousReader = (uid) =>
+  testEnv.authenticatedContext(uid, { firebase: { sign_in_provider: 'anonymous' } }).firestore()
+// A token minted right after linking can still say `anonymous`; its identities name the linked provider.
+const linkedReader = (uid, identities, claims = {}) =>
+  testEnv.authenticatedContext(uid, { firebase: { sign_in_provider: 'anonymous', identities }, ...claims }).firestore()
+const submission = (overrides = {}) =>
+  ({ authorId: 7, submittedBy: 'alice', createdAt: serverTimestamp(), ...overrides })
+
+test('a signed-in reader can send and resend a photo record', async () => {
+  for (const db of [reader('alice'), googleReader('alice')]) {
+    const ref = doc(db, 'photoSubmissions/7_alice')
+    await assertSucceeds(setDoc(ref, submission()))
+    await assertSucceeds(setDoc(ref, submission()))
+  }
+})
+
+test('anonymous, signed-out and banned readers cannot send a record', async () => {
+  for (const db of [anonymousReader('alice'), anon(), reader('alice', { photoBan: true })]) {
+    await assertFails(setDoc(doc(db, 'photoSubmissions/7_alice'), submission()))
+  }
+})
+
+test('an account with a linked Apple or Google identity can send a record, whatever its token says', async () => {
+  for (const identities of [{ 'apple.com': ['001'] }, { 'google.com': ['002'] }, { email: ['a@b.c'], 'google.com': ['002'] }]) {
+    const ref = doc(linkedReader('alice', identities), 'photoSubmissions/7_alice')
+    await assertSucceeds(setDoc(ref, submission()))
+    await assertSucceeds(setDoc(ref, submission()))
+  }
+})
+
+test('an anonymous token with no Apple or Google identity cannot send a record', async () => {
+  for (const identities of [{}, { email: ['a@b.c'] }, { 'facebook.com': ['003'] }]) {
+    await assertFails(setDoc(doc(linkedReader('alice', identities), 'photoSubmissions/7_alice'), submission()))
+  }
+})
+
+test('a banned reader cannot send a record, linked identity or not', async () => {
+  const db = linkedReader('alice', { 'google.com': ['002'] }, { photoBan: true })
+  await assertFails(setDoc(doc(db, 'photoSubmissions/7_alice'), submission()))
+})
+
+test('a record must match its ID and shape', async () => {
+  const db = reader('alice')
+  const ref = doc(db, 'photoSubmissions/7_alice')
+  await assertFails(setDoc(doc(db, 'photoSubmissions/7_bob'), submission()))
+  await assertFails(setDoc(ref, submission({ authorId: 8 })))
+  await assertFails(setDoc(ref, submission({ submittedBy: 'bob' })))
+  await assertFails(setDoc(ref, submission({ createdAt: Timestamp.now() })))
+  await assertFails(setDoc(ref, submission({ foo: 'bar' })))
+  for (const key of ['authorId', 'submittedBy', 'createdAt']) {
+    await assertFails(setDoc(ref, withoutKey(submission(), key)))
+  }
+  await assertFails(setDoc(ref, submission({ authorId: '7' })))
+})
+
+// The poet ID matches the Storage path rule: a whole number from 1 to 999999.
+test('the poet ID is 1 to 999999', async () => {
+  const db = reader('alice')
+  for (const authorId of [1, 999999]) {
+    await assertSucceeds(setDoc(doc(db, `photoSubmissions/${authorId}_alice`), submission({ authorId })))
+  }
+  for (const authorId of [0, -7, 1000000]) {
+    await assertFails(setDoc(doc(db, `photoSubmissions/${authorId}_alice`), submission({ authorId })))
+  }
+})
+
+test("a reader can get and delete only their own record, even when it doesn't exist", async () => {
+  const ref = (db) => doc(db, 'photoSubmissions/7_alice')
+  const snapshot = await assertSucceeds(getDoc(ref(reader('alice'))))
+  assert.equal(snapshot.exists(), false)
+  await assertSucceeds(deleteDoc(ref(reader('alice'))))
+  await assertFails(getDoc(ref(reader('bob'))))
+  await assertFails(deleteDoc(ref(reader('bob'))))
+  await assertFails(getDoc(ref(anon())))
+  await assertFails(deleteDoc(ref(anon())))
+  // The ID must be exactly `{authorId}_{uid}`.
+  await assertFails(getDoc(doc(reader('alice'), 'photoSubmissions/7_alice_x')))
+  await assertFails(deleteDoc(doc(reader('alice'), 'photoSubmissions/7_alice_x')))
+  // A banned reader can still take their own photo back.
+  await assertSucceeds(deleteDoc(ref(reader('alice', { photoBan: true }))))
+})
+
+test('nobody can list photo records', async () => {
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(
+      doc(ctx.firestore(), 'photoSubmissions/7_alice'),
+      submission({ createdAt: Timestamp.now() }),
+    )
+  })
+  const db = reader('alice')
+  const submissions = collection(db, 'photoSubmissions')
+  await assertFails(getDocs(submissions))
+  await assertFails(getDocs(query(submissions, where('submittedBy', '==', 'alice'))))
+  // Even a query pinned to one document ID is a list, and a list is denied.
+  await assertFails(getDocs(query(submissions, where(documentId(), '==', '7_alice'))))
 })

@@ -70,6 +70,14 @@ def theme_document(t: ThemeRow, poems_count: int) -> dict:
     return {"id": t.id, "title": t.title, "poemsCount": poems_count}
 
 
+def _meta_author(a: AuthorRow, poems_count: int) -> dict:
+    """An entry of `meta/content.authors`; `photoURL` is left out when there is no photo."""
+    entry = {"id": a.id, "name": a.name, "poemsCount": poems_count}
+    if a.photo:
+        entry["photoURL"] = a.photo
+    return entry
+
+
 def meta_document(
     themes: list[ThemeRow],
     authors: dict[int, AuthorRow],
@@ -81,7 +89,8 @@ def meta_document(
     """The `meta/content` document.
 
     `authors` maps author id to row and may contain authors without poems; only
-    those with at least one poem are listed. Both lists are sorted by id.
+    those with at least one poem are listed. Both lists are sorted by id. An author
+    entry carries `photoURL` only when the author has a photo.
     """
     per_author = Counter(p.author_id for p in poems)
     per_theme = Counter(p.theme_id for p in poems if p.theme_id is not None)
@@ -89,7 +98,7 @@ def meta_document(
         "catalogVersion": catalog_version,
         "catalogChunks": chunk_count,
         "authors": [
-            {"id": a.id, "name": a.name, "poemsCount": per_author[a.id]}
+            _meta_author(a, per_author[a.id])
             for a in sorted(authors.values(), key=lambda a: a.id)
             if per_author[a.id] > 0
         ],

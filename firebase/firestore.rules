@@ -30,6 +30,45 @@ service cloud.firestore {
         && d.text is string;
     }
 
+    // True when the caller may send a photo: signed in with Apple or Google (so not anonymous),
+    // or an account that has linked one of them, and not banned. A token minted right after
+    // linking can still say `anonymous` as its sign-in provider; its `identities` already name the
+    // linked provider. `photoBan` is a custom claim the owner sets; most tokens lack it, and a
+    // token may lack `identities`, so both are read with `.get`, because reading a missing key is
+    // an error and an error means "deny".
+    // storage.rules has the same function: keep the two in step.
+    function canSendPhotos() {
+      return request.auth != null
+        && (request.auth.token.firebase.get('sign_in_provider', '') in ['apple.com', 'google.com']
+          || 'apple.com' in request.auth.token.firebase.get('identities', {})
+          || 'google.com' in request.auth.token.firebase.get('identities', {}))
+        && request.auth.token.get('photoBan', false) != true;
+    }
+
+    // photoSubmissions/{authorId}_{uid}: exactly authorId:int, submittedBy:string and
+    // createdAt:timestamp. authorId is 1 to 999999 (storage.rules takes the same range),
+    // submittedBy is the caller, createdAt is the server time, and the document ID is
+    // authorId_uid, so a caller can only ever write their own record.
+    function validSubmission(id) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['authorId', 'submittedBy', 'createdAt'])
+        && d.keys().hasAll(['authorId', 'submittedBy', 'createdAt'])
+        && d.authorId is int
+        && d.authorId > 0
+        && d.authorId < 1000000
+        && d.submittedBy == request.auth.uid
+        && d.createdAt == request.time
+        && id == string(d.authorId) + '_' + request.auth.uid;
+    }
+
+    // True when the document ID is `{authorId}_{uid}` with the caller's uid. It looks at the ID
+    // only, never at resource.data, so get and delete work on a record that doesn't exist yet.
+    function ownsSubmission(id) {
+      return request.auth != null
+        && id.split('_').size() == 2
+        && id.split('_')[1] == request.auth.uid;
+    }
+
     // Content: anyone can get a document by its ID, which is all the app does. Listing or querying
     // a collection is denied: one query on poems would bill ~4,000 reads. Written only through the
     // Admin SDK (which bypasses rules).
@@ -58,6 +97,14 @@ service cloud.firestore {
         allow read, delete: if isOwner(uid);
         allow create, update: if isOwner(uid) && validLike(likeId);
       }
+    }
+
+    // A reader's photo of a poet, waiting for the owner's approval (the photo itself is in
+    // Storage). A reader can send, resend, check and withdraw their own record. Listing is
+    // never allowed; the owner reads these through the Admin SDK, which bypasses rules.
+    match /photoSubmissions/{id} {
+      allow create, update: if canSendPhotos() && validSubmission(id);
+      allow get, delete: if ownsSubmission(id);
     }
 
     // Everything else is denied (no catch-all allow).

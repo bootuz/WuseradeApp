@@ -4,9 +4,11 @@ Commands:
   migrate    copy themes, authors and poems from the old Postgres into Firestore, rebuild, check counts
   rebuild    recompute counts, the catalog and meta/content after edits made in the Firebase console
   add-poem   add one poem from a text file, then rebuild
+  photos     review the photos readers send of poets: list, approve, reject, remove, ban, unban
 
 Credentials: Application Default Credentials. With FIRESTORE_EMULATOR_HOST set, everything
-goes to the local emulator (project demo-wuserade) and no credentials are needed.
+goes to the local emulator (project demo-wuserade) and no credentials are needed. The photos
+commands also use Storage and Auth, so they need all three emulators set, or none.
 """
 
 from __future__ import annotations
@@ -23,7 +25,7 @@ warnings.filterwarnings("ignore", message="You are using a Python version", cate
 
 from dotenv import load_dotenv  # noqa: E402
 
-from . import store  # noqa: E402
+from . import photos, store  # noqa: E402
 from .source import mask_passwords, read_postgres  # noqa: E402
 
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
@@ -107,6 +109,55 @@ def _add_poem(args: argparse.Namespace) -> int:
     return 0
 
 
+def _connect_photos() -> photos.PhotoServices:
+    services = photos.connect()
+    if os.environ.get("FIRESTORE_EMULATOR_HOST"):
+        print(f"Using the Firestore, Storage and Auth emulators (project {services.db.project})")
+    else:
+        print(f"Using Firebase project {services.db.project}")
+    return services
+
+
+def _photos_list(args: argparse.Namespace) -> int:
+    waiting = photos.list_submissions(_connect_photos(), args.out)
+    for submission in waiting:
+        line = f"{submission.id}  {submission.poet_name}  {submission.created_at.astimezone():%Y-%m-%d %H:%M}"
+        print(f"{line}  (no photo file)" if submission.path is None else line)
+    print(f"{len(waiting)} waiting photos in {args.out}")
+    return 0
+
+
+def _photos_approve(args: argparse.Namespace) -> int:
+    url = photos.approve(_connect_photos(), args.submission_id, args.file)
+    print(f"approved {args.submission_id}: {url}")
+    return 0
+
+
+def _photos_reject(args: argparse.Namespace) -> int:
+    photos.reject(_connect_photos(), args.submission_id)
+    print(f"rejected {args.submission_id}")
+    return 0
+
+
+def _photos_remove(args: argparse.Namespace) -> int:
+    photos.remove(_connect_photos(), args.author_id)
+    print(f"removed the photo of poet {args.author_id}")
+    return 0
+
+
+def _photos_ban(args: argparse.Namespace) -> int:
+    uid = photos.sender_uid(args.sender)  # a bad argument is refused before anything connects
+    deleted = photos.ban(_connect_photos(), uid)
+    print(f"banned {uid}; deleted {deleted} waiting photos")
+    return 0
+
+
+def _photos_unban(args: argparse.Namespace) -> int:
+    photos.unban(_connect_photos(), args.uid)
+    print(f"unbanned {args.uid}")
+    return 0
+
+
 class _Parser(argparse.ArgumentParser):
     """argparse echoes unrecognized arguments; a database URL pasted without --dsn must not leak."""
 
@@ -135,6 +186,40 @@ def build_parser() -> argparse.ArgumentParser:
     add_poem.add_argument("--author-id", required=True, type=int)
     add_poem.add_argument("--theme-id", type=int)
     add_poem.set_defaults(handler=_add_poem)
+
+    photo_commands = commands.add_parser(
+        "photos", help="review the photos readers send of poets"
+    ).add_subparsers(dest="photos_command", required=True)
+
+    photos_list = photo_commands.add_parser("list", help="download the waiting photos and list them")
+    photos_list.add_argument(
+        "--out",
+        type=Path,
+        default=Path.home() / "Downloads" / "wuserade-photos",
+        help="folder for the downloaded photos (default: ~/Downloads/wuserade-photos)",
+    )
+    photos_list.set_defaults(handler=_photos_list)
+
+    approve = photo_commands.add_parser("approve", help="publish a waiting photo as the poet's photo")
+    approve.add_argument("submission_id", metavar="SUBMISSION_ID", help="as printed by 'photos list', like 12_uid")
+    approve.add_argument("--file", type=Path, help="publish this edited copy instead of the submitted file")
+    approve.set_defaults(handler=_photos_approve)
+
+    reject = photo_commands.add_parser("reject", help="delete a waiting photo")
+    reject.add_argument("submission_id", metavar="SUBMISSION_ID")
+    reject.set_defaults(handler=_photos_reject)
+
+    remove = photo_commands.add_parser("remove", help="take a poet's published photo down")
+    remove.add_argument("author_id", metavar="AUTHOR_ID", type=int)
+    remove.set_defaults(handler=_photos_remove)
+
+    ban = photo_commands.add_parser("ban", help="stop a sender from sending photos and delete their waiting ones")
+    ban.add_argument("sender", metavar="UID_OR_SUBMISSION_ID", help="a uid, or a submission id like 12_uid")
+    ban.set_defaults(handler=_photos_ban)
+
+    unban = photo_commands.add_parser("unban", help="let a blocked sender send photos again")
+    unban.add_argument("uid", metavar="UID")
+    unban.set_defaults(handler=_photos_unban)
     return parser
 
 

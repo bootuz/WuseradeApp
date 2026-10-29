@@ -113,7 +113,25 @@ def test_upsert_denormalizes_author_name_and_keeps_document_shape(db):
     assert poem["createdAt"] == START + timedelta(minutes=3)
     assert poem["updatedAt"] == START + timedelta(minutes=3, seconds=30)
     assert doc(db, "poems/1").to_dict()["themeId"] == 2
-    assert doc(db, "authors/1").to_dict()["photoURL"] is None
+    assert doc(db, "authors/1").to_dict().get("photoURL") is None
+
+
+def test_upsert_keeps_an_approved_photo(db):
+    themes, authors, poems = make_content(3)
+    store.upsert_content(db, themes, authors, poems)
+    db.document("authors/1").update({"photoURL": "https://p/1.jpg"})
+    store.upsert_content(db, themes, authors, poems)  # Django's photo is blank
+    assert doc(db, "authors/1").to_dict()["photoURL"] == "https://p/1.jpg"
+
+
+def test_rebuild_keeps_photos_in_meta(db):
+    themes, authors, poems = make_content(3)
+    store.upsert_content(db, themes, authors, poems)
+    db.document("authors/1").update({"photoURL": "https://p/1.jpg"})
+    store.rebuild(db)
+    entries = {a["id"]: a for a in meta(db)["authors"]}
+    assert entries[1]["photoURL"] == "https://p/1.jpg"
+    assert "photoURL" not in entries[2]
 
 
 def test_rebuild_bumps_version(db):

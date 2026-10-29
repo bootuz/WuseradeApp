@@ -153,16 +153,33 @@ def _poem_counts(poems: list[PoemRow]) -> tuple[Counter, Counter]:
     return per_author, per_theme
 
 
-def _commit(db, writes: list[tuple], *, update: bool = False) -> None:
-    """Apply (ref, data) pairs in batches of at most BATCH_LIMIT; `set` by default."""
+def _commit(db, writes: list[tuple], *, update: bool = False, merge: bool = False) -> None:
+    """Apply (ref, data) pairs in batches of at most BATCH_LIMIT.
+
+    `set` replaces each document by default. `merge=True` sets only the fields in `data` and
+    keeps every other stored field. `update=True` updates fields of existing documents. The
+    last two are alternatives.
+    """
+    if update and merge:
+        raise ValueError("update and merge cannot be combined")
     for start in range(0, len(writes), BATCH_LIMIT):
         batch = db.batch()
         for ref, data in writes[start : start + BATCH_LIMIT]:
             if update:
                 batch.update(ref, data)
+            elif merge:
+                batch.set(ref, data, merge=True)
             else:
                 batch.set(ref, data)
         batch.commit()
+
+
+def _author_write(a: AuthorRow, poems_count: int) -> dict:
+    """`author_document` without a blank `photoURL`, to be merged into the stored document."""
+    data = author_document(a, poems_count)
+    if not data["photoURL"]:
+        del data["photoURL"]
+    return data
 
 
 def upsert_content(
@@ -172,19 +189,29 @@ def upsert_content(
 
     Author names are copied onto the poems. Counts are computed from the rows given; `rebuild`
     recomputes them from what is in Firestore.
+
+    Author documents are merged, not replaced, and a blank Django photo leaves out `photoURL`,
+    so a photo the owner approved in Firestore is never overwritten.
     """
     by_id = {a.id: a for a in authors}
     _check_references(by_id, poems)
     per_author, per_theme = _poem_counts(poems)
-    writes = [
-        *((db.collection("themes").document(str(t.id)), theme_document(t, per_theme[t.id])) for t in themes),
-        *((db.collection("authors").document(str(a.id)), author_document(a, per_author[a.id])) for a in authors),
-        *(
+    _commit(
+        db,
+        [(db.collection("themes").document(str(t.id)), theme_document(t, per_theme[t.id])) for t in themes],
+    )
+    _commit(
+        db,
+        [(db.collection("authors").document(str(a.id)), _author_write(a, per_author[a.id])) for a in authors],
+        merge=True,
+    )
+    _commit(
+        db,
+        [
             (db.collection("poems").document(str(p.id)), poem_document(p, by_id[p.author_id].name))
             for p in poems
-        ),
-    ]
-    _commit(db, writes)
+        ],
+    )
 
 
 def check_chunk_sizes(chunks: list[list[dict]], limit: int | None = None) -> None:

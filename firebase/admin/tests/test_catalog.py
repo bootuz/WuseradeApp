@@ -138,6 +138,25 @@ def test_meta_next_poem_id_is_max_plus_one():
     assert meta["minimumAppVersion"] is None
 
 
+def test_meta_document_copies_photo_urls():
+    authors = {
+        1: AuthorRow(id=1, name="А", bio="", photo="https://p/1.jpg"),
+        2: AuthorRow(id=2, name="Б", bio="", photo=None),
+        3: AuthorRow(id=3, name="В", bio="", photo=""),
+    }
+    poems = [make_poem(1, author_id=1), make_poem(2, author_id=2), make_poem(3, author_id=3)]
+
+    meta = meta_document(
+        [], authors, poems, catalog_version=1, chunk_count=1, minimum_app_version=None
+    )
+
+    assert meta["authors"] == [
+        {"id": 1, "name": "А", "poemsCount": 1, "photoURL": "https://p/1.jpg"},
+        {"id": 2, "name": "Б", "poemsCount": 1},
+        {"id": 3, "name": "В", "poemsCount": 1},
+    ]
+
+
 def test_realistic_chunk_fits_firestore_limit():
     title = ("Адыгэ лъэпкъым и таурыхъ " * 3)[:60]
     name = ("Бейтыгъуэн Хьэтэ Борис " * 2)[:30]

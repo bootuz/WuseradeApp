@@ -1,0 +1,44 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // True when the caller may send a photo: signed in with Apple or Google (so not anonymous),
+    // or an account that has linked one of them, and not banned. A token minted right after
+    // linking can still say `anonymous` as its sign-in provider; its `identities` already name the
+    // linked provider. `photoBan` is a custom claim the owner sets; most tokens lack it, and a
+    // token may lack `identities`, so both are read with `.get`, because reading a missing key is
+    // an error and an error means "deny".
+    // firestore.rules has the same function: keep the two in step.
+    function canSendPhotos() {
+      return request.auth != null
+        && (request.auth.token.firebase.get('sign_in_provider', '') in ['apple.com', 'google.com']
+          || 'apple.com' in request.auth.token.firebase.get('identities', {})
+          || 'google.com' in request.auth.token.firebase.get('identities', {}))
+        && request.auth.token.get('photoBan', false) != true;
+    }
+
+    // A reader's photo of a poet, waiting for the owner's approval. Each reader has one file per
+    // poet: photo-submissions/{authorId}/{uid}.jpg, a JPEG of up to 5 MB, with a poet ID of 1 to
+    // 999999 (the same range as the photoSubmissions record). Only the sender can get or delete
+    // it, and nobody can list; the owner reads and moves these through the Admin SDK, which
+    // bypasses rules. A banned reader can still delete their own.
+    match /photo-submissions/{authorId}/{file} {
+      allow create, update: if canSendPhotos()
+        && file == request.auth.uid + '.jpg'
+        && authorId.matches('[1-9][0-9]{0,5}')
+        && request.resource.contentType == 'image/jpeg'
+        && request.resource.size <= 5 * 1024 * 1024;
+      allow get, delete: if request.auth != null && file == request.auth.uid + '.jpg';
+    }
+
+    // Approved photos are public: poets/{authorId}.jpg. Written only through the Admin SDK.
+    // Anyone can get one by its path, but not list the folder, which would show which poets have
+    // a photo. Reading by download token works without this rule; it lets emulator tests do a
+    // plain GET.
+    match /poets/{file} {
+      allow get: if true;
+    }
+
+    // Everything else is denied (no catch-all allow).
+  }
+}

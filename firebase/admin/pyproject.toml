@@ -9,6 +9,7 @@ description = "Admin tool that migrates Wuserade content into Firestore and rebu
 requires-python = ">=3.11"
 dependencies = [
     "firebase-admin",
+    "Pillow",
     "psycopg[binary]",
     "python-dotenv",
 ]
