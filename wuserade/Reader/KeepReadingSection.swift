@@ -14,7 +14,7 @@ struct KeepReadingSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             group(
-                label: "\(OwnerCopy.moreBy) \(author.name)",
+                label: OwnerCopy.moreBy(author.name),
                 poems: suggestions.poetSummaries(author: author),
                 subtitle: .none,
                 section: "poet"

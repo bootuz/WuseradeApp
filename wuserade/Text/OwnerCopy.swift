@@ -6,12 +6,11 @@ import Foundation
 
 enum OwnerCopy {
     static let daysPageLabel = "[owner copy: day’s page label]"
-    static let poetOfTheDay = "[owner copy: poet of the day]"
-    static let shortPoem = "[owner copy: a short poem]"
-    static let allTheirPoems = "[owner copy: all their poems]"
+    static let poetOfTheDay = "махуэм и усакӀуэ"
+    static let shortPoem = "усэ кӀэщӀ"
+    static let allTheirPoems = "и усэ псори"
     static let readOn = "[owner copy: read on]"
-    static let moreBy = "[owner copy: more by]"
-    static let youMightAlsoLike = "[owner copy: you might also like]"
+    static let youMightAlsoLike = "мыхэри уигу ирихьынкӀи хъунщ"
     static let like = "[owner copy: like]"
     static let unlike = "[owner copy: unlike]"
     static let copy = "[owner copy: copy]"
@@ -59,13 +58,18 @@ enum OwnerCopy {
     static let photoSendFailed = "[owner copy: photo could not be sent, try again]"
     static let photoSendBanned = "[owner copy: this account can't send photos]"
 
-    static let morningPoem = "[owner copy: morning poem]"
-    static let morningPoemTime = "[owner copy: time]"
-    static let notificationsOff = "[owner copy: notifications are off for Wuserade in iOS Settings]"
-    static let openSettings = "[owner copy: open Settings]"
-    static let morningInvitation = "[owner copy: invitation to the morning poem]"
-    static let turnOn = "[owner copy: turn on]"
-    static let notNow = "[owner copy: not now]"
+    static let morningPoem = "пщэдджыжьым и усэ"
+    static let morningPoemTime = "зэманыр"
+    static let notificationsOff = "iOS-м и гъэпсыкӀэхэм Усэрадэм папщӀэ хъыбарегъащӀэхэр гъэункӀыфӀащ."
+    static let openSettings = "гъэпсыкӀэхэр къызэӀух"
+    static let morningInvitation = "мы пщэджыжьым и усэм уеджэну укъыдогъэблагъэ"
+    static let turnOn = "щӀэгъанэ"
+    static let notNow = "иджыпстукъым"
+
+    /// The heading over more poems by the same poet. The copy puts the poet's name first.
+    static func moreBy(_ name: String) -> String {
+        "\(name) и усэ нэхъыбэж"
+    }
 
     /// The day's-page date read in words, such as '28 October'.
     static func dayAndMonth(_ date: Date) -> String {
