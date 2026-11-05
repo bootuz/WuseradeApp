@@ -76,14 +76,12 @@ struct PoetOfTheDaySection: View {
                     .foregroundStyle(Palette.ink)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(verbatim: "\(poet.poemsCount) \(OwnerCopy.countNoun)")
-                    .serif(.rowMeta)
-                    .foregroundStyle(Palette.inkSecondary)
+                PoemCount(count: poet.poemsCount, token: .rowMeta)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(poet.name), \(poet.poemsCount) \(OwnerCopy.countNoun)")
+        .accessibilityLabel("\(poet.name), \(PoemCount.spoken(poet.poemsCount))")
         .accessibilityAddTraits(.isButton)
         .task(id: poet.photo) {
             guard let url = poet.photo, loaded?.url != url,

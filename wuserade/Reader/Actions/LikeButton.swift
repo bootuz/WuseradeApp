@@ -23,7 +23,8 @@ struct LikeButton: View {
         Button {
             toggle()
         } label: {
-            Label(isLiked ? OwnerCopy.unlike : OwnerCopy.like, systemImage: isLiked ? "heart.fill" : "heart")
+            // One label in both states: VoiceOver says the poem is liked through the selected trait below.
+            Label(OwnerCopy.like, systemImage: isLiked ? "heart.fill" : "heart")
                 .foregroundStyle(isLiked ? Palette.like : Palette.ink)
                 .contentTransition(.symbolEffect(.replace))
                 .symbolEffect(.bounce, value: bounce)

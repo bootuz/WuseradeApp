@@ -20,7 +20,7 @@ enum AppTab: String, Hashable, CaseIterable {
     /// Outline names: the tab bar fills them itself, and the sidebar shows them in outline.
     var symbol: String {
         switch self {
-        case .new: "text.book.closed"
+        case .new: "pencil.and.outline"
         case .themes: "books.vertical"
         case .poets: "person.2"
         case .liked: "heart"

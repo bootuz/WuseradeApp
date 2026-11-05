@@ -12,7 +12,6 @@ enum OwnerCopy {
     static let readOn = "[owner copy: read on]"
     static let youMightAlsoLike = "мыхэри уигу ирихьынкӀи хъунщ"
     static let like = "[owner copy: like]"
-    static let unlike = "[owner copy: unlike]"
     static let copy = "[owner copy: copy]"
     static let smaller = "[owner copy: smaller]"
     static let larger = "[owner copy: larger]"
@@ -31,10 +30,8 @@ enum OwnerCopy {
     static let refreshFailed = "[owner copy: could not refresh; showing what was saved]"
     static let close = "[owner copy: close]"
     static let onboardingFirstLine = "[owner copy: replaces the weekly-poem promise]"
-    static let acknowledgements = "[owner copy: acknowledgements: Alegreya, SIL Open Font License]"
     static let nothingSelected = "[owner copy: choose a poem]"
 
-    static let unlikeSwipe = "[owner copy: unlike]"
     static let googleSignInConfirm = "[owner copy: Google sign-in wording]"
 
     static let likeNeedsAccount = "[owner copy: liking waits until you have an account]"

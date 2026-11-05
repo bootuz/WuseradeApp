@@ -14,9 +14,7 @@ struct DetailHeader: View {
                 .foregroundStyle(Palette.ink)
                 .accessibilityAddTraits(.isHeader)
             if let count {
-                Text("\(count) \(OwnerCopy.countNoun)")
-                    .serif(.sectionLabel)
-                    .foregroundStyle(Palette.inkSecondary)
+                PoemCount(count: count, token: .sectionLabel)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

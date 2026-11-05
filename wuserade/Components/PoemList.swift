@@ -62,7 +62,7 @@ struct PoemList<Header: View>: View {
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 if let onUnlike {
                     Button(role: .destructive) { onUnlike(poem) } label: {
-                        Label(OwnerCopy.unlikeSwipe, systemImage: "heart.slash")
+                        Image(systemName: "heart.slash")
                     }
                     .tint(Palette.likeSwipe)
                 }

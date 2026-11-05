@@ -34,10 +34,7 @@ struct PoetHeader: View {
                 .accessibilityAddTraits(.isHeader)
                 .padding(.top, Space.six)
             if let count {
-                Text("\(count) \(OwnerCopy.countNoun)")
-                    .serif(.sectionLabel)
-                    .foregroundStyle(Palette.inkSecondary)
-                    .multilineTextAlignment(.center)
+                PoemCount(count: count, token: .sectionLabel)
                     .padding(.top, Space.two)
             }
             SendPhotoArea(poet: poet, hasPhoto: photoURL != nil)

@@ -57,13 +57,13 @@ struct SettingsSheet: View {
                         Button {
                             openURL(privacy)
                         } label: {
-                            SettingsRowLabel(title: String(localized: "ФӀэкӀхэм щхьэкӀэ политикэ"), systemImage: "hand.raised", leavesApp: true)
+                            SettingsRowLabel(title: "Privacy Policy", systemImage: "hand.raised", leavesApp: true)
                         }
                     }
                     NavigationLink {
                         AcknowledgementsView()
                     } label: {
-                        Text(OwnerCopy.acknowledgements).foregroundStyle(Palette.ink)
+                        Text(verbatim: "Font Licence").foregroundStyle(Palette.ink)
                     }
                 }
 
